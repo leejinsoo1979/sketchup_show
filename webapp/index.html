@@ -13,25 +13,84 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0a0a0a;
+      background: #1a1a1a;
       color: #e0e0e0;
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
-      flex-direction: column;
+      overflow: hidden;
+      font-size: 12px;
     }
 
-    /* Header */
-    header {
-      background: #111;
-      border-bottom: 1px solid #222;
-      padding: 16px 24px;
+    /* 좌측 아이콘 메뉴바 */
+    .icon-menu {
+      width: 48px;
+      background: #0a0a0a;
+      border-right: 1px solid #333;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
+      padding: 12px 0;
+      flex-shrink: 0;
+    }
+
+    .icon-menu-item {
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-bottom: 4px;
+    }
+
+    .icon-menu-item:hover {
+      background: #1a1a1a;
+      color: #ccc;
+    }
+
+    .icon-menu-item.active {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .icon-menu-item svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .icon-menu-spacer {
+      flex: 1;
+    }
+
+    .icon-menu-divider {
+      width: 24px;
+      height: 1px;
+      background: #333;
+      margin: 8px 0;
+    }
+
+    /* 좌측 컨트롤 패널 */
+    .sidebar {
+      width: 220px;
+      background: #141414;
+      border-right: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #333;
     }
 
     .logo {
-      font-size: 18px;
+      font-size: 13px;
       font-weight: 600;
       color: #fff;
     }
@@ -40,54 +99,23 @@
       color: #0066ff;
     }
 
-    .api-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      color: #666;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ff3b30;
-    }
-
-    .status-dot.connected {
-      background: #30d158;
-    }
-
-    /* Main */
-    main {
+    .sidebar-content {
       flex: 1;
-      display: flex;
-      padding: 24px;
-      gap: 24px;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 280px;
-      background: #111;
-      border-radius: 12px;
-      padding: 20px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
-      flex-shrink: 0;
+      gap: 16px;
+      overflow-y: auto;
     }
 
-    .section {
+    .control-section {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
     }
 
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
+    .section-label {
+      font-size: 10px;
       color: #666;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -96,17 +124,17 @@
     /* API Key Input */
     .api-input-group {
       display: flex;
-      gap: 8px;
+      gap: 6px;
     }
 
     .api-input {
       flex: 1;
-      background: #1a1a1a;
+      background: #0a0a0a;
       border: 1px solid #333;
       border-radius: 6px;
-      padding: 10px 12px;
+      padding: 8px 10px;
       color: #fff;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .api-input:focus {
@@ -114,9 +142,47 @@
       border-color: #0066ff;
     }
 
-    /* Buttons */
+    .segmented {
+      display: flex;
+      background: #0a0a0a;
+      border-radius: 6px;
+      padding: 3px;
+      border: 1px solid #333;
+    }
+
+    .seg-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .seg-btn:hover {
+      color: #aaa;
+    }
+
+    .seg-btn.active {
+      background: #333;
+      color: #fff;
+    }
+
+    .sidebar-actions {
+      padding: 16px;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     .btn {
-      padding: 10px 16px;
+      height: 36px;
+      padding: 0 16px;
       border: none;
       border-radius: 6px;
       font-size: 12px;
@@ -139,61 +205,263 @@
     }
 
     .btn-primary:disabled {
-      background: #1a1a1a;
-      color: #444;
+      background: #222;
+      color: #555;
       cursor: not-allowed;
     }
 
     .btn-secondary {
-      background: #222;
+      background: #2a2a2a;
       color: #ccc;
     }
 
     .btn-secondary:hover {
-      background: #2a2a2a;
+      background: #333;
+    }
+
+    .btn-secondary:disabled {
+      background: #222;
+      color: #555;
+      cursor: not-allowed;
     }
 
     .btn-sm {
-      padding: 8px 12px;
+      height: 28px;
+      padding: 0 10px;
       font-size: 11px;
     }
 
-    /* Segmented Control */
-    .segmented {
+    .sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #333;
       display: flex;
-      background: #1a1a1a;
-      border-radius: 8px;
-      padding: 4px;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .seg-btn {
-      flex: 1;
-      padding: 8px 12px;
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #666;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ff3b30;
+    }
+
+    .status-dot.connected {
+      background: #30d158;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
       background: transparent;
       border: none;
       color: #666;
-      font-size: 12px;
-      font-weight: 500;
       cursor: pointer;
-      border-radius: 6px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: all 0.15s;
     }
 
-    .seg-btn:hover {
-      color: #999;
-    }
-
-    .seg-btn.active {
+    .icon-btn:hover {
       background: #333;
       color: #fff;
     }
 
-    /* Upload Area */
-    .upload-area {
-      border: 2px dashed #333;
-      border-radius: 8px;
-      padding: 24px;
+    .icon-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* 메인 영역 */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0a0a0a;
+      min-width: 0;
+    }
+
+    /* 히스토리 탭 바 */
+    .history-tabs {
+      display: flex;
+      background: #141414;
+      border-bottom: 1px solid #333;
+      padding: 0 8px;
+      overflow-x: auto;
+      flex-shrink: 0;
+      height: 32px;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .history-tab {
+      padding: 6px 14px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: #888;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      position: relative;
+      top: 1px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .history-tab:hover {
+      background: #252525;
+      color: #ccc;
+    }
+
+    .history-tab.active {
+      background: #0a0a0a;
+      color: #fff;
+      border-color: #333;
+    }
+
+    .history-tab .thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 3px;
+      object-fit: cover;
+    }
+
+    .history-tab .close-btn {
+      width: 14px;
+      height: 14px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .history-tab .close-btn:hover {
+      background: #ff3b30;
+      color: #fff;
+    }
+
+    .image-container {
+      flex: 1;
+      display: flex;
+      gap: 1px;
+      background: #333;
+      min-height: 0;
+    }
+
+    .image-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #111;
+      min-width: 0;
+    }
+
+    .panel-label {
+      height: 28px;
+      padding: 0 12px;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .panel-label span {
+      flex: 1;
+    }
+
+    .panel-tools {
+      display: flex;
+      gap: 4px;
+    }
+
+    .panel-tool-btn {
+      width: 22px;
+      height: 22px;
+      background: transparent;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .panel-tool-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .panel-tool-btn.active {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .panel-tool-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .panel-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: #0d0d0d;
+    }
+
+    .panel-content img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .empty-state {
+      color: #333;
+      font-size: 11px;
       text-align: center;
+    }
+
+    /* 업로드 영역 */
+    .upload-area {
+      position: absolute;
+      inset: 20px;
+      border: 2px dashed #333;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
       transition: all 0.15s;
     }
@@ -208,89 +476,67 @@
       background: rgba(0, 102, 255, 0.1);
     }
 
+    .upload-area.hidden {
+      display: none;
+    }
+
     .upload-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
+      font-size: 48px;
+      color: #333;
+      margin-bottom: 12px;
     }
 
     .upload-text {
       font-size: 13px;
-      color: #888;
+      color: #666;
     }
 
     .upload-hint {
       font-size: 11px;
-      color: #555;
+      color: #444;
       margin-top: 4px;
     }
 
-    /* Main Content */
-    .content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      min-width: 0;
+    /* 가이드 오버레이 */
+    .guide-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
     }
 
-    .image-grid {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      min-height: 0;
+    .guide-overlay.hidden {
+      display: none;
     }
 
-    .image-panel {
-      background: #111;
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+    .guide-canvas {
+      width: 100%;
+      height: 100%;
     }
 
-    .panel-header {
-      padding: 12px 16px;
-      background: #161616;
-      font-size: 12px;
-      font-weight: 500;
-      color: #888;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .panel-content {
-      flex: 1;
+    /* Status Bar */
+    .status-bar {
+      height: 24px;
+      background: #141414;
+      border-top: 1px solid #333;
+      padding: 0 12px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      position: relative;
-      min-height: 300px;
-      background: #0d0d0d;
-    }
-
-    .panel-content img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-
-    .empty-state {
-      color: #333;
-      font-size: 13px;
+      font-size: 10px;
+      color: #555;
+      flex-shrink: 0;
     }
 
     /* Loading */
     .loading-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.9);
+      background: rgba(0,0,0,0.9);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 16px;
+      z-index: 10;
     }
 
     .loading-overlay.hidden {
@@ -298,9 +544,9 @@
     }
 
     .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid #222;
+      width: 24px;
+      height: 24px;
+      border: 2px solid #333;
       border-top-color: #0066ff;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
@@ -311,24 +557,144 @@
     }
 
     .loading-text {
-      color: #888;
-      font-size: 13px;
+      margin-top: 12px;
+      color: #666;
+      font-size: 11px;
     }
 
-    /* Action Bar */
-    .action-bar {
-      display: flex;
-      gap: 12px;
-    }
-
-    .action-bar .btn {
-      flex: 1;
-      padding: 14px;
-    }
-
-    /* Hidden file input */
-    #file-input {
+    /* Mix Panel */
+    .mix-panel {
       display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .mix-panel.active {
+      display: flex;
+    }
+
+    .mix-modes {
+      display: flex;
+      gap: 4px;
+      padding: 8px 12px;
+      background: #141414;
+      border-bottom: 1px solid #333;
+    }
+
+    .mix-mode-btn {
+      flex: 1;
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #888;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .mix-mode-btn:hover {
+      background: #252525;
+      color: #ccc;
+    }
+
+    .mix-mode-btn.active {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .mix-content {
+      flex: 1;
+      display: flex;
+      gap: 1px;
+      background: #333;
+      min-height: 0;
+    }
+
+    .mix-canvas-panel {
+      flex: 2;
+      background: #0d0d0d;
+      position: relative;
+    }
+
+    .mix-canvas-panel canvas {
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    .mix-controls {
+      width: 250px;
+      background: #141414;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .mix-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mix-section-title {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .mix-textarea {
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px;
+      color: #fff;
+      font-size: 11px;
+      resize: none;
+      min-height: 80px;
+    }
+
+    .mix-textarea:focus {
+      outline: none;
+      border-color: #0066ff;
+    }
+
+    .brush-sizes {
+      display: flex;
+      gap: 6px;
+    }
+
+    .brush-size-btn {
+      width: 32px;
+      height: 32px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #888;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .brush-size-btn:hover {
+      background: #252525;
+    }
+
+    .brush-size-btn.active {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .brush-size-btn .dot {
+      border-radius: 50%;
+      background: currentColor;
     }
 
     /* Toast */
@@ -340,7 +706,7 @@
       color: #fff;
       padding: 12px 20px;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 12px;
       opacity: 0;
       transform: translateY(10px);
       transition: all 0.3s;
@@ -360,114 +726,391 @@
       background: #30d158;
     }
 
-    /* Responsive */
-    @media (max-width: 900px) {
-      main {
-        flex-direction: column;
-      }
+    /* Settings Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
 
-      .sidebar {
-        width: 100%;
-      }
+    .modal-overlay.hidden {
+      display: none;
+    }
 
-      .image-grid {
-        grid-template-columns: 1fr;
-      }
+    .modal {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90%;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .modal-close {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .modal-close:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #333;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .form-input {
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #0066ff;
+    }
+
+    /* Hidden */
+    .hidden {
+      display: none !important;
+    }
+
+    #file-input {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="logo">Nano<span>Banana</span> Renderer</div>
-    <div class="api-status">
-      <span class="status-dot" id="status-dot"></span>
-      <span id="status-text">API 연결 안됨</span>
-    </div>
-  </header>
+  <!-- 좌측 아이콘 메뉴바 -->
+  <nav class="icon-menu">
+    <button class="icon-menu-item active" id="menu-render" title="Render">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-mix" title="Mix">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="6" cy="6" r="3"></circle>
+        <circle cx="18" cy="18" r="3"></circle>
+        <path d="M6 21V9a9 9 0 0 0 9 9"></path>
+        <path d="M18 3v12a9 9 0 0 1-9-9"></path>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-history" title="History">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-batch" title="Batch">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="2" width="8" height="8" rx="1"></rect>
+        <rect x="14" y="2" width="8" height="8" rx="1"></rect>
+        <rect x="2" y="14" width="8" height="8" rx="1"></rect>
+        <rect x="14" y="14" width="8" height="8" rx="1"></rect>
+      </svg>
+    </button>
+    <div class="icon-menu-divider"></div>
+    <button class="icon-menu-item" id="menu-gallery" title="Gallery">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="3" y1="9" x2="21" y2="9"></line>
+        <line x1="9" y1="21" x2="9" y2="9"></line>
+      </svg>
+    </button>
+    <div class="icon-menu-spacer"></div>
+    <button class="icon-menu-item" id="menu-help" title="Help">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-settings" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
+  </nav>
 
-  <main>
-    <aside class="sidebar">
+  <!-- 좌측 사이드바 -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">Nano<span>Banana</span></div>
+    </div>
+
+    <div class="sidebar-content">
       <!-- API Key -->
-      <div class="section">
-        <div class="section-title">API Key</div>
+      <div class="control-section">
+        <span class="section-label">API Key</span>
         <div class="api-input-group">
           <input type="password" class="api-input" id="api-key" placeholder="Gemini API Key">
           <button class="btn btn-secondary btn-sm" id="btn-save-key">저장</button>
         </div>
       </div>
 
-      <!-- Upload -->
-      <div class="section">
-        <div class="section-title">이미지 업로드</div>
-        <div class="upload-area" id="upload-area">
-          <div class="upload-icon">+</div>
-          <div class="upload-text">클릭 또는 드래그하여 업로드</div>
-          <div class="upload-hint">PNG, JPG (최대 20MB)</div>
-        </div>
-        <input type="file" id="file-input" accept="image/*">
-      </div>
-
-      <!-- Time Setting -->
-      <div class="section">
-        <div class="section-title">시간대</div>
+      <div class="control-section">
+        <span class="section-label">Time</span>
         <div class="segmented" id="time-group">
-          <button class="seg-btn active" data-value="day">Day</button>
-          <button class="seg-btn" data-value="evening">Evening</button>
-          <button class="seg-btn" data-value="night">Night</button>
+          <button class="seg-btn active" data-time="day">Day</button>
+          <button class="seg-btn" data-time="evening">Eve</button>
+          <button class="seg-btn" data-time="night">Night</button>
         </div>
       </div>
 
-      <!-- Lights Setting -->
-      <div class="section">
-        <div class="section-title">실내 조명</div>
+      <div class="control-section">
+        <span class="section-label">Lights</span>
         <div class="segmented" id="light-group">
-          <button class="seg-btn active" data-value="on">On</button>
-          <button class="seg-btn" data-value="off">Off</button>
+          <button class="seg-btn active" data-light="on">On</button>
+          <button class="seg-btn" data-light="off">Off</button>
         </div>
       </div>
 
-      <!-- Actions -->
-      <div class="section" style="margin-top: auto;">
-        <button class="btn btn-primary" id="btn-render" disabled>렌더링 시작</button>
+      <div class="control-section">
+        <span class="section-label">Size</span>
+        <div class="segmented" id="size-group">
+          <button class="seg-btn" data-size="1920">FHD</button>
+          <button class="seg-btn" data-size="2560">QHD</button>
+          <button class="seg-btn active" data-size="3840">4K</button>
+        </div>
       </div>
-    </aside>
 
-    <div class="content">
-      <div class="image-grid">
-        <div class="image-panel">
-          <div class="panel-header">
-            <span>Source</span>
-            <span id="source-info"></span>
-          </div>
-          <div class="panel-content">
-            <div class="empty-state" id="source-empty">이미지를 업로드하세요</div>
-            <img id="source-image" style="display: none;">
+      <div class="control-section">
+        <span class="section-label">Style</span>
+        <div class="segmented" id="style-group">
+          <button class="seg-btn active" data-style="realistic">Real</button>
+          <button class="seg-btn" data-style="archviz">ArchViz</button>
+          <button class="seg-btn" data-style="artistic">Art</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-actions">
+      <button class="btn btn-primary" id="btn-render" disabled>Render</button>
+      <button class="btn btn-secondary" id="btn-save" disabled>Export</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-indicator">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="api-status">No API Key</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 메인 영역 -->
+  <main class="main-area">
+    <!-- 히스토리 탭 -->
+    <div class="history-tabs" id="history-tabs">
+      <div class="history-tab active" data-id="new">
+        <span>New</span>
+      </div>
+    </div>
+
+    <!-- Render Panel -->
+    <div class="image-container" id="render-panel">
+      <div class="image-panel" id="source-panel">
+        <div class="panel-label">
+          <span>Source</span>
+          <div class="panel-tools">
+            <button class="panel-tool-btn" id="btn-guide-source" title="Guide Grid">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="2" x2="12" y2="22"></line>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+              </svg>
+            </button>
+            <button class="panel-tool-btn" id="btn-expand-source" title="Expand">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+              </svg>
+            </button>
           </div>
         </div>
-
-        <div class="image-panel">
-          <div class="panel-header">
-            <span>Result</span>
-            <button class="btn btn-secondary btn-sm" id="btn-download" style="display: none;">다운로드</button>
+        <div class="panel-content" id="source-content">
+          <div class="upload-area" id="upload-area">
+            <div class="upload-icon">+</div>
+            <div class="upload-text">클릭 또는 드래그하여 업로드</div>
+            <div class="upload-hint">PNG, JPG (최대 20MB)</div>
           </div>
-          <div class="panel-content">
-            <div class="empty-state" id="result-empty">렌더링 대기 중</div>
-            <img id="result-image" style="display: none;">
-            <div class="loading-overlay hidden" id="loading">
-              <div class="spinner"></div>
-              <div class="loading-text">렌더링 중...</div>
+          <img id="source-image" class="hidden">
+          <div class="guide-overlay hidden" id="guide-source">
+            <canvas class="guide-canvas" id="guide-canvas-source"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="image-panel" id="result-panel">
+        <div class="panel-label">
+          <span>Result</span>
+          <div class="panel-tools">
+            <button class="panel-tool-btn" id="btn-guide-result" title="Guide Grid">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="2" x2="12" y2="22"></line>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+              </svg>
+            </button>
+            <button class="panel-tool-btn" id="btn-expand-result" title="Expand">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="panel-content">
+          <div class="empty-state" id="result-empty">Ready to render</div>
+          <img id="result-image" class="hidden">
+          <div class="guide-overlay hidden" id="guide-result">
+            <canvas class="guide-canvas" id="guide-canvas-result"></canvas>
+          </div>
+          <div class="loading-overlay hidden" id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">Rendering...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mix Panel -->
+    <div class="mix-panel" id="mix-panel">
+      <div class="mix-modes">
+        <button class="mix-mode-btn active" data-mode="add-remove">Object Add/Remove</button>
+        <button class="mix-mode-btn" data-mode="inpaint">Inpainting</button>
+        <button class="mix-mode-btn" data-mode="material">Material</button>
+        <button class="mix-mode-btn" data-mode="floorplan">Floorplan→3D</button>
+      </div>
+      <div class="mix-content">
+        <div class="mix-canvas-panel">
+          <canvas id="mix-canvas"></canvas>
+          <div class="upload-area" id="mix-upload-area">
+            <div class="upload-icon">+</div>
+            <div class="upload-text">이미지 업로드</div>
+          </div>
+        </div>
+        <div class="mix-controls">
+          <div class="mix-section">
+            <div class="mix-section-title">Instructions</div>
+            <textarea class="mix-textarea" id="mix-instruction" placeholder="수정할 내용을 입력하세요..."></textarea>
+          </div>
+          <div class="mix-section" id="brush-section">
+            <div class="mix-section-title">Brush Size</div>
+            <div class="brush-sizes">
+              <button class="brush-size-btn" data-size="10"><div class="dot" style="width:6px;height:6px"></div></button>
+              <button class="brush-size-btn active" data-size="20"><div class="dot" style="width:10px;height:10px"></div></button>
+              <button class="brush-size-btn" data-size="40"><div class="dot" style="width:16px;height:16px"></div></button>
+              <button class="brush-size-btn" data-size="60"><div class="dot" style="width:22px;height:22px"></div></button>
             </div>
           </div>
+          <div class="mix-section" id="material-section" style="display:none">
+            <div class="mix-section-title">Material Image</div>
+            <div class="upload-area" id="material-upload" style="position:relative;inset:auto;height:100px;margin:0">
+              <div class="upload-text" style="font-size:11px">재질 이미지 업로드</div>
+            </div>
+          </div>
+          <div class="mix-section" id="floorplan-section" style="display:none">
+            <div class="mix-section-title">Wall Height (mm)</div>
+            <input type="number" class="form-input" id="wall-height" value="2700">
+            <div class="mix-section-title" style="margin-top:12px">Wall Thickness (mm)</div>
+            <input type="number" class="form-input" id="wall-thickness" value="150">
+            <div class="mix-section-title" style="margin-top:12px">Style</div>
+            <div class="segmented" id="floorplan-style">
+              <button class="seg-btn active" data-style="modern">Modern</button>
+              <button class="seg-btn" data-style="scandi">Nordic</button>
+              <button class="seg-btn" data-style="luxury">Luxury</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-mix-apply" style="margin-top:auto">Apply</button>
         </div>
       </div>
+    </div>
 
-      <div class="action-bar">
-        <button class="btn btn-secondary" id="btn-clear">초기화</button>
-        <button class="btn btn-primary" id="btn-render-main" disabled>렌더링</button>
-      </div>
+    <div class="status-bar">
+      <span id="status-text">Ready</span>
     </div>
   </main>
 
+  <!-- Settings Modal -->
+  <div class="modal-overlay hidden" id="settings-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Settings</div>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Gemini API Key</label>
+          <input type="password" class="form-input" id="settings-api-key" placeholder="Enter your API key">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Default Save Location</label>
+          <input type="text" class="form-input" id="settings-save-path" placeholder="Downloads folder" disabled>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="settings-cancel">Cancel</button>
+        <button class="btn btn-primary" id="settings-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*">
+  <input type="file" id="material-input" accept="image/*">
   <div class="toast" id="toast"></div>
 
   <script>
@@ -478,7 +1121,16 @@
       resultImage: null,
       isRendering: false,
       timePreset: 'day',
-      lightSwitch: 'on'
+      lightSwitch: 'on',
+      imageSize: '3840',
+      stylePreset: 'realistic',
+      currentMode: 'render', // render, mix
+      mixMode: 'add-remove',
+      mixImage: null,
+      materialImage: null,
+      brushSize: 20,
+      history: [],
+      historyIndex: -1
     };
 
     // Elements
@@ -488,24 +1140,27 @@
       uploadArea: document.getElementById('upload-area'),
       fileInput: document.getElementById('file-input'),
       sourceImage: document.getElementById('source-image'),
-      sourceEmpty: document.getElementById('source-empty'),
-      sourceInfo: document.getElementById('source-info'),
       resultImage: document.getElementById('result-image'),
       resultEmpty: document.getElementById('result-empty'),
       loading: document.getElementById('loading'),
       btnRender: document.getElementById('btn-render'),
-      btnRenderMain: document.getElementById('btn-render-main'),
-      btnDownload: document.getElementById('btn-download'),
-      btnClear: document.getElementById('btn-clear'),
+      btnSave: document.getElementById('btn-save'),
       statusDot: document.getElementById('status-dot'),
+      apiStatus: document.getElementById('api-status'),
       statusText: document.getElementById('status-text'),
-      toast: document.getElementById('toast')
+      toast: document.getElementById('toast'),
+      renderPanel: document.getElementById('render-panel'),
+      mixPanel: document.getElementById('mix-panel'),
+      mixCanvas: document.getElementById('mix-canvas'),
+      mixInstruction: document.getElementById('mix-instruction'),
+      historyTabs: document.getElementById('history-tabs'),
+      settingsModal: document.getElementById('settings-modal')
     };
 
     // Initialize
     function init() {
       if (state.apiKey) {
-        el.apiKey.value = '••••••••' + state.apiKey.slice(-4);
+        el.apiKey.value = '••••' + state.apiKey.slice(-4);
         updateApiStatus(true);
       }
 
@@ -514,37 +1169,108 @@
       el.uploadArea.addEventListener('click', () => el.fileInput.click());
       el.fileInput.addEventListener('change', handleFileSelect);
       el.btnRender.addEventListener('click', startRender);
-      el.btnRenderMain.addEventListener('click', startRender);
-      el.btnDownload.addEventListener('click', downloadResult);
-      el.btnClear.addEventListener('click', clearAll);
+      el.btnSave.addEventListener('click', downloadResult);
 
       // Drag and drop
-      el.uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        el.uploadArea.classList.add('dragover');
-      });
-      el.uploadArea.addEventListener('dragleave', () => {
-        el.uploadArea.classList.remove('dragover');
-      });
+      el.uploadArea.addEventListener('dragover', handleDragOver);
+      el.uploadArea.addEventListener('dragleave', handleDragLeave);
       el.uploadArea.addEventListener('drop', handleDrop);
 
       // Segmented controls
-      setupSegmented('time-group', (value) => state.timePreset = value);
-      setupSegmented('light-group', (value) => state.lightSwitch = value);
+      setupSegmented('time-group', 'time', (v) => state.timePreset = v);
+      setupSegmented('light-group', 'light', (v) => state.lightSwitch = v);
+      setupSegmented('size-group', 'size', (v) => state.imageSize = v);
+      setupSegmented('style-group', 'style', (v) => state.stylePreset = v);
 
-      // Check for SketchUp data
-      checkSketchUpData();
+      // Menu items
+      document.querySelectorAll('.icon-menu-item').forEach(item => {
+        item.addEventListener('click', () => handleMenuClick(item.id));
+      });
+
+      // Mix modes
+      document.querySelectorAll('.mix-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => setMixMode(btn.dataset.mode));
+      });
+
+      // Brush sizes
+      document.querySelectorAll('.brush-size-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.brush-size-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.brushSize = parseInt(btn.dataset.size);
+        });
+      });
+
+      // Mix upload
+      document.getElementById('mix-upload-area').addEventListener('click', () => el.fileInput.click());
+
+      // Mix apply
+      document.getElementById('btn-mix-apply').addEventListener('click', applyMix);
+
+      // Settings modal
+      document.getElementById('menu-settings').addEventListener('click', () => {
+        document.getElementById('settings-api-key').value = state.apiKey;
+        el.settingsModal.classList.remove('hidden');
+      });
+      document.getElementById('modal-close').addEventListener('click', () => el.settingsModal.classList.add('hidden'));
+      document.getElementById('settings-cancel').addEventListener('click', () => el.settingsModal.classList.add('hidden'));
+      document.getElementById('settings-save').addEventListener('click', () => {
+        const key = document.getElementById('settings-api-key').value.trim();
+        if (key) {
+          state.apiKey = key;
+          localStorage.setItem('nanobanana_api_key', key);
+          el.apiKey.value = '••••' + key.slice(-4);
+          updateApiStatus(true);
+          showToast('Settings saved', 'success');
+        }
+        el.settingsModal.classList.add('hidden');
+      });
+
+      // Guide grids
+      document.getElementById('btn-guide-source').addEventListener('click', (e) => toggleGuide('source', e.target.closest('button')));
+      document.getElementById('btn-guide-result').addEventListener('click', (e) => toggleGuide('result', e.target.closest('button')));
+
+      // Initialize mix canvas
+      initMixCanvas();
     }
 
-    function setupSegmented(groupId, callback) {
+    function setupSegmented(groupId, attr, callback) {
       const group = document.getElementById(groupId);
       group.querySelectorAll('.seg-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           group.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          callback(btn.dataset.value);
+          callback(btn.dataset[attr]);
         });
       });
+    }
+
+    function handleMenuClick(menuId) {
+      document.querySelectorAll('.icon-menu-item').forEach(i => i.classList.remove('active'));
+      document.getElementById(menuId).classList.add('active');
+
+      if (menuId === 'menu-render') {
+        state.currentMode = 'render';
+        el.renderPanel.style.display = 'flex';
+        el.mixPanel.classList.remove('active');
+      } else if (menuId === 'menu-mix') {
+        state.currentMode = 'mix';
+        el.renderPanel.style.display = 'none';
+        el.mixPanel.classList.add('active');
+      } else if (menuId === 'menu-settings') {
+        el.settingsModal.classList.remove('hidden');
+      }
+    }
+
+    function setMixMode(mode) {
+      state.mixMode = mode;
+      document.querySelectorAll('.mix-mode-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+      // Show/hide relevant sections
+      document.getElementById('brush-section').style.display = (mode === 'inpaint' || mode === 'material') ? 'block' : 'none';
+      document.getElementById('material-section').style.display = mode === 'material' ? 'block' : 'none';
+      document.getElementById('floorplan-section').style.display = mode === 'floorplan' ? 'block' : 'none';
     }
 
     function saveApiKey() {
@@ -552,15 +1278,25 @@
       if (key && !key.startsWith('••')) {
         state.apiKey = key;
         localStorage.setItem('nanobanana_api_key', key);
-        el.apiKey.value = '••••••••' + key.slice(-4);
+        el.apiKey.value = '••••' + key.slice(-4);
         updateApiStatus(true);
-        showToast('API Key 저장됨', 'success');
+        showToast('API Key saved', 'success');
       }
     }
 
     function updateApiStatus(connected) {
       el.statusDot.classList.toggle('connected', connected);
-      el.statusText.textContent = connected ? 'API 연결됨' : 'API 연결 안됨';
+      el.apiStatus.textContent = connected ? 'Connected' : 'No API Key';
+      updateRenderButton();
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      el.uploadArea.classList.add('dragover');
+    }
+
+    function handleDragLeave() {
+      el.uploadArea.classList.remove('dragover');
     }
 
     function handleFileSelect(e) {
@@ -582,35 +1318,22 @@
       reader.onload = (e) => {
         state.sourceImage = e.target.result.split(',')[1];
         el.sourceImage.src = e.target.result;
-        el.sourceImage.style.display = 'block';
-        el.sourceEmpty.style.display = 'none';
-        el.sourceInfo.textContent = `${(file.size / 1024 / 1024).toFixed(1)}MB`;
+        el.sourceImage.classList.remove('hidden');
+        el.uploadArea.classList.add('hidden');
         updateRenderButton();
+        setStatus(`Loaded: ${file.name}`);
+
+        // Also load to mix canvas if in mix mode
+        if (state.currentMode === 'mix') {
+          loadMixImage(e.target.result);
+        }
       };
       reader.readAsDataURL(file);
-    }
-
-    function loadImageFromBase64(base64) {
-      state.sourceImage = base64;
-      el.sourceImage.src = 'data:image/png;base64,' + base64;
-      el.sourceImage.style.display = 'block';
-      el.sourceEmpty.style.display = 'none';
-      updateRenderButton();
     }
 
     function updateRenderButton() {
       const canRender = state.apiKey && state.sourceImage && !state.isRendering;
       el.btnRender.disabled = !canRender;
-      el.btnRenderMain.disabled = !canRender;
-    }
-
-    function checkSketchUpData() {
-      const params = new URLSearchParams(window.location.search);
-      const imageData = params.get('image');
-      if (imageData) {
-        loadImageFromBase64(imageData);
-        showToast('SketchUp에서 이미지 로드됨', 'success');
-      }
     }
 
     async function startRender() {
@@ -619,7 +1342,8 @@
       state.isRendering = true;
       updateRenderButton();
       el.loading.classList.remove('hidden');
-      el.resultEmpty.style.display = 'none';
+      el.resultEmpty.classList.add('hidden');
+      setStatus('Rendering...');
 
       try {
         const prompt = buildPrompt();
@@ -628,16 +1352,19 @@
         if (result) {
           state.resultImage = result;
           el.resultImage.src = 'data:image/png;base64,' + result;
-          el.resultImage.style.display = 'block';
-          el.btnDownload.style.display = 'block';
-          showToast('렌더링 완료', 'success');
+          el.resultImage.classList.remove('hidden');
+          el.btnSave.disabled = false;
+          addToHistory(state.sourceImage, result);
+          showToast('Render complete', 'success');
+          setStatus('Complete');
         } else {
-          throw new Error('렌더링 결과가 없습니다');
+          throw new Error('No result received');
         }
       } catch (error) {
-        showToast('오류: ' + error.message, 'error');
-        el.resultEmpty.style.display = 'block';
-        el.resultEmpty.textContent = '렌더링 실패';
+        showToast('Error: ' + error.message, 'error');
+        el.resultEmpty.classList.remove('hidden');
+        el.resultEmpty.textContent = 'Render failed';
+        setStatus('Error');
       } finally {
         state.isRendering = false;
         updateRenderButton();
@@ -647,85 +1374,38 @@
 
     function buildPrompt() {
       const timeDesc = {
-        day: '정오 12:00 PM (Neutral Reference Daylight), 맑은 낮 하늘',
+        day: '정오 12:00 PM, 맑은 낮 하늘',
         evening: 'Golden hour 오후 5:00 PM, 따뜻한 석양빛',
         night: '밤 9:00 PM, 어두운 외부, 실내 조명만'
       }[state.timePreset];
 
       const lightDesc = {
-        on: '실내 조명 ON - 천장등, 펜던트, 간접조명 모두 켜짐',
-        off: '실내 조명 OFF - 자연광만 사용'
+        on: '실내 조명 ON (3000K 따뜻한 조명)',
+        off: '실내 조명 OFF - 자연광만'
       }[state.lightSwitch];
 
-      return `ROLE:
-첨부된 건축/인테리어 이미지를
-원본 비율과 형태를 100% 유지한 상태로
-초고해상도 포토리얼리스틱 사진으로 재구성하는
-건축 시각화(AI Architectural Visualization) 전문가이다.
+      const styleDesc = {
+        realistic: 'Photorealistic, RAW photo, 8K',
+        archviz: 'Architectural visualization, V-Ray quality',
+        artistic: 'Artistic interpretation, cinematic lighting'
+      }[state.stylePreset];
 
-이 작업은 "재설계"가 아닌
-"엄격한 이미지-투-이미지 재구성(Strict Image-to-Image Reconstruction)"이다.
+      return `[INPUT IMAGE = REFERENCE]
+Transform this architectural/interior image into a photorealistic render.
+Maintain 100% identical geometry, camera angle, and composition.
 
-==================================================
-CRITICAL RULES (절대 규칙)
-==================================================
+CRITICAL RULES:
+- Keep ALL structural elements exactly as shown
+- Preserve camera angle, FOV, and perspective
+- No additions, deletions, or modifications to layout
+- Apply realistic PBR materials with proper reflections
+- ${styleDesc}
 
-1. 구조 보존 (GEOMETRY PRESERVATION : 1.5)
-- 벽체, 바닥, 천장, 창문, 문, 기둥 등 모든 구조 요소의
-  위치, 크기, 비율을 100% 그대로 유지
-- 창호의 개수, 분할(Mullion), 프레임 두께, 위치 변경 절대 금지
-- 카메라 앵글, 시점, FOV(Field of View), 소실점(Vanishing Point),
-  프레이밍을 원본과 완전히 동일하게 유지
-- 어떠한 구조 요소도 추가, 삭제, 이동, 회전, 보정하지 않음
-- 왜곡, 휨, 비틀림, 형태 보정, 스마트 최적화 금지
+LIGHTING:
+- Time: ${timeDesc}
+- Interior lights: ${lightDesc}
 
-2. 재질 현실화 (REALISTIC MATERIALS : 1.3)
-- 모든 재질은 PBR(Physically Based Rendering) 기준으로 현실화
-- Ray Tracing, Global Illumination 기반의 물리적으로 정확한 조명 계산
-- 반사, 거칠기, 미세 질감은 현실적으로 표현하되
-  재질 표현으로 인해 형태가 변형되어 보이면 안 됨
-
-3. 출력 품질 (OUTPUT QUALITY)
-- (Masterpiece, Best Quality, Photorealistic : 1.4)
-- (RAW Architectural Photo, 8K Resolution, UHD : 1.2)
-- (Architectural Photography, Shot on DSLR : 1.2)
-- Sharp focus, high dynamic range, detailed textures
-- "AI 렌더"가 아닌 "실제 DSLR 촬영 사진"처럼 보여야 함
-
-==================================================
-마감 재료 처리 규칙
-==================================================
-
-- 외벽 / 내벽: 원본 재질 유형 유지, 질감만 실사 수준으로 현실화
-- 창호 / 유리: 위치·크기 고정, 과하지 않은 자연스러운 반사만 적용
-- 천장: 형태, 높이, 색감, 조명 배치 100% 유지
-- 바닥: 패턴 유지, 실사 수준의 질감 및 반사 표현
-- 가구 / 오브제: 원본 형태·비율·배치 절대 변경 금지
-
-==================================================
-환경 및 조명 설정
-==================================================
-
-- 시간대: ${timeDesc}
-- 실내조명: ${lightDesc}
-- 배경: 도시 환경 (건축 구조에는 영향 없음)
-- 그림자: 물리적으로 자연스럽고 부드러운 그림자
-- 조명 변화로 인해 구조가 달라 보이면 안 됨
-
-==================================================
-NEGATIVE PROMPT (엄격 적용)
-==================================================
-
-Sketch, Cartoon, Anime, Painting, Drawing, Illustration,
-3D render, CGI, Unreal, Blender, V-Ray style,
-Clay, Wireframe, Polygon,
-Low quality, Blurry, Pixelated, Noise,
-Distorted geometry, Warped lines, Bent edges,
-Wrong perspective, Perspective correction,
-Geometry enhancement, Proportion correction,
-AI redesign, Smart optimization,
-Added structure, Removed structure,
-Text, Watermark, Logo, Signature`;
+OUTPUT: Ultra-high resolution photorealistic architectural photograph`;
     }
 
     async function callGeminiAPI(imageBase64, prompt) {
@@ -751,7 +1431,7 @@ Text, Watermark, Logo, Signature`;
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || '요청 실패');
+        throw new Error(error.error?.message || 'Request failed');
       }
 
       const data = await response.json();
@@ -773,22 +1453,238 @@ Text, Watermark, Logo, Signature`;
 
       const link = document.createElement('a');
       link.href = 'data:image/png;base64,' + state.resultImage;
-      link.download = `nanobanana_render_${Date.now()}.png`;
+      link.download = `nanobanana_${Date.now()}.png`;
       link.click();
+      showToast('Image saved', 'success');
     }
 
-    function clearAll() {
-      state.sourceImage = null;
-      state.resultImage = null;
-      el.sourceImage.style.display = 'none';
-      el.sourceEmpty.style.display = 'block';
-      el.sourceInfo.textContent = '';
-      el.resultImage.style.display = 'none';
-      el.resultEmpty.style.display = 'block';
-      el.resultEmpty.textContent = '렌더링 대기 중';
-      el.btnDownload.style.display = 'none';
-      el.fileInput.value = '';
-      updateRenderButton();
+    function addToHistory(source, result) {
+      const id = Date.now().toString();
+      state.history.push({ id, source, result, time: new Date() });
+
+      const tab = document.createElement('div');
+      tab.className = 'history-tab';
+      tab.dataset.id = id;
+      tab.innerHTML = `
+        <img class="thumb" src="data:image/png;base64,${result}">
+        <span>${new Date().toLocaleTimeString()}</span>
+        <button class="close-btn">&times;</button>
+      `;
+
+      tab.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('close-btn')) {
+          loadFromHistory(id);
+        }
+      });
+
+      tab.querySelector('.close-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeFromHistory(id);
+      });
+
+      el.historyTabs.appendChild(tab);
+    }
+
+    function loadFromHistory(id) {
+      const item = state.history.find(h => h.id === id);
+      if (item) {
+        state.sourceImage = item.source;
+        state.resultImage = item.result;
+        el.sourceImage.src = 'data:image/png;base64,' + item.source;
+        el.sourceImage.classList.remove('hidden');
+        el.uploadArea.classList.add('hidden');
+        el.resultImage.src = 'data:image/png;base64,' + item.result;
+        el.resultImage.classList.remove('hidden');
+        el.resultEmpty.classList.add('hidden');
+        el.btnSave.disabled = false;
+
+        document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`[data-id="${id}"]`).classList.add('active');
+      }
+    }
+
+    function removeFromHistory(id) {
+      state.history = state.history.filter(h => h.id !== id);
+      document.querySelector(`[data-id="${id}"]`).remove();
+    }
+
+    // Mix Canvas
+    let mixCtx = null;
+    let isDrawing = false;
+    let maskData = null;
+
+    function initMixCanvas() {
+      const canvas = el.mixCanvas;
+      mixCtx = canvas.getContext('2d');
+
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseout', stopDrawing);
+    }
+
+    function loadMixImage(dataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        el.mixCanvas.width = img.width;
+        el.mixCanvas.height = img.height;
+        mixCtx.drawImage(img, 0, 0);
+        state.mixImage = dataUrl.split(',')[1];
+        document.getElementById('mix-upload-area').classList.add('hidden');
+      };
+      img.src = dataUrl;
+    }
+
+    function startDrawing(e) {
+      if (state.mixMode !== 'inpaint' && state.mixMode !== 'material') return;
+      isDrawing = true;
+      draw(e);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+
+      const rect = el.mixCanvas.getBoundingClientRect();
+      const scaleX = el.mixCanvas.width / rect.width;
+      const scaleY = el.mixCanvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      mixCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+      mixCtx.beginPath();
+      mixCtx.arc(x, y, state.brushSize, 0, Math.PI * 2);
+      mixCtx.fill();
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    async function applyMix() {
+      if (!state.apiKey || !state.mixImage) {
+        showToast('Please load an image first', 'error');
+        return;
+      }
+
+      const instruction = el.mixInstruction.value.trim();
+      if (!instruction && state.mixMode !== 'floorplan') {
+        showToast('Please enter instructions', 'error');
+        return;
+      }
+
+      el.loading.classList.remove('hidden');
+      setStatus('Processing...');
+
+      try {
+        let prompt = '';
+
+        switch (state.mixMode) {
+          case 'add-remove':
+            prompt = `Modify this interior image: ${instruction}
+CRITICAL: Keep camera angle and all other elements unchanged. Only make the specified changes.`;
+            break;
+
+          case 'inpaint':
+            prompt = `In the marked/red areas of this image: ${instruction}
+Keep everything else exactly the same. Seamless blend required.`;
+            break;
+
+          case 'material':
+            prompt = `Replace the material/texture in the marked red areas with: ${instruction}
+Maintain geometry and lighting. Apply realistic PBR material properties.`;
+            break;
+
+          case 'floorplan':
+            const wallHeight = document.getElementById('wall-height').value;
+            const wallThickness = document.getElementById('wall-thickness').value;
+            const style = document.querySelector('#floorplan-style .seg-btn.active').dataset.style;
+            prompt = `Convert this 2D floorplan to isometric 3D view.
+Wall height: ${wallHeight}mm, Wall thickness: ${wallThickness}mm
+Style: ${style === 'modern' ? 'Modern minimalist' : style === 'scandi' ? 'Scandinavian' : 'Luxury'}
+Add furniture, materials, and lighting appropriate for each room.`;
+            break;
+        }
+
+        const result = await callGeminiAPI(state.mixImage, prompt);
+
+        if (result) {
+          state.resultImage = result;
+          el.resultImage.src = 'data:image/png;base64,' + result;
+          el.resultImage.classList.remove('hidden');
+          el.resultEmpty.classList.add('hidden');
+          el.btnSave.disabled = false;
+
+          // Switch to render view to show result
+          handleMenuClick('menu-render');
+          showToast('Mix complete', 'success');
+          setStatus('Complete');
+        }
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+        setStatus('Error');
+      } finally {
+        el.loading.classList.add('hidden');
+      }
+    }
+
+    // Guide Grid
+    function toggleGuide(panel, btn) {
+      const overlay = document.getElementById(`guide-${panel}`);
+      const canvas = document.getElementById(`guide-canvas-${panel}`);
+      const isHidden = overlay.classList.toggle('hidden');
+
+      btn.classList.toggle('active', !isHidden);
+
+      if (!isHidden) {
+        const container = overlay.parentElement;
+        canvas.width = container.offsetWidth;
+        canvas.height = container.offsetHeight;
+        drawGrid(canvas);
+      }
+    }
+
+    function drawGrid(canvas) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      const gridSize = 40;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(255, 100, 100, 0.3)';
+      ctx.lineWidth = 1;
+
+      // Grid lines
+      for (let x = gridSize; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+
+      for (let y = gridSize; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Center lines
+      ctx.strokeStyle = 'rgba(255, 100, 100, 0.7)';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(w / 2, 0);
+      ctx.lineTo(w / 2, h);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.stroke();
+    }
+
+    function setStatus(text) {
+      el.statusText.textContent = text;
     }
 
     function showToast(message, type = '') {
@@ -796,12 +1692,6 @@ Text, Watermark, Logo, Signature`;
       el.toast.className = 'toast show ' + type;
       setTimeout(() => el.toast.classList.remove('show'), 3000);
     }
-
-    // SketchUp 연동 함수 (외부에서 호출 가능)
-    window.loadFromSketchUp = function(base64) {
-      loadImageFromBase64(base64);
-      showToast('SketchUp에서 이미지 로드됨', 'success');
-    };
 
     init();
   </script>
