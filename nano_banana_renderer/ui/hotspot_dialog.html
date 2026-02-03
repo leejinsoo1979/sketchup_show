@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오브젝트 배치 - NanoBanana</title>
+  <link rel="stylesheet" href="styles/common.css">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: var(--bg-secondary);
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Canvas Section */
+    .canvas-section {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-md);
+      background: var(--bg-tertiary);
+      position: relative;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: var(--bg-primary);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    #hotspot-canvas {
+      display: block;
+      max-width: 100%;
+      max-height: calc(100vh - 200px);
+    }
+
+    .instruction-overlay {
+      position: absolute;
+      bottom: var(--spacing-md);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      border-radius: var(--border-radius);
+      font-size: 13px;
+      pointer-events: none;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 300px;
+      background: var(--bg-primary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-md);
+    }
+
+    /* Object List */
+    .objects-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+
+    .object-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm);
+      background: var(--bg-secondary);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+    }
+
+    .object-thumbnail {
+      width: 50px;
+      height: 50px;
+      background: var(--bg-tertiary);
+      border-radius: var(--border-radius-sm);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .object-thumbnail img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .object-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .object-name {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: var(--spacing-xs);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .object-scale {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .object-scale input {
+      width: 80px;
+      height: 4px;
+    }
+
+    .object-delete {
+      padding: 6px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: var(--border-radius-sm);
+    }
+
+    .object-delete:hover {
+      background: var(--bg-tertiary);
+      color: var(--danger-color);
+    }
+
+    .empty-list {
+      text-align: center;
+      padding: var(--spacing-lg);
+      color: var(--text-muted);
+    }
+
+    /* Add Buttons */
+    .add-buttons {
+      padding: var(--spacing-md);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    .add-buttons .btn {
+      flex: 1;
+      font-size: 12px;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-md);
+      background: rgba(255, 255, 255, 0.95);
+      z-index: 100;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Modal */
+    .library-modal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 200;
+    }
+
+    .library-modal-content {
+      width: 500px;
+      max-height: 80vh;
+      background: var(--bg-primary);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .library-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .library-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .library-item {
+      aspect-ratio: 1;
+      background: var(--bg-secondary);
+      border-radius: var(--border-radius);
+      border: 2px solid transparent;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-sm);
+      transition: var(--transition);
+    }
+
+    .library-item:hover {
+      border-color: var(--primary-color);
+    }
+
+    .library-item img {
+      max-width: 80%;
+      max-height: 60%;
+      object-fit: contain;
+    }
+
+    .library-item span {
+      margin-top: var(--spacing-xs);
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1 class="header-title">📦 오브젝트 배치</h1>
+    <button class="btn btn-ghost btn-icon" id="btn-close" title="닫기">✕</button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Canvas Section -->
+    <section class="canvas-section">
+      <div class="canvas-wrapper" id="canvas-wrapper">
+        <canvas id="hotspot-canvas"></canvas>
+        <div class="instruction-overlay" id="instruction">
+          이미지를 클릭하여 오브젝트 배치 위치를 선택하세요
+        </div>
+      </div>
+      <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="spinner"></div>
+        <span>재생성 중...</span>
+      </div>
+    </section>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">배치된 오브젝트</h2>
+      </div>
+
+      <div class="sidebar-content">
+        <div class="objects-list" id="objects-list">
+          <div class="empty-list" id="empty-list">
+            배치된 오브젝트가 없습니다
+          </div>
+        </div>
+      </div>
+
+      <div class="add-buttons">
+        <button class="btn btn-secondary" id="btn-add-library">
+          📚 라이브러리
+        </button>
+        <button class="btn btn-secondary" id="btn-add-upload">
+          📤 업로드
+        </button>
+        <input type="file" id="file-input" accept="image/png,image/jpeg" hidden>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <button class="btn btn-secondary" id="btn-cancel">취소</button>
+    <button class="btn btn-primary" id="btn-regenerate" disabled>🎨 재생성</button>
+  </footer>
+
+  <!-- Library Modal -->
+  <div class="library-modal hidden" id="library-modal">
+    <div class="library-modal-content">
+      <div class="library-header">
+        <h3>오브젝트 라이브러리</h3>
+        <button class="btn btn-ghost btn-icon" id="btn-close-library">✕</button>
+      </div>
+      <div class="library-grid" id="library-grid">
+        <!-- Sample items - 실제 구현시 동적으로 로드 -->
+        <div class="library-item" data-name="Floor Lamp" data-url="placeholder">
+          <div style="font-size: 40px;">💡</div>
+          <span>플로어 램프</span>
+        </div>
+        <div class="library-item" data-name="Armchair" data-url="placeholder">
+          <div style="font-size: 40px;">🪑</div>
+          <span>암체어</span>
+        </div>
+        <div class="library-item" data-name="Coffee Table" data-url="placeholder">
+          <div style="font-size: 40px;">🪵</div>
+          <span>커피 테이블</span>
+        </div>
+        <div class="library-item" data-name="Plant" data-url="placeholder">
+          <div style="font-size: 40px;">🪴</div>
+          <span>화분</span>
+        </div>
+        <div class="library-item" data-name="Rug" data-url="placeholder">
+          <div style="font-size: 40px;">🟫</div>
+          <span>러그</span>
+        </div>
+        <div class="library-item" data-name="Vase" data-url="placeholder">
+          <div style="font-size: 40px;">🏺</div>
+          <span>꽃병</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Canvas & Context
+    const canvas = document.getElementById('hotspot-canvas');
+    const ctx = canvas.getContext('2d');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+
+    // State
+    let baseImage = null;
+    let hotspots = [];
+    let pendingPosition = null;
+
+    // Elements
+    const elements = {
+      objectsList: document.getElementById('objects-list'),
+      emptyList: document.getElementById('empty-list'),
+      btnRegenerate: document.getElementById('btn-regenerate'),
+      loadingOverlay: document.getElementById('loading-overlay'),
+      libraryModal: document.getElementById('library-modal'),
+      fileInput: document.getElementById('file-input')
+    };
+
+    // SketchUp Communication
+    window.sketchup = {
+      addHotspot: function(data) {
+        window.location = 'skp:add_hotspot@' + encodeURIComponent(JSON.stringify(data));
+      },
+      removeHotspot: function(id) {
+        window.location = 'skp:remove_hotspot@' + id;
+      },
+      updateHotspotScale: function(id, scale) {
+        window.location = 'skp:update_hotspot_scale@' + id + '@' + scale;
+      },
+      regenerateWithHotspots: function() {
+        window.location = 'skp:regenerate_with_hotspots';
+      },
+      cancelHotspot: function() {
+        window.location = 'skp:cancel_hotspot';
+      }
+    };
+
+    // Load Base Image (Called from Ruby)
+    function loadBaseImage(base64) {
+      baseImage = new Image();
+      baseImage.onload = function() {
+        canvas.width = baseImage.width;
+        canvas.height = baseImage.height;
+        render();
+      };
+      baseImage.src = 'data:image/png;base64,' + base64;
+    }
+
+    // Ruby Callbacks
+    function onHotspotAdded(id) {
+      // Hotspot이 Ruby에서 추가됨
+      updateUI();
+    }
+
+    function onRegenerateStart() {
+      elements.loadingOverlay.classList.remove('hidden');
+    }
+
+    function onRegenerateComplete(imageBase64) {
+      elements.loadingOverlay.classList.add('hidden');
+      // 성공시 다이얼로그 닫힘 (Ruby에서 처리)
+    }
+
+    function onRegenerateError(message) {
+      elements.loadingOverlay.classList.add('hidden');
+      alert('재생성 실패: ' + message);
+    }
+
+    // Render Canvas
+    function render() {
+      if (!baseImage) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(baseImage, 0, 0);
+
+      // Draw hotspots
+      hotspots.forEach(function(hotspot, index) {
+        // Draw object image
+        if (hotspot.image && hotspot.image.complete) {
+          const scale = hotspot.scale || 1;
+          const width = hotspot.image.width * scale * 0.3; // 미리보기 스케일
+          const height = hotspot.image.height * scale * 0.3;
+          const x = hotspot.x - width / 2;
+          const y = hotspot.y - height;
+
+          ctx.globalAlpha = 0.8;
+          ctx.drawImage(hotspot.image, x, y, width, height);
+          ctx.globalAlpha = 1;
+        }
+
+        // Draw hotspot marker
+        ctx.fillStyle = '#6366f1';
+        ctx.beginPath();
+        ctx.arc(hotspot.x, hotspot.y, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(index + 1, hotspot.x, hotspot.y);
+      });
+    }
+
+    // Add Hotspot
+    function addHotspot(x, y, imageBase64, name) {
+      const id = 'hotspot_' + Date.now();
+      const hotspot = {
+        id: id,
+        x: x,
+        y: y,
+        scale: 1,
+        imageBase64: imageBase64,
+        name: name,
+        image: new Image()
+      };
+
+      hotspot.image.onload = function() {
+        render();
+      };
+      hotspot.image.src = 'data:image/png;base64,' + imageBase64;
+
+      hotspots.push(hotspot);
+
+      // Notify Ruby
+      sketchup.addHotspot({
+        x: x,
+        y: y,
+        image: imageBase64,
+        name: name
+      });
+
+      updateUI();
+      render();
+    }
+
+    // Remove Hotspot
+    function removeHotspot(id) {
+      hotspots = hotspots.filter(function(h) { return h.id !== id; });
+      sketchup.removeHotspot(id);
+      updateUI();
+      render();
+    }
+
+    // Update Scale
+    function updateScale(id, scale) {
+      const hotspot = hotspots.find(function(h) { return h.id === id; });
+      if (hotspot) {
+        hotspot.scale = scale;
+        sketchup.updateHotspotScale(id, scale);
+        render();
+      }
+    }
+
+    // Update UI
+    function updateUI() {
+      // Update objects list
+      elements.emptyList.classList.toggle('hidden', hotspots.length > 0);
+
+      const listHtml = hotspots.map(function(hotspot, index) {
+        return `
+          <div class="object-item" data-id="${hotspot.id}">
+            <div class="object-thumbnail">
+              <img src="data:image/png;base64,${hotspot.imageBase64}" alt="${hotspot.name}">
+            </div>
+            <div class="object-info">
+              <div class="object-name">${index + 1}. ${hotspot.name}</div>
+              <div class="object-scale">
+                <span>스케일:</span>
+                <input type="range" min="20" max="200" value="${hotspot.scale * 100}"
+                  onchange="updateScale('${hotspot.id}', this.value / 100)">
+                <span>${Math.round(hotspot.scale * 100)}%</span>
+              </div>
+            </div>
+            <button class="object-delete" onclick="removeHotspot('${hotspot.id}')">🗑️</button>
+          </div>
+        `;
+      }).join('');
+
+      elements.objectsList.innerHTML = listHtml || '<div class="empty-list">배치된 오브젝트가 없습니다</div>';
+
+      // Update regenerate button
+      elements.btnRegenerate.disabled = hotspots.length === 0;
+    }
+
+    // Canvas Click Handler
+    canvasWrapper.addEventListener('click', function(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      pendingPosition = { x: x, y: y };
+
+      // Show library modal for object selection
+      elements.libraryModal.classList.remove('hidden');
+    });
+
+    // Library Item Click
+    document.querySelectorAll('.library-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        if (!pendingPosition) return;
+
+        const name = this.dataset.name;
+
+        // 실제 구현에서는 라이브러리 이미지 로드
+        // 현재는 placeholder 사용
+        alert('라이브러리 기능은 오브젝트 이미지 파일이 필요합니다.\n"업로드" 버튼을 사용하여 이미지를 추가하세요.');
+
+        elements.libraryModal.classList.add('hidden');
+        pendingPosition = null;
+      });
+    });
+
+    // File Upload
+    document.getElementById('btn-add-upload').addEventListener('click', function() {
+      elements.fileInput.click();
+    });
+
+    elements.fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Get click position or use center
+      if (!pendingPosition) {
+        pendingPosition = {
+          x: canvas.width / 2,
+          y: canvas.height / 2
+        };
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const base64 = event.target.result.split(',')[1];
+        const name = file.name.replace(/\.[^/.]+$/, '');
+        addHotspot(pendingPosition.x, pendingPosition.y, base64, name);
+        pendingPosition = null;
+      };
+      reader.readAsDataURL(file);
+
+      this.value = '';
+    });
+
+    // Library Modal
+    document.getElementById('btn-add-library').addEventListener('click', function() {
+      pendingPosition = {
+        x: canvas.width / 2,
+        y: canvas.height / 2
+      };
+      elements.libraryModal.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-library').addEventListener('click', function() {
+      elements.libraryModal.classList.add('hidden');
+      pendingPosition = null;
+    });
+
+    // Regenerate
+    document.getElementById('btn-regenerate').addEventListener('click', function() {
+      if (hotspots.length === 0) {
+        alert('배치된 오브젝트가 없습니다.');
+        return;
+      }
+      elements.loadingOverlay.classList.remove('hidden');
+      sketchup.regenerateWithHotspots();
+    });
+
+    // Cancel/Close
+    document.getElementById('btn-cancel').addEventListener('click', function() {
+      sketchup.cancelHotspot();
+    });
+
+    document.getElementById('btn-close').addEventListener('click', function() {
+      sketchup.cancelHotspot();
+    });
+  </script>
+</body>
+</html>

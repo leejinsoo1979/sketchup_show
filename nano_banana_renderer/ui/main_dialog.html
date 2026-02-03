@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NanoBanana Renderer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      font-size: 12px;
+    }
+
+    /* 좌측 아이콘 메뉴바 */
+    .icon-menu {
+      width: 48px;
+      background: #0a0a0a;
+      border-right: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0;
+      flex-shrink: 0;
+    }
+
+    .icon-menu-item {
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-bottom: 4px;
+    }
+
+    .icon-menu-item:hover {
+      background: #1a1a1a;
+      color: #ccc;
+    }
+
+    .icon-menu-item.active {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .icon-menu-item svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .icon-menu-spacer {
+      flex: 1;
+    }
+
+    .icon-menu-divider {
+      width: 24px;
+      height: 1px;
+      background: #333;
+      margin: 8px 0;
+    }
+
+    /* 좌측 컨트롤 패널 */
+    .sidebar {
+      width: 200px;
+      background: #141414;
+      border-right: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #333;
+    }
+
+    .logo {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .sidebar-content {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .control-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .segmented {
+      display: flex;
+      background: #0a0a0a;
+      border-radius: 6px;
+      padding: 3px;
+      border: 1px solid #333;
+    }
+
+    .seg-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .seg-btn:hover {
+      color: #aaa;
+    }
+
+    .seg-btn.active {
+      background: #333;
+      color: #fff;
+    }
+
+    .sidebar-actions {
+      padding: 16px;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      height: 36px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #0055dd;
+    }
+
+    .btn-primary:disabled {
+      background: #222;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #2a2a2a;
+      color: #ccc;
+    }
+
+    .btn-secondary:hover {
+      background: #333;
+    }
+
+    .btn-secondary:disabled {
+      background: #222;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    .sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #666;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ff3b30;
+    }
+
+    .status-dot.connected {
+      background: #30d158;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .icon-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* 우측 이미지 영역 */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0a0a0a;
+      min-width: 0;
+    }
+
+    .image-container {
+      flex: 1;
+      display: flex;
+      gap: 1px;
+      background: #333;
+      min-height: 0;
+    }
+
+    .image-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #111;
+      min-width: 0;
+    }
+
+    .panel-label {
+      height: 24px;
+      padding: 0 12px;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .panel-label span {
+      flex: 1;
+    }
+
+    .panel-expand-btn {
+      width: 20px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .panel-expand-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .panel-expand-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .panel-guide-btn {
+      width: 20px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-right: 4px;
+    }
+
+    .panel-guide-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .panel-guide-btn.active {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .panel-guide-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* 가이드 오버레이 */
+    .guide-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      overflow: hidden;
+    }
+
+    .guide-overlay.hidden {
+      display: none;
+    }
+
+    /* 그리드 캔버스 */
+    .guide-grid-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 그리드 슬라이더 컨트롤 */
+    .guide-controls {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    .guide-controls.hidden {
+      display: none;
+    }
+
+    .guide-controls label {
+      font-size: 10px;
+      color: #aaa;
+    }
+
+    .guide-slider {
+      width: 100px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #444;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .guide-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #0066ff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .guide-value {
+      font-size: 10px;
+      color: #fff;
+      min-width: 35px;
+    }
+
+    .guide-lock-btn {
+      width: 24px;
+      height: 24px;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #aaa;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+    }
+
+    .guide-lock-btn:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .guide-lock-btn.locked {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .guide-lock-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .guide-controls.locked .guide-slider {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .guide-zoom-slider {
+      width: 80px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #444;
+      border-radius: 2px;
+      outline: none;
+      margin-left: 8px;
+    }
+
+    .guide-zoom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #ff6600;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .image-zoom-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .image-zoom-wrapper {
+      position: relative;
+      transform-origin: center center;
+    }
+
+    .image-zoom-wrapper img {
+      display: block;
+      max-width: none;
+      max-height: none;
+    }
+
+    .image-zoom-wrapper canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .image-panel.hidden {
+      display: none;
+    }
+
+    .image-panel.fullscreen {
+      flex: 1;
+    }
+
+    .panel-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: #0d0d0d;
+    }
+
+    .panel-content img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .empty-state {
+      color: #333;
+      font-size: 11px;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      height: 24px;
+      background: #141414;
+      border-top: 1px solid #333;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      font-size: 10px;
+      color: #555;
+      flex-shrink: 0;
+    }
+
+    /* Loading */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #333;
+      border-top-color: #0066ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 12px;
+      color: #666;
+      font-size: 11px;
+    }
+
+    /* Camera Controls */
+    .camera-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .camera-move {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .move-row {
+      display: flex;
+      gap: 2px;
+    }
+
+    .camera-height, .camera-rotate {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cam-btn {
+      width: 28px;
+      height: 28px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #ccc;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+    }
+
+    .cam-btn:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .cam-btn:active {
+      background: #0066ff;
+    }
+
+    .cam-btn.small {
+      width: 24px;
+      height: 24px;
+      font-size: 10px;
+    }
+
+    .btn-mirror {
+      width: 100%;
+      height: 32px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: all 0.15s;
+    }
+
+    .btn-mirror:hover {
+      background: #444;
+    }
+
+    .btn-mirror.active {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .camera-btns-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .camera-btns-row .btn-mirror {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .btn-2point {
+      width: 40px;
+      height: 32px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-2point svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-2point:hover {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .cam-btn.wasd {
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    .cam-btn.active-key {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .keyboard-hint {
+      font-size: 9px;
+      color: #555;
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    /* Scene Tabs */
+    .scene-tabs {
+      display: flex;
+      background: #141414;
+      border-bottom: 1px solid #333;
+      padding: 0 8px;
+      overflow-x: auto;
+      flex-shrink: 0;
+      height: 32px;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .scene-tabs::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .scene-tabs::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 2px;
+    }
+
+    .scene-tab {
+      padding: 6px 14px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: #888;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      position: relative;
+      top: 1px;
+    }
+
+    .scene-tab:hover {
+      background: #252525;
+      color: #ccc;
+    }
+
+    .scene-tab.active {
+      background: #0a0a0a;
+      color: #fff;
+      border-color: #333;
+    }
+
+    .scene-add-btn {
+      width: 28px;
+      height: 24px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: #888;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 4px;
+      transition: all 0.15s;
+      position: relative;
+      top: 1px;
+    }
+
+    .scene-add-btn:hover {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    /* 씬 탭 렌더링 로딩 아이콘 */
+    .scene-tab-content {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scene-tab-spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid #555;
+      border-top-color: #0066ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .scene-tab.rendering {
+      background: #1a2a3a;
+      border-color: #0066ff;
+      color: #0066ff;
+    }
+
+    .scene-tab.render-complete {
+      background: #1a3a2a;
+      border-color: #30d158;
+      color: #30d158;
+    }
+
+    .scene-tab.render-error {
+      background: #3a1a1a;
+      border-color: #ff3b30;
+      color: #ff3b30;
+    }
+  </style>
+</head>
+<body>
+  <!-- 좌측 아이콘 메뉴바 -->
+  <nav class="icon-menu">
+    <button class="icon-menu-item active" id="menu-render" title="Render">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-camera" title="Camera">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-scenes" title="Scenes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+        <line x1="8" y1="21" x2="16" y2="21"></line>
+        <line x1="12" y1="17" x2="12" y2="21"></line>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-mix" title="Mix">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="6" cy="6" r="3"></circle>
+        <circle cx="18" cy="18" r="3"></circle>
+        <path d="M6 21V9a9 9 0 0 0 9 9"></path>
+        <path d="M18 3v12a9 9 0 0 1-9-9"></path>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-history" title="History">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    </button>
+    <div class="icon-menu-divider"></div>
+    <button class="icon-menu-item" id="menu-layers" title="Layers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
+      </svg>
+    </button>
+    <div class="icon-menu-spacer"></div>
+    <button class="icon-menu-item" id="menu-help" title="Help">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-settings" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
+  </nav>
+
+  <!-- 좌측 사이드바 -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">NanoBanana</div>
+    </div>
+
+    <div class="sidebar-content">
+      <div class="control-section">
+        <span class="section-label">Time</span>
+        <div class="segmented" id="time-group">
+          <button class="seg-btn active" data-time="day">Day</button>
+          <button class="seg-btn" data-time="evening">Eve</button>
+          <button class="seg-btn" data-time="night">Night</button>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <span class="section-label">Lights</span>
+        <div class="segmented" id="light-group">
+          <button class="seg-btn active" data-light="on">On</button>
+          <button class="seg-btn" data-light="off">Off</button>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <span class="section-label">Size</span>
+        <div class="segmented" id="size-group">
+          <button class="seg-btn" data-size="1920">FHD</button>
+          <button class="seg-btn" data-size="2560">QHD</button>
+          <button class="seg-btn active" data-size="3840">4K</button>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <span class="section-label">Camera</span>
+        <div class="camera-btns-row">
+          <button class="btn btn-mirror" id="btn-mirror">Mirror</button>
+          <button class="btn btn-2point" id="btn-2point" title="2점 투시 자동 보정">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="12" y1="3" x2="12" y2="21"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="camera-controls">
+          <div class="camera-move">
+            <div class="move-row">
+              <button class="cam-btn wasd" id="cam-forward" title="Forward (W)">W</button>
+            </div>
+            <div class="move-row">
+              <button class="cam-btn wasd" id="cam-left" title="Left (A)">A</button>
+              <button class="cam-btn wasd" id="cam-back" title="Back (S)">S</button>
+              <button class="cam-btn wasd" id="cam-right" title="Right (D)">D</button>
+            </div>
+          </div>
+          <div class="camera-height">
+            <button class="cam-btn small" id="cam-up" title="Up (Q)">Q</button>
+            <button class="cam-btn small" id="cam-down" title="Down (E)">E</button>
+          </div>
+          <div class="camera-rotate">
+            <button class="cam-btn small" id="cam-rot-left" title="Rotate Left (Z)">Z</button>
+            <button class="cam-btn small" id="cam-rot-right" title="Rotate Right (X)">X</button>
+          </div>
+        </div>
+        <div class="keyboard-hint">WASD 이동 | QE 높이 | ZX 회전</div>
+      </div>
+
+      <div class="control-section">
+        <span class="section-label">Height</span>
+        <div class="segmented" id="height-group">
+          <button class="seg-btn" data-height="standing">서기</button>
+          <button class="seg-btn active" data-height="seated">앉기</button>
+          <button class="seg-btn" data-height="low_angle">낮음</button>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <span class="section-label">FOV</span>
+        <div class="segmented" id="fov-group">
+          <button class="seg-btn" data-fov="wide">광각</button>
+          <button class="seg-btn active" data-fov="standard">표준</button>
+          <button class="seg-btn" data-fov="telephoto">망원</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-actions">
+      <button class="btn btn-secondary" id="btn-capture">Convert</button>
+      <button class="btn btn-primary" id="btn-render" disabled>Render</button>
+      <button class="btn btn-secondary" id="btn-edit" disabled>Edit</button>
+      <button class="btn btn-secondary" id="btn-save" disabled>Export</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-indicator">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="api-status">Checking...</span>
+      </div>
+      <button class="icon-btn" id="btn-settings" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- 우측 메인 영역 -->
+  <main class="main-area">
+    <!-- 씬 탭 바 -->
+    <div class="scene-tabs" id="scene-tabs">
+      <button class="scene-add-btn" id="btn-add-scene" title="현재 뷰를 씬으로 저장">+</button>
+    </div>
+
+    <div class="image-container" id="image-container">
+      <div class="image-panel" id="source-panel">
+        <div class="panel-label">
+          <span>Source</span>
+          <button class="panel-guide-btn" id="btn-guide" title="가이드 표시">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="2" x2="12" y2="22"></line>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+            </svg>
+          </button>
+          <button class="panel-expand-btn" id="btn-expand-source" title="Expand">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="panel-content">
+          <div class="empty-state" id="original-empty">No image</div>
+          <!-- 이미지+그리드 줌 컨테이너 -->
+          <div class="image-zoom-container" id="zoom-container-source">
+            <div class="image-zoom-wrapper" id="zoom-wrapper-source">
+              <img id="original-image" style="display:none;">
+              <canvas class="guide-grid-canvas" id="guide-canvas-source" style="display:none;"></canvas>
+            </div>
+          </div>
+          <!-- 그리드 컨트롤 -->
+          <div class="guide-controls hidden" id="guide-controls-source">
+            <label>Grid</label>
+            <input type="range" class="guide-slider" id="guide-slider-source" min="10" max="100" value="40">
+            <span class="guide-value" id="guide-value-source">40px</span>
+            <button class="guide-lock-btn" id="guide-lock-source" title="Lock">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </button>
+            <label style="margin-left:8px;">Zoom</label>
+            <input type="range" class="guide-zoom-slider" id="guide-zoom-source" min="50" max="150" value="100">
+          </div>
+        </div>
+      </div>
+
+      <div class="image-panel" id="result-panel">
+        <div class="panel-label">
+          <span>Result</span>
+          <button class="panel-guide-btn" id="btn-guide-result" title="가이드 표시">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="2" x2="12" y2="22"></line>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+            </svg>
+          </button>
+          <button class="panel-expand-btn" id="btn-expand-result" title="Expand">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="panel-content">
+          <div class="empty-state" id="render-empty">Ready</div>
+          <!-- 이미지+그리드 줌 컨테이너 -->
+          <div class="image-zoom-container" id="zoom-container-result">
+            <div class="image-zoom-wrapper" id="zoom-wrapper-result">
+              <img id="render-image" style="display:none;">
+              <canvas class="guide-grid-canvas" id="guide-canvas-result" style="display:none;"></canvas>
+            </div>
+          </div>
+          <!-- 그리드 컨트롤 -->
+          <div class="guide-controls hidden" id="guide-controls-result">
+            <label>Grid</label>
+            <input type="range" class="guide-slider" id="guide-slider-result" min="10" max="100" value="40">
+            <span class="guide-value" id="guide-value-result">40px</span>
+            <button class="guide-lock-btn" id="guide-lock-result" title="Lock">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </button>
+            <label style="margin-left:8px;">Zoom</label>
+            <input type="range" class="guide-zoom-slider" id="guide-zoom-result" min="50" max="150" value="100">
+          </div>
+          <div class="loading-overlay hidden" id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">Rendering...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <span id="status-text">Ready</span>
+    </div>
+  </main>
+
+  <script>
+    const state = {
+      originalImage: null,
+      renderImage: null,
+      isRendering: false,
+      apiConnected: false,
+      timePreset: 'day',
+      lightSwitch: 'on',
+      imageSize: '3840'
+    };
+
+    const el = {
+      originalImage: document.getElementById('original-image'),
+      originalEmpty: document.getElementById('original-empty'),
+      renderImage: document.getElementById('render-image'),
+      renderEmpty: document.getElementById('render-empty'),
+      loading: document.getElementById('loading'),
+      btnCapture: document.getElementById('btn-capture'),
+      btnRender: document.getElementById('btn-render'),
+      btnEdit: document.getElementById('btn-edit'),
+      btnSave: document.getElementById('btn-save'),
+      btnSettings: document.getElementById('btn-settings'),
+      statusText: document.getElementById('status-text'),
+      statusDot: document.getElementById('status-dot'),
+      apiStatus: document.getElementById('api-status')
+    };
+
+    // SketchUp Ruby 콜백 호출
+    function callRuby(action, ...args) {
+      if (window.sketchup && window.sketchup[action]) {
+        window.sketchup[action](...args);
+      } else {
+        // Fallback for older SketchUp versions
+        window.location = 'skp:' + action + (args.length ? '@' + args.join('@') : '');
+      }
+    }
+
+    const sketchup = {
+      captureScene: (size) => callRuby('capture_scene', size),
+      startRender: (time, light) => callRuby('start_render', time, light),
+      saveImage: () => callRuby('save_image', ''),
+      openEditor: () => callRuby('open_editor'),
+      openSettings: () => callRuby('open_settings'),
+      checkApiStatus: () => callRuby('check_api_status'),
+      // Camera controls
+      camMove: (dir) => callRuby('cam_move', dir),
+      camRotate: (dir) => callRuby('cam_rotate', dir),
+      camHeight: (preset) => callRuby('cam_height', preset),
+      camFov: (preset) => callRuby('cam_fov', preset),
+      startMirror: () => callRuby('start_mirror'),
+      stopMirror: () => callRuby('stop_mirror'),
+      // Scene controls
+      getScenes: () => callRuby('get_scenes'),
+      selectScene: (name) => callRuby('select_scene', name),
+      addScene: () => callRuby('add_scene'),
+      // 2점 투시
+      apply2Point: () => callRuby('apply_2point'),
+      // Mix
+      openMix: () => callRuby('open_mix')
+    };
+
+    let mirrorActive = false;
+
+    function onCaptureComplete(base64, materialCount) {
+      state.originalImage = base64;
+      el.originalImage.src = 'data:image/png;base64,' + base64;
+      el.originalImage.style.display = 'block';
+      el.originalEmpty.style.display = 'none';
+      // Render 버튼은 Convert 완료 후 활성화
+    }
+
+    // Convert 완료 (AI 프롬프트 생성 완료)
+    function onConvertComplete() {
+      state.converted = true;
+      el.btnRender.disabled = false;
+      setStatus('Convert complete - Ready to render');
+    }
+
+    // 렌더링 중인 씬 목록 관리
+    const renderingScenes = new Map(); // sceneName -> { startTime }
+
+    function onRenderStart(sceneName) {
+      state.isRendering = true;
+      el.loading.classList.remove('hidden');
+      // Render 버튼은 활성화 상태 유지 (연속 렌더링 가능)
+      // el.btnRender.disabled = true;
+
+      // 해당 씬 탭에 로딩 표시
+      if (sceneName) {
+        renderingScenes.set(sceneName, { startTime: Date.now() });
+        updateSceneTabStatus(sceneName, 'rendering');
+      }
+
+      setStatus('Rendering: ' + (sceneName || 'Unknown'));
+    }
+
+    function onRenderComplete(base64, sceneName) {
+      state.renderImage = base64;
+      el.renderImage.src = 'data:image/png;base64,' + base64;
+      el.renderImage.style.display = 'block';
+      el.renderEmpty.style.display = 'none';
+      el.loading.classList.add('hidden');
+      el.btnRender.disabled = false;
+      el.btnEdit.disabled = false;
+      el.btnSave.disabled = false;
+
+      // 해당 씬 탭 상태 업데이트
+      if (sceneName) {
+        renderingScenes.delete(sceneName);
+        updateSceneTabStatus(sceneName, 'complete');
+        // 3초 후 상태 초기화
+        setTimeout(() => updateSceneTabStatus(sceneName, 'normal'), 3000);
+      }
+
+      // 다른 씬이 아직 렌더링 중인지 확인
+      state.isRendering = renderingScenes.size > 0;
+
+      setStatus('Complete: ' + (sceneName || 'Unknown'));
+    }
+
+    function onRenderError(msg, sceneName) {
+      el.loading.classList.add('hidden');
+      el.btnRender.disabled = false;
+
+      // 해당 씬 탭 상태 업데이트
+      if (sceneName) {
+        renderingScenes.delete(sceneName);
+        updateSceneTabStatus(sceneName, 'error');
+        // 5초 후 상태 초기화
+        setTimeout(() => updateSceneTabStatus(sceneName, 'normal'), 5000);
+      }
+
+      // 다른 씬이 아직 렌더링 중인지 확인
+      state.isRendering = renderingScenes.size > 0;
+
+      setStatus('Error: ' + msg);
+    }
+
+    // 씬 탭 상태 업데이트
+    function updateSceneTabStatus(sceneName, status) {
+      const tabs = document.querySelectorAll('.scene-tab');
+      tabs.forEach(tab => {
+        if (tab.dataset.scene === sceneName) {
+          // 기존 상태 클래스 제거
+          tab.classList.remove('rendering', 'render-complete', 'render-error');
+
+          // 스피너 제거/추가
+          const existingSpinner = tab.querySelector('.scene-tab-spinner');
+          if (existingSpinner) existingSpinner.remove();
+
+          if (status === 'rendering') {
+            tab.classList.add('rendering');
+            // 스피너 추가
+            const spinner = document.createElement('div');
+            spinner.className = 'scene-tab-spinner';
+            tab.insertBefore(spinner, tab.firstChild);
+          } else if (status === 'complete') {
+            tab.classList.add('render-complete');
+          } else if (status === 'error') {
+            tab.classList.add('render-error');
+          }
+        }
+      });
+    }
+
+    function onApiStatusUpdate(connected) {
+      state.apiConnected = connected;
+      el.statusDot.classList.toggle('connected', connected);
+      el.apiStatus.textContent = connected ? 'Connected' : 'Disconnected';
+    }
+
+    function setStatus(text) {
+      el.statusText.textContent = text;
+    }
+
+    el.btnCapture.addEventListener('click', () => {
+      setStatus('Converting...');
+      sketchup.captureScene(state.imageSize);
+    });
+
+    el.btnRender.addEventListener('click', () => {
+      sketchup.startRender(state.timePreset, state.lightSwitch);
+    });
+
+    el.btnSave.addEventListener('click', () => sketchup.saveImage());
+    el.btnEdit.addEventListener('click', () => sketchup.openEditor());
+    el.btnSettings.addEventListener('click', () => sketchup.openSettings());
+
+    document.querySelectorAll('#time-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#time-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.timePreset = btn.dataset.time;
+      });
+    });
+
+    document.querySelectorAll('#light-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#light-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.lightSwitch = btn.dataset.light;
+      });
+    });
+
+    // Size buttons
+    document.querySelectorAll('#size-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#size-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.imageSize = btn.dataset.size;
+      });
+    });
+
+    // Mirror button
+    const btnMirror = document.getElementById('btn-mirror');
+    btnMirror.addEventListener('click', () => {
+      mirrorActive = !mirrorActive;
+      btnMirror.classList.toggle('active', mirrorActive);
+      btnMirror.textContent = mirrorActive ? 'Mirror ON' : 'Mirror';
+      if (mirrorActive) {
+        sketchup.startMirror();
+      } else {
+        sketchup.stopMirror();
+      }
+    });
+
+    // Mirror update callback (Ruby에서 호출) - 최적화
+    let mirrorImageReady = true;
+    function onMirrorUpdate(base64) {
+      if (!mirrorActive || !mirrorImageReady) return;
+
+      mirrorImageReady = false;
+
+      // 직접 src 교체 (새 Image 객체 없이)
+      el.originalImage.src = 'data:image/jpeg;base64,' + base64;
+      el.originalImage.style.display = 'block';
+      el.originalEmpty.style.display = 'none';
+
+      // 다음 프레임 즉시 허용
+      mirrorImageReady = true;
+    }
+
+    // 미러링 상태 설정 (Ruby에서 호출)
+    function setMirrorActive(active) {
+      mirrorActive = active;
+      btnMirror.classList.toggle('active', active);
+      btnMirror.textContent = active ? 'Mirror ON' : 'Mirror';
+    }
+
+    // 2점 투시 버튼
+    document.getElementById('btn-2point').addEventListener('click', () => sketchup.apply2Point());
+
+    // Camera movement buttons
+    document.getElementById('cam-forward').addEventListener('click', () => sketchup.camMove('forward'));
+    document.getElementById('cam-back').addEventListener('click', () => sketchup.camMove('back'));
+    document.getElementById('cam-left').addEventListener('click', () => sketchup.camMove('left'));
+    document.getElementById('cam-right').addEventListener('click', () => sketchup.camMove('right'));
+    document.getElementById('cam-up').addEventListener('click', () => sketchup.camMove('up'));
+    document.getElementById('cam-down').addEventListener('click', () => sketchup.camMove('down'));
+    document.getElementById('cam-rot-left').addEventListener('click', () => sketchup.camRotate('left'));
+    document.getElementById('cam-rot-right').addEventListener('click', () => sketchup.camRotate('right'));
+
+    // Camera height presets
+    document.querySelectorAll('#height-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#height-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sketchup.camHeight(btn.dataset.height);
+      });
+    });
+
+    // Camera FOV presets
+    document.querySelectorAll('#fov-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#fov-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sketchup.camFov(btn.dataset.fov);
+      });
+    });
+
+    // WASD 키보드 컨트롤
+    const keyMap = {
+      'w': { action: 'move', dir: 'forward', btn: 'cam-forward' },
+      'W': { action: 'move', dir: 'forward', btn: 'cam-forward' },
+      's': { action: 'move', dir: 'back', btn: 'cam-back' },
+      'S': { action: 'move', dir: 'back', btn: 'cam-back' },
+      'a': { action: 'move', dir: 'left', btn: 'cam-left' },
+      'A': { action: 'move', dir: 'left', btn: 'cam-left' },
+      'd': { action: 'move', dir: 'right', btn: 'cam-right' },
+      'D': { action: 'move', dir: 'right', btn: 'cam-right' },
+      'q': { action: 'move', dir: 'up', btn: 'cam-up' },
+      'Q': { action: 'move', dir: 'up', btn: 'cam-up' },
+      'e': { action: 'move', dir: 'down', btn: 'cam-down' },
+      'E': { action: 'move', dir: 'down', btn: 'cam-down' },
+      'z': { action: 'rotate', dir: 'left', btn: 'cam-rot-left' },
+      'Z': { action: 'rotate', dir: 'left', btn: 'cam-rot-left' },
+      'x': { action: 'rotate', dir: 'right', btn: 'cam-rot-right' },
+      'X': { action: 'rotate', dir: 'right', btn: 'cam-rot-right' }
+    };
+
+    const activeKeys = new Set();
+    const keyIntervals = {};
+
+    document.addEventListener('keydown', (e) => {
+      // 텍스트 입력 필드에서만 무시 (슬라이더는 허용)
+      if (e.target.tagName === 'TEXTAREA') return;
+      if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+
+      const mapping = keyMap[e.key];
+      if (mapping) {
+        const key = e.key.toLowerCase();
+
+        // 버튼 활성화 표시
+        const btn = document.getElementById(mapping.btn);
+        if (btn) btn.classList.add('active-key');
+
+        // 처음 누를 때만 interval 시작
+        if (!activeKeys.has(key)) {
+          activeKeys.add(key);
+
+          // 즉시 실행
+          if (mapping.action === 'move') {
+            sketchup.camMove(mapping.dir);
+          } else if (mapping.action === 'rotate') {
+            sketchup.camRotate(mapping.dir);
+          }
+
+          // 반복 실행 (100ms 간격)
+          keyIntervals[key] = setInterval(() => {
+            if (mapping.action === 'move') {
+              sketchup.camMove(mapping.dir);
+            } else if (mapping.action === 'rotate') {
+              sketchup.camRotate(mapping.dir);
+            }
+          }, 100);
+        }
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      const mapping = keyMap[e.key];
+      if (mapping) {
+        const key = e.key.toLowerCase();
+        activeKeys.delete(key);
+
+        // interval 정리
+        if (keyIntervals[key]) {
+          clearInterval(keyIntervals[key]);
+          delete keyIntervals[key];
+        }
+
+        // 버튼 활성화 해제
+        const btn = document.getElementById(mapping.btn);
+        if (btn) btn.classList.remove('active-key');
+      }
+    });
+
+    // 씬 탭 업데이트 (Ruby에서 호출)
+    function onScenesUpdate(scenesJson) {
+      const scenes = JSON.parse(scenesJson);
+      const tabsContainer = document.getElementById('scene-tabs');
+
+      // 탭 초기화
+      tabsContainer.innerHTML = '';
+
+      // 씬 탭 추가
+      scenes.forEach((scene, index) => {
+        const tab = document.createElement('div');
+        tab.className = 'scene-tab';
+        if (index === 0) tab.classList.add('active'); // 첫 번째 씬 활성화
+        tab.dataset.scene = scene.name;
+
+        // 렌더링 중인 씬이면 스피너 추가
+        if (renderingScenes.has(scene.name)) {
+          tab.classList.add('rendering');
+          const spinner = document.createElement('div');
+          spinner.className = 'scene-tab-spinner';
+          tab.appendChild(spinner);
+        }
+
+        // 씬 이름 텍스트
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = scene.name;
+        tab.appendChild(nameSpan);
+
+        tab.addEventListener('click', () => {
+          // 활성 탭 변경
+          document.querySelectorAll('.scene-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          // Ruby에 씬 전환 요청
+          sketchup.selectScene(scene.name);
+        });
+        tabsContainer.appendChild(tab);
+      });
+
+      // + 버튼 다시 추가
+      const addBtn = document.createElement('button');
+      addBtn.className = 'scene-add-btn';
+      addBtn.id = 'btn-add-scene';
+      addBtn.title = '현재 뷰를 씬으로 저장';
+      addBtn.textContent = '+';
+      addBtn.addEventListener('click', () => sketchup.addScene());
+      tabsContainer.appendChild(addBtn);
+    }
+
+    // ========================================
+    // 그리드 가이드 시스템
+    // ========================================
+
+    // 그리드 그리기 함수
+    function drawGrid(canvas, gridSize) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 중앙 좌표
+      const centerX = w / 2;
+      const centerY = h / 2;
+
+      // 일반 그리드 라인 (연한 색)
+      ctx.strokeStyle = 'rgba(255, 100, 100, 0.25)';
+      ctx.lineWidth = 1;
+
+      // 수직선 (중앙에서 양쪽으로)
+      for (let x = centerX % gridSize; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+
+      // 수평선 (중앙에서 양쪽으로)
+      for (let y = centerY % gridSize; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // 중앙 십자 라인 (진한 색)
+      ctx.strokeStyle = 'rgba(255, 100, 100, 0.8)';
+      ctx.lineWidth = 2;
+
+      // 중앙 수평선
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(w, centerY);
+      ctx.stroke();
+
+      // 중앙 수직선
+      ctx.beginPath();
+      ctx.moveTo(centerX, 0);
+      ctx.lineTo(centerX, h);
+      ctx.stroke();
+
+      // 중앙 십자 표시
+      ctx.fillStyle = 'rgba(255, 100, 100, 0.9)';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('+', centerX, centerY);
+    }
+
+    // 그리드 캔버스 업데이트 (이미지 크기에 맞춤)
+    function updateGridCanvas(canvas, img, slider, valueEl) {
+      if (!img || img.style.display === 'none') return;
+      canvas.width = img.offsetWidth;
+      canvas.height = img.offsetHeight;
+      canvas.style.display = 'block';
+      const gridSize = parseInt(slider.value);
+      valueEl.textContent = gridSize + 'px';
+      drawGrid(canvas, gridSize);
+    }
+
+    // Source 패널
+    const guideControlsSource = document.getElementById('guide-controls-source');
+    const canvasSource = document.getElementById('guide-canvas-source');
+    const sliderSource = document.getElementById('guide-slider-source');
+    const valueSource = document.getElementById('guide-value-source');
+    const lockSource = document.getElementById('guide-lock-source');
+    const zoomSource = document.getElementById('guide-zoom-source');
+    const zoomWrapperSource = document.getElementById('zoom-wrapper-source');
+    const btnGuide = document.getElementById('btn-guide');
+    let guideActiveSource = false;
+    let guideLockedSource = false;
+
+    btnGuide.addEventListener('click', () => {
+      guideActiveSource = !guideActiveSource;
+      btnGuide.classList.toggle('active', guideActiveSource);
+      guideControlsSource.classList.toggle('hidden', !guideActiveSource);
+      if (guideActiveSource) {
+        updateGridCanvas(canvasSource, el.originalImage, sliderSource, valueSource);
+      } else {
+        canvasSource.style.display = 'none';
+      }
+    });
+
+    sliderSource.addEventListener('input', () => {
+      updateGridCanvas(canvasSource, el.originalImage, sliderSource, valueSource);
+    });
+
+    lockSource.addEventListener('click', () => {
+      guideLockedSource = !guideLockedSource;
+      lockSource.classList.toggle('locked', guideLockedSource);
+      guideControlsSource.classList.toggle('locked', guideLockedSource);
+    });
+
+    // Zoom 슬라이더 (Source) - 이미지+그리드 함께 줌
+    zoomSource.addEventListener('input', () => {
+      const scale = parseInt(zoomSource.value) / 100;
+      zoomWrapperSource.style.transform = `scale(${scale})`;
+    });
+
+    // Result 패널
+    const guideControlsResult = document.getElementById('guide-controls-result');
+    const canvasResult = document.getElementById('guide-canvas-result');
+    const sliderResult = document.getElementById('guide-slider-result');
+    const valueResult = document.getElementById('guide-value-result');
+    const lockResult = document.getElementById('guide-lock-result');
+    const zoomResult = document.getElementById('guide-zoom-result');
+    const zoomWrapperResult = document.getElementById('zoom-wrapper-result');
+    const btnGuideResult = document.getElementById('btn-guide-result');
+    let guideActiveResult = false;
+    let guideLockedResult = false;
+
+    btnGuideResult.addEventListener('click', () => {
+      guideActiveResult = !guideActiveResult;
+      btnGuideResult.classList.toggle('active', guideActiveResult);
+      guideControlsResult.classList.toggle('hidden', !guideActiveResult);
+      if (guideActiveResult) {
+        updateGridCanvas(canvasResult, el.renderImage, sliderResult, valueResult);
+      } else {
+        canvasResult.style.display = 'none';
+      }
+    });
+
+    sliderResult.addEventListener('input', () => {
+      updateGridCanvas(canvasResult, el.renderImage, sliderResult, valueResult);
+    });
+
+    lockResult.addEventListener('click', () => {
+      guideLockedResult = !guideLockedResult;
+      lockResult.classList.toggle('locked', guideLockedResult);
+      guideControlsResult.classList.toggle('locked', guideLockedResult);
+    });
+
+    // Zoom 슬라이더 (Result)
+    zoomResult.addEventListener('input', () => {
+      const scale = parseInt(zoomResult.value) / 100;
+      zoomWrapperResult.style.transform = `scale(${scale})`;
+    });
+
+    // 창 리사이즈 시 그리드 업데이트
+    window.addEventListener('resize', () => {
+      if (guideActiveSource) {
+        updateGridCanvas(canvasSource, el.originalImage, sliderSource, valueSource);
+      }
+      if (guideActiveResult) {
+        updateGridCanvas(canvasResult, el.renderImage, sliderResult, valueResult);
+      }
+    });
+
+    // 패널 확장/축소 기능
+    const sourcePanel = document.getElementById('source-panel');
+    const resultPanel = document.getElementById('result-panel');
+    const btnExpandSource = document.getElementById('btn-expand-source');
+    const btnExpandResult = document.getElementById('btn-expand-result');
+
+    // 확장 아이콘 SVG
+    const expandIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="15 3 21 3 21 9"></polyline>
+      <polyline points="9 21 3 21 3 15"></polyline>
+      <line x1="21" y1="3" x2="14" y2="10"></line>
+      <line x1="3" y1="21" x2="10" y2="14"></line>
+    </svg>`;
+
+    // 축소 아이콘 SVG (분할 아이콘)
+    const collapseIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="4 14 10 14 10 20"></polyline>
+      <polyline points="20 10 14 10 14 4"></polyline>
+      <line x1="14" y1="10" x2="21" y2="3"></line>
+      <line x1="3" y1="21" x2="10" y2="14"></line>
+    </svg>`;
+
+    let expandedPanel = null;
+
+    function togglePanelExpand(panel, otherPanel, btn) {
+      if (expandedPanel === panel) {
+        // 이미 확장된 상태면 축소
+        panel.classList.remove('fullscreen');
+        otherPanel.classList.remove('hidden');
+        btn.innerHTML = expandIcon;
+        btn.title = 'Expand';
+        // 다른 패널 버튼도 확장 아이콘으로 복구
+        const otherBtn = otherPanel.querySelector('.panel-expand-btn');
+        otherBtn.innerHTML = expandIcon;
+        otherBtn.title = 'Expand';
+        expandedPanel = null;
+      } else {
+        // 확장
+        panel.classList.add('fullscreen');
+        otherPanel.classList.add('hidden');
+        btn.innerHTML = collapseIcon;
+        btn.title = 'Split';
+        expandedPanel = panel;
+      }
+    }
+
+    btnExpandSource.addEventListener('click', () => {
+      togglePanelExpand(sourcePanel, resultPanel, btnExpandSource);
+    });
+
+    btnExpandResult.addEventListener('click', () => {
+      togglePanelExpand(resultPanel, sourcePanel, btnExpandResult);
+    });
+
+    // 아이콘 메뉴 클릭 이벤트
+    document.querySelectorAll('.icon-menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        // 활성 상태 변경
+        document.querySelectorAll('.icon-menu-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
+        // 메뉴별 동작
+        const menuId = item.id;
+        switch(menuId) {
+          case 'menu-render':
+            // 기본 렌더 패널 표시
+            break;
+          case 'menu-camera':
+            // 카메라 컨트롤 포커스
+            break;
+          case 'menu-scenes':
+            // 씬 관리
+            break;
+          case 'menu-mix':
+            // Mix 다이얼로그 열기
+            sketchup.openMix();
+            break;
+          case 'menu-history':
+            // 히스토리 패널
+            break;
+          case 'menu-layers':
+            // 레이어 관리
+            break;
+          case 'menu-help':
+            // 도움말
+            break;
+          case 'menu-settings':
+            sketchup.openSettings();
+            break;
+        }
+      });
+    });
+
+    // 즉시 초기화 (지연 없이)
+    sketchup.checkApiStatus();
+    sketchup.getScenes();
+  </script>
+</body>
+</html>

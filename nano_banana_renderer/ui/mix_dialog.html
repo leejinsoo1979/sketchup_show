@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mix - NanoBanana</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      font-size: 12px;
+    }
+
+    /* 좌측 모드 선택 패널 */
+    .mode-panel {
+      width: 220px;
+      background: #141414;
+      border-right: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .mode-header {
+      padding: 16px;
+      border-bottom: 1px solid #333;
+    }
+
+    .mode-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .mode-subtitle {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .mode-list {
+      flex: 1;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    .mode-item {
+      padding: 14px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-item:hover {
+      background: #252525;
+      border-color: #444;
+    }
+
+    .mode-item.active {
+      background: #0066ff15;
+      border-color: #0066ff;
+    }
+
+    .mode-item-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mode-item-title svg {
+      width: 16px;
+      height: 16px;
+      color: #0066ff;
+    }
+
+    .mode-item-desc {
+      font-size: 10px;
+      color: #888;
+      line-height: 1.5;
+    }
+
+    .mode-item-badge {
+      font-size: 9px;
+      padding: 2px 6px;
+      background: #0066ff30;
+      color: #0066ff;
+      border-radius: 3px;
+      margin-left: auto;
+    }
+
+    /* 메인 작업 영역 */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0a0a0a;
+      min-width: 0;
+    }
+
+    .toolbar {
+      height: 48px;
+      background: #141414;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tool-btn {
+      width: 32px;
+      height: 32px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .tool-btn:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .tool-btn.active {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .tool-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .tool-divider {
+      width: 1px;
+      height: 24px;
+      background: #333;
+    }
+
+    .tool-label {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .tool-info {
+      margin-left: auto;
+      font-size: 10px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tool-info-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+    }
+
+    .canvas-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: #0d0d0d;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    #main-canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .overlay-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    #draw-canvas {
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+
+    .empty-state {
+      color: #444;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .empty-state p {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* 3D 좌표 표시 오버레이 */
+    .coord-overlay {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-family: 'Monaco', 'Consolas', monospace;
+      color: #0f0;
+      display: none;
+    }
+
+    .coord-overlay.visible {
+      display: block;
+    }
+
+    .coord-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .coord-label {
+      color: #888;
+    }
+
+    /* 우측 옵션 패널 */
+    .options-panel {
+      width: 300px;
+      background: #141414;
+      border-left: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .options-header {
+      padding: 16px;
+      border-bottom: 1px solid #333;
+    }
+
+    .options-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .options-subtitle {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .options-content {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .option-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .option-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .option-label-badge {
+      font-size: 8px;
+      padding: 2px 4px;
+      background: #ff3b3020;
+      color: #ff3b30;
+      border-radius: 2px;
+    }
+
+    .option-input {
+      width: 100%;
+      height: 36px;
+      padding: 0 12px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .option-input:focus {
+      border-color: #0066ff;
+    }
+
+    .option-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px 12px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+
+    .option-textarea:focus {
+      border-color: #0066ff;
+    }
+
+    /* 이미지 업로드 영역 */
+    .upload-area {
+      border: 2px dashed #333;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .upload-area:hover {
+      border-color: #0066ff;
+      background: #0066ff08;
+    }
+
+    .upload-area.has-image {
+      border-style: solid;
+      border-color: #30d158;
+      background: #30d15808;
+    }
+
+    .upload-area svg {
+      width: 32px;
+      height: 32px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .upload-area p {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .upload-preview {
+      max-width: 100%;
+      max-height: 100px;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+
+    /* 슬라이더 */
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slider {
+      flex: 1;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #333;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #0066ff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .slider-value {
+      font-size: 11px;
+      color: #fff;
+      min-width: 50px;
+      text-align: right;
+      font-family: 'Monaco', 'Consolas', monospace;
+    }
+
+    /* 핫스팟 마커 (3D 좌표 표시) */
+    .hotspot-marker {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      background: #ff3b30;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: move;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      z-index: 10;
+      transition: transform 0.1s;
+    }
+
+    .hotspot-marker:hover {
+      background: #ff6b60;
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    .hotspot-marker.selected {
+      background: #0066ff;
+      box-shadow: 0 0 0 4px rgba(0,102,255,0.3);
+    }
+
+    .hotspot-marker::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 8px;
+      background: #fff;
+    }
+
+    /* 핫스팟 목록 (3D 좌표 포함) */
+    .hotspot-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .hotspot-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .hotspot-item:hover {
+      border-color: #444;
+    }
+
+    .hotspot-item.selected {
+      border-color: #0066ff;
+      background: #0066ff10;
+    }
+
+    .hotspot-item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hotspot-item-num {
+      width: 24px;
+      height: 24px;
+      background: #ff3b30;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .hotspot-item.selected .hotspot-item-num {
+      background: #0066ff;
+    }
+
+    .hotspot-item-preview {
+      width: 40px;
+      height: 40px;
+      background: #0a0a0a;
+      border-radius: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .hotspot-item-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hotspot-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .hotspot-item-name {
+      font-size: 11px;
+      color: #fff;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hotspot-item-coords {
+      font-size: 9px;
+      color: #666;
+      font-family: 'Monaco', 'Consolas', monospace;
+      margin-top: 2px;
+    }
+
+    .hotspot-item-delete {
+      width: 24px;
+      height: 24px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .hotspot-item-delete:hover {
+      background: #ff3b30;
+      color: #fff;
+    }
+
+    .hotspot-item-controls {
+      display: flex;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #333;
+    }
+
+    .hotspot-control {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .hotspot-control-label {
+      font-size: 9px;
+      color: #666;
+    }
+
+    .hotspot-control-slider {
+      width: 100%;
+      height: 3px;
+    }
+
+    /* 액션 버튼 */
+    .options-actions {
+      padding: 16px;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      height: 40px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #0055dd;
+    }
+
+    .btn-primary:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #2a2a2a;
+      color: #ccc;
+    }
+
+    .btn-secondary:hover {
+      background: #333;
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* 로딩 오버레이 */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #333;
+      border-top-color: #0066ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 16px;
+      color: #888;
+      font-size: 12px;
+    }
+
+    .loading-subtext {
+      margin-top: 8px;
+      color: #555;
+      font-size: 10px;
+    }
+
+    /* 상태바 */
+    .status-bar {
+      height: 28px;
+      background: #141414;
+      border-top: 1px solid #333;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #666;
+    }
+
+    .status-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 색상 선택 */
+    .color-picker-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .color-btn {
+      width: 28px;
+      height: 28px;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .color-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .color-btn.active {
+      border-color: #fff;
+    }
+
+    .color-btn.red { background: rgba(255, 59, 48, 0.6); }
+    .color-btn.blue { background: rgba(0, 102, 255, 0.6); }
+    .color-btn.green { background: rgba(48, 209, 88, 0.6); }
+    .color-btn.yellow { background: rgba(255, 214, 10, 0.6); }
+
+    /* 숨김 */
+    .hidden {
+      display: none !important;
+    }
+
+    /* 평면도 파라미터 */
+    .param-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .param-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .param-item label {
+      font-size: 10px;
+      color: #666;
+    }
+
+    .param-item input {
+      height: 32px;
+      padding: 0 10px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 11px;
+    }
+
+    .param-item input:focus {
+      border-color: #0066ff;
+      outline: none;
+    }
+
+    /* 스케치업 연동 상태 */
+    .sketchup-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: #0a0a0a;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+
+    .sketchup-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff3b30;
+    }
+
+    .sketchup-status-dot.connected {
+      background: #30d158;
+    }
+
+    .sketchup-status-text {
+      font-size: 10px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <!-- 좌측 모드 선택 -->
+  <aside class="mode-panel">
+    <div class="mode-header">
+      <div class="mode-title">Mix Mode</div>
+      <div class="mode-subtitle">AI Scene Mixing System</div>
+    </div>
+    <div class="mode-list">
+      <div class="mode-item active" data-mode="add-remove">
+        <div class="mode-item-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          Object Insert & Remove
+          <span class="mode-item-badge">3D</span>
+        </div>
+        <div class="mode-item-desc">3D 월드 좌표 기반으로 가구/소품을 정확한 위치에 배치하거나 제거합니다.</div>
+      </div>
+      <div class="mode-item" data-mode="inpaint">
+        <div class="mode-item-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+          </svg>
+          Inpainting
+        </div>
+        <div class="mode-item-desc">마스킹 영역만 수정하고 나머지 씬은 픽셀 단위까지 그대로 유지합니다.</div>
+      </div>
+      <div class="mode-item" data-mode="material">
+        <div class="mode-item-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+          Material Replace
+        </div>
+        <div class="mode-item-desc">벽/바닥/천장에 새로운 재질을 실제 공간에 맞게 투영합니다.</div>
+      </div>
+      <div class="mode-item" data-mode="floorplan">
+        <div class="mode-item-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+            <line x1="8" y1="2" x2="8" y2="18"></line>
+            <line x1="16" y1="6" x2="16" y2="22"></line>
+          </svg>
+          Floorplan to Isometric
+        </div>
+        <div class="mode-item-desc">2D 평면도를 분석하여 3D 아이소메트릭 뷰로 자동 변환합니다.</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 메인 작업 영역 -->
+  <main class="main-area">
+    <div class="toolbar">
+      <!-- Add/Remove 모드 툴바 -->
+      <div class="toolbar-group" id="toolbar-add-remove">
+        <button class="tool-btn active" id="tool-hotspot" title="핫스팟 추가 (스케치업 뷰에서 클릭)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <line x1="12" y1="2" x2="12" y2="6"></line>
+            <line x1="12" y1="18" x2="12" y2="22"></line>
+            <line x1="2" y1="12" x2="6" y2="12"></line>
+            <line x1="18" y1="12" x2="22" y2="12"></line>
+          </svg>
+        </button>
+        <span class="tool-label">Click on SketchUp viewport to add hotspot</span>
+        <div class="tool-info">
+          <div class="tool-info-item">
+            <span>Unit: mm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inpaint/Material 모드 툴바 -->
+      <div class="toolbar-group hidden" id="toolbar-mask">
+        <button class="tool-btn active" id="tool-brush" title="브러시">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"></path>
+            <path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"></path>
+          </svg>
+        </button>
+        <button class="tool-btn" id="tool-eraser" title="지우개">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 20H7L3 16l10-10 7 7-4 4"></path>
+          </svg>
+        </button>
+        <div class="tool-divider"></div>
+        <button class="tool-btn" id="tool-clear-mask" title="마스크 초기화">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Floorplan 모드 툴바 -->
+      <div class="toolbar-group hidden" id="toolbar-floorplan">
+        <span class="tool-label">Upload 2D floorplan to generate isometric view</span>
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="empty-state" id="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <p>먼저 메인 화면에서 씬을 캡처(Convert)하세요</p>
+        <p style="margin-top:4px;color:#555;">캡처 후 Mix 기능을 사용할 수 있습니다</p>
+      </div>
+      <div class="canvas-wrapper hidden" id="canvas-wrapper">
+        <canvas id="main-canvas"></canvas>
+        <canvas id="mask-canvas" class="overlay-canvas"></canvas>
+        <canvas id="draw-canvas" class="overlay-canvas"></canvas>
+        <!-- 핫스팟 마커들이 여기에 동적으로 추가됨 -->
+      </div>
+
+      <!-- 3D 좌표 오버레이 -->
+      <div class="coord-overlay" id="coord-overlay">
+        <div class="coord-row">
+          <span class="coord-label">World:</span>
+          <span id="coord-world">X: 0 Y: 0 Z: 0</span>
+        </div>
+        <div class="coord-row">
+          <span class="coord-label">Screen:</span>
+          <span id="coord-screen">X: 0 Y: 0</span>
+        </div>
+      </div>
+
+      <div class="loading-overlay hidden" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-text">Processing...</div>
+        <div class="loading-subtext" id="loading-subtext">AI가 씬을 분석하고 있습니다</div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-bar-left">
+        <span id="status-text">Ready</span>
+      </div>
+      <div class="status-bar-right">
+        <span id="scene-info">Scene context loaded</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- 우측 옵션 패널 -->
+  <aside class="options-panel">
+    <div class="options-header">
+      <div class="options-title" id="options-title">Object Insert & Remove</div>
+      <div class="options-subtitle" id="options-subtitle">3D 좌표 기반 오브젝트 배치</div>
+    </div>
+
+    <div class="options-content">
+      <!-- 스케치업 연동 상태 -->
+      <div class="sketchup-status">
+        <div class="sketchup-status-dot" id="sketchup-status-dot"></div>
+        <span class="sketchup-status-text" id="sketchup-status-text">Connecting to SketchUp...</span>
+      </div>
+
+      <!-- Add/Remove 옵션 -->
+      <div class="options-mode" id="options-add-remove">
+        <div class="option-section">
+          <span class="option-label">
+            Reference Image
+            <span class="option-label-badge">Required</span>
+          </span>
+          <div class="upload-area" id="upload-object">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p>Click to upload furniture/object image</p>
+            <img class="upload-preview hidden" id="object-preview">
+          </div>
+          <input type="file" id="object-file" accept="image/*" style="display:none">
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Object Name</span>
+          <input type="text" class="option-input" id="object-name" placeholder="e.g., Modern Dining Chair">
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Estimated Size (mm)</span>
+          <div class="param-grid">
+            <div class="param-item">
+              <label>Width</label>
+              <input type="number" id="object-width" value="500" min="100" max="5000">
+            </div>
+            <div class="param-item">
+              <label>Height</label>
+              <input type="number" id="object-height" value="800" min="100" max="5000">
+            </div>
+            <div class="param-item">
+              <label>Depth</label>
+              <input type="number" id="object-depth" value="500" min="100" max="5000">
+            </div>
+          </div>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Placement Instructions</span>
+          <textarea class="option-textarea" id="object-instruction" placeholder="e.g., Place naturally on the floor, facing the window. Match the lighting of the scene."></textarea>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Hotspots (3D Positions)</span>
+          <div class="hotspot-list" id="hotspot-list">
+            <div class="empty-state" style="font-size:11px;padding:16px;color:#555;">
+              스케치업 뷰포트에서 클릭하여 핫스팟을 추가하세요
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inpaint 옵션 -->
+      <div class="options-mode hidden" id="options-inpaint">
+        <div class="option-section">
+          <span class="option-label">Brush Size</span>
+          <div class="slider-container">
+            <input type="range" class="slider" id="brush-size" min="5" max="100" value="30">
+            <span class="slider-value" id="brush-size-value">30px</span>
+          </div>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Mask Color</span>
+          <div class="color-picker-row">
+            <button class="color-btn red active" data-color="rgba(255, 59, 48, 0.5)"></button>
+            <button class="color-btn blue" data-color="rgba(0, 102, 255, 0.5)"></button>
+            <button class="color-btn green" data-color="rgba(48, 209, 88, 0.5)"></button>
+            <button class="color-btn yellow" data-color="rgba(255, 214, 10, 0.5)"></button>
+          </div>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">
+            Edit Instruction
+            <span class="option-label-badge">Required</span>
+          </span>
+          <textarea class="option-textarea" id="inpaint-instruction" placeholder="e.g., Change the sofa to a vintage brown leather chesterfield sofa, keeping the same size and position."></textarea>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Preserve Settings</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:#ccc;margin-top:4px;">
+            <input type="checkbox" id="preserve-lighting" checked> Lighting & Shadows
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:#ccc;margin-top:4px;">
+            <input type="checkbox" id="preserve-style" checked> Material Style & Tone
+          </label>
+        </div>
+      </div>
+
+      <!-- Material 옵션 -->
+      <div class="options-mode hidden" id="options-material">
+        <div class="option-section">
+          <span class="option-label">Brush Size</span>
+          <div class="slider-container">
+            <input type="range" class="slider" id="material-brush-size" min="5" max="100" value="40">
+            <span class="slider-value" id="material-brush-size-value">40px</span>
+          </div>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">
+            Material Texture Image
+            <span class="option-label-badge">Required</span>
+          </span>
+          <div class="upload-area" id="upload-material">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p>Click to upload material texture</p>
+            <img class="upload-preview hidden" id="material-preview">
+          </div>
+          <input type="file" id="material-file" accept="image/*" style="display:none">
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Material Description</span>
+          <textarea class="option-textarea" id="material-description" placeholder="e.g., Herringbone oak wood flooring, natural matte finish"></textarea>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Mapping Options</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:#ccc;margin-top:4px;">
+            <input type="checkbox" id="real-scale" checked> Real Scale Mapping
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:#ccc;margin-top:4px;">
+            <input type="checkbox" id="perspective-correction" checked> Perspective Correction
+          </label>
+        </div>
+      </div>
+
+      <!-- Floorplan 옵션 -->
+      <div class="options-mode hidden" id="options-floorplan">
+        <div class="option-section">
+          <span class="option-label">
+            2D Floorplan Image
+            <span class="option-label-badge">Required</span>
+          </span>
+          <div class="upload-area" id="upload-floorplan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p>Click to upload 2D floorplan (PNG/PDF)</p>
+            <img class="upload-preview hidden" id="floorplan-preview">
+          </div>
+          <input type="file" id="floorplan-file" accept="image/*,.pdf" style="display:none">
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Space Parameters</span>
+          <div class="param-grid">
+            <div class="param-item">
+              <label>Wall Height (mm)</label>
+              <input type="number" id="wall-height" value="2400" min="2000" max="5000">
+            </div>
+            <div class="param-item">
+              <label>Wall Thickness (mm)</label>
+              <input type="number" id="wall-thickness" value="100" min="50" max="500">
+            </div>
+          </div>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Interior Style</span>
+          <select class="option-input" id="floorplan-style">
+            <option value="modern">Modern Minimalist</option>
+            <option value="scandinavian">Scandinavian</option>
+            <option value="industrial">Industrial</option>
+            <option value="classic">Classic Traditional</option>
+            <option value="luxury">Luxury High-End</option>
+            <option value="japandi">Japandi</option>
+          </select>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Additional Instructions</span>
+          <textarea class="option-textarea" id="floorplan-instruction" placeholder="e.g., Add appropriate furniture for each room, warm artificial lighting"></textarea>
+        </div>
+
+        <div class="option-section">
+          <span class="option-label">Output Options</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:#ccc;margin-top:4px;">
+            <input type="checkbox" id="generate-components" checked> Generate SketchUp Components
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="options-actions">
+      <button class="btn btn-primary" id="btn-apply" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Apply Mix
+      </button>
+      <button class="btn btn-secondary" id="btn-cancel">Cancel</button>
+    </div>
+  </aside>
+
+  <script>
+    // ========================================
+    // State
+    // ========================================
+    const state = {
+      mode: 'add-remove',
+      baseImage: null,
+      baseImageBase64: null,
+      objectImage: null,
+      materialImage: null,
+      floorplanImage: null,
+      hotspots: [],
+      selectedHotspot: null,
+      brushSize: 30,
+      brushColor: 'rgba(255, 59, 48, 0.5)',
+      tool: 'brush',
+      isDrawing: false,
+      canvasScale: 1,
+      sceneContext: null, // 스케치업 씬 컨텍스트
+      sketchupConnected: false
+    };
+
+    // ========================================
+    // Elements
+    // ========================================
+    const el = {
+      emptyState: document.getElementById('empty-state'),
+      canvasWrapper: document.getElementById('canvas-wrapper'),
+      mainCanvas: document.getElementById('main-canvas'),
+      maskCanvas: document.getElementById('mask-canvas'),
+      drawCanvas: document.getElementById('draw-canvas'),
+      loading: document.getElementById('loading'),
+      loadingText: document.getElementById('loading-text'),
+      loadingSubtext: document.getElementById('loading-subtext'),
+      statusText: document.getElementById('status-text'),
+      sceneInfo: document.getElementById('scene-info'),
+      coordOverlay: document.getElementById('coord-overlay'),
+      coordWorld: document.getElementById('coord-world'),
+      coordScreen: document.getElementById('coord-screen'),
+      optionsTitle: document.getElementById('options-title'),
+      optionsSubtitle: document.getElementById('options-subtitle'),
+      btnApply: document.getElementById('btn-apply'),
+      btnCancel: document.getElementById('btn-cancel'),
+      sketchupStatusDot: document.getElementById('sketchup-status-dot'),
+      sketchupStatusText: document.getElementById('sketchup-status-text'),
+      // Toolbars
+      toolbarAddRemove: document.getElementById('toolbar-add-remove'),
+      toolbarMask: document.getElementById('toolbar-mask'),
+      toolbarFloorplan: document.getElementById('toolbar-floorplan'),
+      // Options panels
+      optionsAddRemove: document.getElementById('options-add-remove'),
+      optionsInpaint: document.getElementById('options-inpaint'),
+      optionsMaterial: document.getElementById('options-material'),
+      optionsFloorplan: document.getElementById('options-floorplan'),
+      // Inputs
+      objectName: document.getElementById('object-name'),
+      objectWidth: document.getElementById('object-width'),
+      objectHeight: document.getElementById('object-height'),
+      objectDepth: document.getElementById('object-depth'),
+      objectInstruction: document.getElementById('object-instruction'),
+      inpaintInstruction: document.getElementById('inpaint-instruction'),
+      materialDescription: document.getElementById('material-description'),
+      floorplanStyle: document.getElementById('floorplan-style'),
+      floorplanInstruction: document.getElementById('floorplan-instruction'),
+      wallHeight: document.getElementById('wall-height'),
+      wallThickness: document.getElementById('wall-thickness'),
+      brushSize: document.getElementById('brush-size'),
+      brushSizeValue: document.getElementById('brush-size-value'),
+      materialBrushSize: document.getElementById('material-brush-size'),
+      materialBrushSizeValue: document.getElementById('material-brush-size-value'),
+      hotspotList: document.getElementById('hotspot-list')
+    };
+
+    // ========================================
+    // Ruby Communication
+    // ========================================
+    function callRuby(action, ...args) {
+      if (window.sketchup && window.sketchup[action]) {
+        window.sketchup[action](...args);
+      } else {
+        window.location = 'skp:' + action + (args.length ? '@' + args.join('@') : '');
+      }
+    }
+
+    // ========================================
+    // Mode Switching
+    // ========================================
+    document.querySelectorAll('.mode-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.mode-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        switchMode(item.dataset.mode);
+      });
+    });
+
+    function switchMode(mode) {
+      state.mode = mode;
+
+      // Hide all
+      el.toolbarAddRemove.classList.add('hidden');
+      el.toolbarMask.classList.add('hidden');
+      el.toolbarFloorplan.classList.add('hidden');
+      el.optionsAddRemove.classList.add('hidden');
+      el.optionsInpaint.classList.add('hidden');
+      el.optionsMaterial.classList.add('hidden');
+      el.optionsFloorplan.classList.add('hidden');
+
+      // Show relevant
+      switch(mode) {
+        case 'add-remove':
+          el.toolbarAddRemove.classList.remove('hidden');
+          el.optionsAddRemove.classList.remove('hidden');
+          el.optionsTitle.textContent = 'Object Insert & Remove';
+          el.optionsSubtitle.textContent = '3D 좌표 기반 오브젝트 배치';
+          el.drawCanvas.style.cursor = 'crosshair';
+          break;
+        case 'inpaint':
+          el.toolbarMask.classList.remove('hidden');
+          el.optionsInpaint.classList.remove('hidden');
+          el.optionsTitle.textContent = 'Inpainting';
+          el.optionsSubtitle.textContent = '마스킹 영역만 수정';
+          el.drawCanvas.style.cursor = 'crosshair';
+          break;
+        case 'material':
+          el.toolbarMask.classList.remove('hidden');
+          el.optionsMaterial.classList.remove('hidden');
+          el.optionsTitle.textContent = 'Material Replace';
+          el.optionsSubtitle.textContent = '재질 투영 및 교체';
+          el.drawCanvas.style.cursor = 'crosshair';
+          break;
+        case 'floorplan':
+          el.toolbarFloorplan.classList.remove('hidden');
+          el.optionsFloorplan.classList.remove('hidden');
+          el.optionsTitle.textContent = 'Floorplan to Isometric';
+          el.optionsSubtitle.textContent = '2D → 3D 변환';
+          el.drawCanvas.style.cursor = 'default';
+          break;
+      }
+
+      // Clear mask
+      const ctx = el.maskCanvas.getContext('2d');
+      ctx.clearRect(0, 0, el.maskCanvas.width, el.maskCanvas.height);
+
+      updateApplyButton();
+      setStatus(`Mode: ${mode}`);
+    }
+
+    // ========================================
+    // Canvas Setup
+    // ========================================
+    function loadBaseImage(base64) {
+      const img = new Image();
+      img.onload = () => {
+        state.baseImage = img;
+
+        const container = document.querySelector('.canvas-container');
+        const maxW = container.clientWidth - 40;
+        const maxH = container.clientHeight - 40;
+
+        let w = img.width;
+        let h = img.height;
+
+        if (w > maxW) {
+          const ratio = maxW / w;
+          w = maxW;
+          h = h * ratio;
+        }
+        if (h > maxH) {
+          const ratio = maxH / h;
+          h = maxH;
+          w = w * ratio;
+        }
+
+        state.canvasScale = w / img.width;
+
+        el.mainCanvas.width = w;
+        el.mainCanvas.height = h;
+        el.maskCanvas.width = w;
+        el.maskCanvas.height = h;
+        el.drawCanvas.width = w;
+        el.drawCanvas.height = h;
+
+        const ctx = el.mainCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        el.emptyState.classList.add('hidden');
+        el.canvasWrapper.classList.remove('hidden');
+
+        setStatus('Image loaded');
+        updateApplyButton();
+      };
+      img.src = 'data:image/png;base64,' + base64;
+    }
+
+    // ========================================
+    // Hotspot System (3D Coordinates)
+    // ========================================
+
+    // 스케치업에서 3D 좌표 받아서 핫스팟 추가
+    function onHotspotFromSketchUp(dataJson) {
+      const data = JSON.parse(dataJson);
+
+      const id = 'hotspot-' + Date.now();
+      const hotspot = {
+        id,
+        position: data.position, // { x, y, z } in mm
+        normal: data.normal,     // { x, y, z }
+        screenPos: data.screen_pos, // { x, y } in pixels
+        floorReference: data.floor_reference,
+        name: el.objectName.value || 'Object ' + (state.hotspots.length + 1),
+        image: state.objectImage,
+        estimatedSize: {
+          width: parseInt(el.objectWidth.value) || 500,
+          height: parseInt(el.objectHeight.value) || 800,
+          depth: parseInt(el.objectDepth.value) || 500
+        },
+        scale: 1.0,
+        rotation: 0
+      };
+
+      state.hotspots.push(hotspot);
+      renderHotspots();
+      updateHotspotList();
+      updateApplyButton();
+
+      setStatus(`Hotspot added at (${Math.round(data.position.x)}, ${Math.round(data.position.y)}, ${Math.round(data.position.z)}) mm`);
+    }
+
+    // 이미지 클릭으로 핫스팟 추가 (스케치업에 좌표 요청)
+    el.drawCanvas.addEventListener('click', (e) => {
+      if (state.mode !== 'add-remove') return;
+
+      const rect = el.drawCanvas.getBoundingClientRect();
+      const screenX = Math.round((e.clientX - rect.left) / state.canvasScale);
+      const screenY = Math.round((e.clientY - rect.top) / state.canvasScale);
+
+      // 스케치업에 3D 좌표 요청
+      callRuby('mix_get_3d_coord', screenX, screenY);
+    });
+
+    function renderHotspots() {
+      // Remove existing markers
+      document.querySelectorAll('.hotspot-marker').forEach(m => m.remove());
+
+      state.hotspots.forEach((h, i) => {
+        const marker = document.createElement('div');
+        marker.className = 'hotspot-marker';
+        marker.textContent = i + 1;
+
+        // 스크린 좌표 사용 (캔버스 스케일 적용)
+        const screenX = h.screenPos.x * state.canvasScale;
+        const screenY = h.screenPos.y * state.canvasScale;
+        marker.style.left = screenX + 'px';
+        marker.style.top = screenY + 'px';
+        marker.dataset.id = h.id;
+
+        if (state.selectedHotspot === h.id) {
+          marker.classList.add('selected');
+        }
+
+        marker.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state.selectedHotspot = h.id;
+          renderHotspots();
+          updateHotspotList();
+        });
+
+        el.canvasWrapper.appendChild(marker);
+      });
+    }
+
+    function updateHotspotList() {
+      if (state.hotspots.length === 0) {
+        el.hotspotList.innerHTML = `
+          <div class="empty-state" style="font-size:11px;padding:16px;color:#555;">
+            스케치업 뷰포트에서 클릭하여 핫스팟을 추가하세요
+          </div>`;
+        return;
+      }
+
+      el.hotspotList.innerHTML = state.hotspots.map((h, i) => `
+        <div class="hotspot-item ${state.selectedHotspot === h.id ? 'selected' : ''}" data-id="${h.id}">
+          <div class="hotspot-item-header">
+            <div class="hotspot-item-num">${i + 1}</div>
+            <div class="hotspot-item-preview">
+              ${h.image ? `<img src="data:image/png;base64,${h.image}">` : ''}
+            </div>
+            <div class="hotspot-item-info">
+              <div class="hotspot-item-name">${h.name}</div>
+              <div class="hotspot-item-coords">
+                X: ${Math.round(h.position.x)} Y: ${Math.round(h.position.y)} Z: ${Math.round(h.position.z)} mm
+              </div>
+            </div>
+            <button class="hotspot-item-delete" data-id="${h.id}">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="hotspot-item-controls">
+            <div class="hotspot-control">
+              <span class="hotspot-control-label">Scale: ${h.scale.toFixed(1)}x</span>
+              <input type="range" class="hotspot-control-slider slider" min="0.5" max="2" step="0.1" value="${h.scale}" data-id="${h.id}" data-type="scale">
+            </div>
+            <div class="hotspot-control">
+              <span class="hotspot-control-label">Rotation: ${h.rotation}°</span>
+              <input type="range" class="hotspot-control-slider slider" min="0" max="360" step="15" value="${h.rotation}" data-id="${h.id}" data-type="rotation">
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Event handlers
+      el.hotspotList.querySelectorAll('.hotspot-item').forEach(item => {
+        item.addEventListener('click', () => {
+          state.selectedHotspot = item.dataset.id;
+          renderHotspots();
+          updateHotspotList();
+        });
+      });
+
+      el.hotspotList.querySelectorAll('.hotspot-item-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          state.hotspots = state.hotspots.filter(h => h.id !== id);
+          if (state.selectedHotspot === id) state.selectedHotspot = null;
+          renderHotspots();
+          updateHotspotList();
+          updateApplyButton();
+        });
+      });
+
+      el.hotspotList.querySelectorAll('.hotspot-control-slider').forEach(slider => {
+        slider.addEventListener('input', (e) => {
+          const id = slider.dataset.id;
+          const type = slider.dataset.type;
+          const value = parseFloat(slider.value);
+          const hotspot = state.hotspots.find(h => h.id === id);
+          if (hotspot) {
+            if (type === 'scale') hotspot.scale = value;
+            if (type === 'rotation') hotspot.rotation = value;
+            updateHotspotList();
+          }
+        });
+      });
+    }
+
+    // ========================================
+    // Mask Drawing
+    // ========================================
+    let lastX, lastY;
+
+    el.drawCanvas.addEventListener('mousedown', (e) => {
+      if (state.mode !== 'inpaint' && state.mode !== 'material') return;
+
+      state.isDrawing = true;
+      const rect = el.drawCanvas.getBoundingClientRect();
+      lastX = e.clientX - rect.left;
+      lastY = e.clientY - rect.top;
+    });
+
+    el.drawCanvas.addEventListener('mousemove', (e) => {
+      const rect = el.drawCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Show coordinates
+      if (state.mode === 'add-remove') {
+        el.coordOverlay.classList.add('visible');
+        el.coordScreen.textContent = `X: ${Math.round(x / state.canvasScale)} Y: ${Math.round(y / state.canvasScale)}`;
+      }
+
+      if (!state.isDrawing) return;
+      if (state.mode !== 'inpaint' && state.mode !== 'material') return;
+
+      const ctx = el.maskCanvas.getContext('2d');
+      const brushSize = state.mode === 'material' ?
+        parseInt(el.materialBrushSize.value) : parseInt(el.brushSize.value);
+
+      ctx.beginPath();
+      ctx.lineWidth = brushSize;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (state.tool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+      } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = state.brushColor;
+      }
+
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      lastX = x;
+      lastY = y;
+    });
+
+    el.drawCanvas.addEventListener('mouseup', () => {
+      state.isDrawing = false;
+      updateApplyButton();
+    });
+
+    el.drawCanvas.addEventListener('mouseleave', () => {
+      state.isDrawing = false;
+      el.coordOverlay.classList.remove('visible');
+    });
+
+    // Tool buttons
+    document.getElementById('tool-brush').addEventListener('click', () => {
+      state.tool = 'brush';
+      document.getElementById('tool-brush').classList.add('active');
+      document.getElementById('tool-eraser').classList.remove('active');
+    });
+
+    document.getElementById('tool-eraser').addEventListener('click', () => {
+      state.tool = 'eraser';
+      document.getElementById('tool-eraser').classList.add('active');
+      document.getElementById('tool-brush').classList.remove('active');
+    });
+
+    document.getElementById('tool-clear-mask').addEventListener('click', () => {
+      const ctx = el.maskCanvas.getContext('2d');
+      ctx.clearRect(0, 0, el.maskCanvas.width, el.maskCanvas.height);
+      updateApplyButton();
+    });
+
+    // Brush size sliders
+    el.brushSize.addEventListener('input', () => {
+      el.brushSizeValue.textContent = el.brushSize.value + 'px';
+    });
+
+    el.materialBrushSize.addEventListener('input', () => {
+      el.materialBrushSizeValue.textContent = el.materialBrushSize.value + 'px';
+    });
+
+    // Color buttons
+    document.querySelectorAll('.color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.brushColor = btn.dataset.color;
+      });
+    });
+
+    // ========================================
+    // File Uploads
+    // ========================================
+    document.getElementById('upload-object').addEventListener('click', () => {
+      document.getElementById('object-file').click();
+    });
+
+    document.getElementById('object-file').addEventListener('change', (e) => {
+      handleFileUpload(e.target.files[0], 'object');
+    });
+
+    document.getElementById('upload-material').addEventListener('click', () => {
+      document.getElementById('material-file').click();
+    });
+
+    document.getElementById('material-file').addEventListener('change', (e) => {
+      handleFileUpload(e.target.files[0], 'material');
+    });
+
+    document.getElementById('upload-floorplan').addEventListener('click', () => {
+      document.getElementById('floorplan-file').click();
+    });
+
+    document.getElementById('floorplan-file').addEventListener('change', (e) => {
+      handleFileUpload(e.target.files[0], 'floorplan');
+    });
+
+    function handleFileUpload(file, type) {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result.split(',')[1];
+
+        switch(type) {
+          case 'object':
+            state.objectImage = base64;
+            document.getElementById('object-preview').src = e.target.result;
+            document.getElementById('object-preview').classList.remove('hidden');
+            document.getElementById('upload-object').classList.add('has-image');
+            break;
+          case 'material':
+            state.materialImage = base64;
+            document.getElementById('material-preview').src = e.target.result;
+            document.getElementById('material-preview').classList.remove('hidden');
+            document.getElementById('upload-material').classList.add('has-image');
+            break;
+          case 'floorplan':
+            state.floorplanImage = base64;
+            document.getElementById('floorplan-preview').src = e.target.result;
+            document.getElementById('floorplan-preview').classList.remove('hidden');
+            document.getElementById('upload-floorplan').classList.add('has-image');
+            if (state.mode === 'floorplan') {
+              loadFloorplanImage(base64);
+            }
+            break;
+        }
+
+        updateApplyButton();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadFloorplanImage(base64) {
+      const img = new Image();
+      img.onload = () => {
+        const container = document.querySelector('.canvas-container');
+        const maxW = container.clientWidth - 40;
+        const maxH = container.clientHeight - 40;
+
+        let w = img.width;
+        let h = img.height;
+
+        if (w > maxW) { const ratio = maxW / w; w = maxW; h = h * ratio; }
+        if (h > maxH) { const ratio = maxH / h; h = maxH; w = w * ratio; }
+
+        el.mainCanvas.width = w;
+        el.mainCanvas.height = h;
+        el.maskCanvas.width = w;
+        el.maskCanvas.height = h;
+        el.drawCanvas.width = w;
+        el.drawCanvas.height = h;
+
+        const ctx = el.mainCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        el.emptyState.classList.add('hidden');
+        el.canvasWrapper.classList.remove('hidden');
+      };
+      img.src = 'data:image/png;base64,' + base64;
+    }
+
+    // ========================================
+    // Apply Button Logic
+    // ========================================
+    function updateApplyButton() {
+      let canApply = false;
+
+      switch(state.mode) {
+        case 'add-remove':
+          canApply = state.baseImage && state.hotspots.length > 0;
+          break;
+        case 'inpaint':
+          canApply = state.baseImage && hasMaskContent() && el.inpaintInstruction.value.trim();
+          break;
+        case 'material':
+          canApply = state.baseImage && hasMaskContent() && state.materialImage;
+          break;
+        case 'floorplan':
+          canApply = state.floorplanImage;
+          break;
+      }
+
+      el.btnApply.disabled = !canApply;
+    }
+
+    function hasMaskContent() {
+      const ctx = el.maskCanvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, el.maskCanvas.width, el.maskCanvas.height);
+      return imageData.data.some((v, i) => i % 4 === 3 && v > 0);
+    }
+
+    el.inpaintInstruction.addEventListener('input', updateApplyButton);
+    el.materialDescription.addEventListener('input', updateApplyButton);
+
+    // ========================================
+    // Apply Mix
+    // ========================================
+    el.btnApply.addEventListener('click', applyMix);
+
+    function applyMix() {
+      showLoading('Processing...', 'AI가 씬을 분석하고 있습니다');
+
+      const data = {
+        mode: state.mode,
+        sceneContext: state.sceneContext
+      };
+
+      switch(state.mode) {
+        case 'add-remove':
+          data.baseImage = state.baseImageBase64;
+          data.hotspots = state.hotspots.map(h => ({
+            position: h.position,
+            normal: h.normal,
+            screenPos: h.screenPos,
+            floorReference: h.floorReference,
+            name: h.name,
+            image: h.image,
+            estimatedSize: h.estimatedSize,
+            scale: h.scale,
+            rotation: h.rotation
+          }));
+          data.instruction = el.objectInstruction.value;
+          data.constraints = {
+            keepSceneUnchanged: true,
+            autoScale: true,
+            autoRotation: true
+          };
+          break;
+
+        case 'inpaint':
+          data.baseImage = state.baseImageBase64;
+          data.maskImage = canvasToBase64(el.maskCanvas);
+          data.instruction = el.inpaintInstruction.value;
+          data.preserve = {
+            lighting: document.getElementById('preserve-lighting').checked,
+            style: document.getElementById('preserve-style').checked,
+            camera: true,
+            composition: true
+          };
+          break;
+
+        case 'material':
+          data.baseImage = state.baseImageBase64;
+          data.maskImage = canvasToBase64(el.maskCanvas);
+          data.materialImage = state.materialImage;
+          data.description = el.materialDescription.value;
+          data.mapping = {
+            realScale: document.getElementById('real-scale').checked,
+            perspectiveCorrection: document.getElementById('perspective-correction').checked
+          };
+          break;
+
+        case 'floorplan':
+          data.floorplanImage = state.floorplanImage;
+          data.parameters = {
+            wallHeight: parseInt(el.wallHeight.value),
+            wallThickness: parseInt(el.wallThickness.value),
+            style: el.floorplanStyle.value
+          };
+          data.instruction = el.floorplanInstruction.value;
+          data.generateComponents = document.getElementById('generate-components').checked;
+          break;
+      }
+
+      callRuby('mix_apply', JSON.stringify(data));
+    }
+
+    function canvasToBase64(canvas) {
+      return canvas.toDataURL('image/png').split(',')[1];
+    }
+
+    // ========================================
+    // Callbacks from Ruby
+    // ========================================
+    function onMixReady() {
+      callRuby('mix_get_current_image');
+      callRuby('mix_get_scene_context');
+    }
+
+    function onBaseImageLoaded(base64) {
+      state.baseImageBase64 = base64;
+      loadBaseImage(base64);
+    }
+
+    function onSceneContextLoaded(contextJson) {
+      state.sceneContext = JSON.parse(contextJson);
+      state.sketchupConnected = true;
+      el.sketchupStatusDot.classList.add('connected');
+      el.sketchupStatusText.textContent = 'SketchUp Connected';
+      el.sceneInfo.textContent = `Camera: FOV ${state.sceneContext.camera.fov.toFixed(0)}°`;
+    }
+
+    function onCoordReceived(coordJson) {
+      const data = JSON.parse(coordJson);
+      el.coordWorld.textContent = `X: ${Math.round(data.position.x)} Y: ${Math.round(data.position.y)} Z: ${Math.round(data.position.z)}`;
+
+      // 핫스팟 추가
+      onHotspotFromSketchUp(coordJson);
+    }
+
+    function onMixComplete(resultBase64) {
+      hideLoading();
+
+      const img = new Image();
+      img.onload = () => {
+        const ctx = el.mainCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, el.mainCanvas.width, el.mainCanvas.height);
+
+        // Clear
+        const maskCtx = el.maskCanvas.getContext('2d');
+        maskCtx.clearRect(0, 0, el.maskCanvas.width, el.maskCanvas.height);
+        state.hotspots = [];
+        state.selectedHotspot = null;
+        renderHotspots();
+        updateHotspotList();
+
+        setStatus('Mix complete!');
+      };
+      img.src = 'data:image/png;base64,' + resultBase64;
+    }
+
+    function onMixError(message) {
+      hideLoading();
+      setStatus('Error: ' + message);
+      alert('Mix Error: ' + message);
+    }
+
+    function onComponentsPlaced(resultJson) {
+      const result = JSON.parse(resultJson);
+      setStatus(`${result.placed_count} components placed in SketchUp`);
+    }
+
+    // ========================================
+    // Utility
+    // ========================================
+    function showLoading(text, subtext) {
+      el.loadingText.textContent = text || 'Processing...';
+      el.loadingSubtext.textContent = subtext || '';
+      el.loading.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      el.loading.classList.add('hidden');
+    }
+
+    function setStatus(text) {
+      el.statusText.textContent = text;
+    }
+
+    el.btnCancel.addEventListener('click', () => {
+      callRuby('mix_cancel');
+    });
+
+    // Initialize
+    setTimeout(onMixReady, 100);
+  </script>
+</body>
+</html>

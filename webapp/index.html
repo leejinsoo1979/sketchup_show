@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NanoBanana Renderer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: #111;
+      border-bottom: 1px solid #222;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .logo span {
+      color: #0066ff;
+    }
+
+    .api-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff3b30;
+    }
+
+    .status-dot.connected {
+      background: #30d158;
+    }
+
+    /* Main */
+    main {
+      flex: 1;
+      display: flex;
+      padding: 24px;
+      gap: 24px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #111;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      flex-shrink: 0;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* API Key Input */
+    .api-input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .api-input {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .api-input:focus {
+      outline: none;
+      border-color: #0066ff;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #0055dd;
+    }
+
+    .btn-primary:disabled {
+      background: #1a1a1a;
+      color: #444;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #222;
+      color: #ccc;
+    }
+
+    .btn-secondary:hover {
+      background: #2a2a2a;
+    }
+
+    .btn-sm {
+      padding: 8px 12px;
+      font-size: 11px;
+    }
+
+    /* Segmented Control */
+    .segmented {
+      display: flex;
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .seg-btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .seg-btn:hover {
+      color: #999;
+    }
+
+    .seg-btn.active {
+      background: #333;
+      color: #fff;
+    }
+
+    /* Upload Area */
+    .upload-area {
+      border: 2px dashed #333;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .upload-area:hover {
+      border-color: #0066ff;
+      background: rgba(0, 102, 255, 0.05);
+    }
+
+    .upload-area.dragover {
+      border-color: #0066ff;
+      background: rgba(0, 102, 255, 0.1);
+    }
+
+    .upload-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .upload-text {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .upload-hint {
+      font-size: 11px;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    /* Main Content */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .image-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .image-panel {
+      background: #111;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 12px 16px;
+      background: #161616;
+      font-size: 12px;
+      font-weight: 500;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 300px;
+      background: #0d0d0d;
+    }
+
+    .panel-content img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .empty-state {
+      color: #333;
+      font-size: 13px;
+    }
+
+    /* Loading */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #222;
+      border-top-color: #0066ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #888;
+      font-size: 13px;
+    }
+
+    /* Action Bar */
+    .action-bar {
+      display: flex;
+      gap: 12px;
+    }
+
+    .action-bar .btn {
+      flex: 1;
+      padding: 14px;
+    }
+
+    /* Hidden file input */
+    #file-input {
+      display: none;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #222;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: #ff3b30;
+    }
+
+    .toast.success {
+      background: #30d158;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      main {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+      }
+
+      .image-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Nano<span>Banana</span> Renderer</div>
+    <div class="api-status">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">API 연결 안됨</span>
+    </div>
+  </header>
+
+  <main>
+    <aside class="sidebar">
+      <!-- API Key -->
+      <div class="section">
+        <div class="section-title">API Key</div>
+        <div class="api-input-group">
+          <input type="password" class="api-input" id="api-key" placeholder="Gemini API Key">
+          <button class="btn btn-secondary btn-sm" id="btn-save-key">저장</button>
+        </div>
+      </div>
+
+      <!-- Upload -->
+      <div class="section">
+        <div class="section-title">이미지 업로드</div>
+        <div class="upload-area" id="upload-area">
+          <div class="upload-icon">+</div>
+          <div class="upload-text">클릭 또는 드래그하여 업로드</div>
+          <div class="upload-hint">PNG, JPG (최대 20MB)</div>
+        </div>
+        <input type="file" id="file-input" accept="image/*">
+      </div>
+
+      <!-- Time Setting -->
+      <div class="section">
+        <div class="section-title">시간대</div>
+        <div class="segmented" id="time-group">
+          <button class="seg-btn active" data-value="day">Day</button>
+          <button class="seg-btn" data-value="evening">Evening</button>
+          <button class="seg-btn" data-value="night">Night</button>
+        </div>
+      </div>
+
+      <!-- Lights Setting -->
+      <div class="section">
+        <div class="section-title">실내 조명</div>
+        <div class="segmented" id="light-group">
+          <button class="seg-btn active" data-value="on">On</button>
+          <button class="seg-btn" data-value="off">Off</button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="section" style="margin-top: auto;">
+        <button class="btn btn-primary" id="btn-render" disabled>렌더링 시작</button>
+      </div>
+    </aside>
+
+    <div class="content">
+      <div class="image-grid">
+        <div class="image-panel">
+          <div class="panel-header">
+            <span>Source</span>
+            <span id="source-info"></span>
+          </div>
+          <div class="panel-content">
+            <div class="empty-state" id="source-empty">이미지를 업로드하세요</div>
+            <img id="source-image" style="display: none;">
+          </div>
+        </div>
+
+        <div class="image-panel">
+          <div class="panel-header">
+            <span>Result</span>
+            <button class="btn btn-secondary btn-sm" id="btn-download" style="display: none;">다운로드</button>
+          </div>
+          <div class="panel-content">
+            <div class="empty-state" id="result-empty">렌더링 대기 중</div>
+            <img id="result-image" style="display: none;">
+            <div class="loading-overlay hidden" id="loading">
+              <div class="spinner"></div>
+              <div class="loading-text">렌더링 중...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-secondary" id="btn-clear">초기화</button>
+        <button class="btn btn-primary" id="btn-render-main" disabled>렌더링</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // State
+    const state = {
+      apiKey: localStorage.getItem('nanobanana_api_key') || '',
+      sourceImage: null,
+      resultImage: null,
+      isRendering: false,
+      timePreset: 'day',
+      lightSwitch: 'on'
+    };
+
+    // Elements
+    const el = {
+      apiKey: document.getElementById('api-key'),
+      btnSaveKey: document.getElementById('btn-save-key'),
+      uploadArea: document.getElementById('upload-area'),
+      fileInput: document.getElementById('file-input'),
+      sourceImage: document.getElementById('source-image'),
+      sourceEmpty: document.getElementById('source-empty'),
+      sourceInfo: document.getElementById('source-info'),
+      resultImage: document.getElementById('result-image'),
+      resultEmpty: document.getElementById('result-empty'),
+      loading: document.getElementById('loading'),
+      btnRender: document.getElementById('btn-render'),
+      btnRenderMain: document.getElementById('btn-render-main'),
+      btnDownload: document.getElementById('btn-download'),
+      btnClear: document.getElementById('btn-clear'),
+      statusDot: document.getElementById('status-dot'),
+      statusText: document.getElementById('status-text'),
+      toast: document.getElementById('toast')
+    };
+
+    // Initialize
+    function init() {
+      if (state.apiKey) {
+        el.apiKey.value = '••••••••' + state.apiKey.slice(-4);
+        updateApiStatus(true);
+      }
+
+      // Event listeners
+      el.btnSaveKey.addEventListener('click', saveApiKey);
+      el.uploadArea.addEventListener('click', () => el.fileInput.click());
+      el.fileInput.addEventListener('change', handleFileSelect);
+      el.btnRender.addEventListener('click', startRender);
+      el.btnRenderMain.addEventListener('click', startRender);
+      el.btnDownload.addEventListener('click', downloadResult);
+      el.btnClear.addEventListener('click', clearAll);
+
+      // Drag and drop
+      el.uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        el.uploadArea.classList.add('dragover');
+      });
+      el.uploadArea.addEventListener('dragleave', () => {
+        el.uploadArea.classList.remove('dragover');
+      });
+      el.uploadArea.addEventListener('drop', handleDrop);
+
+      // Segmented controls
+      setupSegmented('time-group', (value) => state.timePreset = value);
+      setupSegmented('light-group', (value) => state.lightSwitch = value);
+
+      // Check for SketchUp data
+      checkSketchUpData();
+    }
+
+    function setupSegmented(groupId, callback) {
+      const group = document.getElementById(groupId);
+      group.querySelectorAll('.seg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          group.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          callback(btn.dataset.value);
+        });
+      });
+    }
+
+    function saveApiKey() {
+      const key = el.apiKey.value.trim();
+      if (key && !key.startsWith('••')) {
+        state.apiKey = key;
+        localStorage.setItem('nanobanana_api_key', key);
+        el.apiKey.value = '••••••••' + key.slice(-4);
+        updateApiStatus(true);
+        showToast('API Key 저장됨', 'success');
+      }
+    }
+
+    function updateApiStatus(connected) {
+      el.statusDot.classList.toggle('connected', connected);
+      el.statusText.textContent = connected ? 'API 연결됨' : 'API 연결 안됨';
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) loadImage(file);
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      el.uploadArea.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        loadImage(file);
+      }
+    }
+
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        state.sourceImage = e.target.result.split(',')[1];
+        el.sourceImage.src = e.target.result;
+        el.sourceImage.style.display = 'block';
+        el.sourceEmpty.style.display = 'none';
+        el.sourceInfo.textContent = `${(file.size / 1024 / 1024).toFixed(1)}MB`;
+        updateRenderButton();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadImageFromBase64(base64) {
+      state.sourceImage = base64;
+      el.sourceImage.src = 'data:image/png;base64,' + base64;
+      el.sourceImage.style.display = 'block';
+      el.sourceEmpty.style.display = 'none';
+      updateRenderButton();
+    }
+
+    function updateRenderButton() {
+      const canRender = state.apiKey && state.sourceImage && !state.isRendering;
+      el.btnRender.disabled = !canRender;
+      el.btnRenderMain.disabled = !canRender;
+    }
+
+    function checkSketchUpData() {
+      const params = new URLSearchParams(window.location.search);
+      const imageData = params.get('image');
+      if (imageData) {
+        loadImageFromBase64(imageData);
+        showToast('SketchUp에서 이미지 로드됨', 'success');
+      }
+    }
+
+    async function startRender() {
+      if (!state.apiKey || !state.sourceImage) return;
+
+      state.isRendering = true;
+      updateRenderButton();
+      el.loading.classList.remove('hidden');
+      el.resultEmpty.style.display = 'none';
+
+      try {
+        const prompt = buildPrompt();
+        const result = await callGeminiAPI(state.sourceImage, prompt);
+
+        if (result) {
+          state.resultImage = result;
+          el.resultImage.src = 'data:image/png;base64,' + result;
+          el.resultImage.style.display = 'block';
+          el.btnDownload.style.display = 'block';
+          showToast('렌더링 완료', 'success');
+        } else {
+          throw new Error('렌더링 결과가 없습니다');
+        }
+      } catch (error) {
+        showToast('오류: ' + error.message, 'error');
+        el.resultEmpty.style.display = 'block';
+        el.resultEmpty.textContent = '렌더링 실패';
+      } finally {
+        state.isRendering = false;
+        updateRenderButton();
+        el.loading.classList.add('hidden');
+      }
+    }
+
+    function buildPrompt() {
+      const timeDesc = {
+        day: '정오 12:00 PM (Neutral Reference Daylight), 맑은 낮 하늘',
+        evening: 'Golden hour 오후 5:00 PM, 따뜻한 석양빛',
+        night: '밤 9:00 PM, 어두운 외부, 실내 조명만'
+      }[state.timePreset];
+
+      const lightDesc = {
+        on: '실내 조명 ON - 천장등, 펜던트, 간접조명 모두 켜짐',
+        off: '실내 조명 OFF - 자연광만 사용'
+      }[state.lightSwitch];
+
+      return `ROLE:
+첨부된 건축/인테리어 이미지를
+원본 비율과 형태를 100% 유지한 상태로
+초고해상도 포토리얼리스틱 사진으로 재구성하는
+건축 시각화(AI Architectural Visualization) 전문가이다.
+
+이 작업은 "재설계"가 아닌
+"엄격한 이미지-투-이미지 재구성(Strict Image-to-Image Reconstruction)"이다.
+
+==================================================
+CRITICAL RULES (절대 규칙)
+==================================================
+
+1. 구조 보존 (GEOMETRY PRESERVATION : 1.5)
+- 벽체, 바닥, 천장, 창문, 문, 기둥 등 모든 구조 요소의
+  위치, 크기, 비율을 100% 그대로 유지
+- 창호의 개수, 분할(Mullion), 프레임 두께, 위치 변경 절대 금지
+- 카메라 앵글, 시점, FOV(Field of View), 소실점(Vanishing Point),
+  프레이밍을 원본과 완전히 동일하게 유지
+- 어떠한 구조 요소도 추가, 삭제, 이동, 회전, 보정하지 않음
+- 왜곡, 휨, 비틀림, 형태 보정, 스마트 최적화 금지
+
+2. 재질 현실화 (REALISTIC MATERIALS : 1.3)
+- 모든 재질은 PBR(Physically Based Rendering) 기준으로 현실화
+- Ray Tracing, Global Illumination 기반의 물리적으로 정확한 조명 계산
+- 반사, 거칠기, 미세 질감은 현실적으로 표현하되
+  재질 표현으로 인해 형태가 변형되어 보이면 안 됨
+
+3. 출력 품질 (OUTPUT QUALITY)
+- (Masterpiece, Best Quality, Photorealistic : 1.4)
+- (RAW Architectural Photo, 8K Resolution, UHD : 1.2)
+- (Architectural Photography, Shot on DSLR : 1.2)
+- Sharp focus, high dynamic range, detailed textures
+- "AI 렌더"가 아닌 "실제 DSLR 촬영 사진"처럼 보여야 함
+
+==================================================
+마감 재료 처리 규칙
+==================================================
+
+- 외벽 / 내벽: 원본 재질 유형 유지, 질감만 실사 수준으로 현실화
+- 창호 / 유리: 위치·크기 고정, 과하지 않은 자연스러운 반사만 적용
+- 천장: 형태, 높이, 색감, 조명 배치 100% 유지
+- 바닥: 패턴 유지, 실사 수준의 질감 및 반사 표현
+- 가구 / 오브제: 원본 형태·비율·배치 절대 변경 금지
+
+==================================================
+환경 및 조명 설정
+==================================================
+
+- 시간대: ${timeDesc}
+- 실내조명: ${lightDesc}
+- 배경: 도시 환경 (건축 구조에는 영향 없음)
+- 그림자: 물리적으로 자연스럽고 부드러운 그림자
+- 조명 변화로 인해 구조가 달라 보이면 안 됨
+
+==================================================
+NEGATIVE PROMPT (엄격 적용)
+==================================================
+
+Sketch, Cartoon, Anime, Painting, Drawing, Illustration,
+3D render, CGI, Unreal, Blender, V-Ray style,
+Clay, Wireframe, Polygon,
+Low quality, Blurry, Pixelated, Noise,
+Distorted geometry, Warped lines, Bent edges,
+Wrong perspective, Perspective correction,
+Geometry enhancement, Proportion correction,
+AI redesign, Smart optimization,
+Added structure, Removed structure,
+Text, Watermark, Logo, Signature`;
+    }
+
+    async function callGeminiAPI(imageBase64, prompt) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${state.apiKey}`;
+
+      const body = {
+        contents: [{
+          parts: [
+            { inlineData: { mimeType: 'image/png', data: imageBase64 } },
+            { text: prompt }
+          ]
+        }],
+        generationConfig: {
+          responseModalities: ['TEXT', 'IMAGE']
+        }
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || '요청 실패');
+      }
+
+      const data = await response.json();
+      const parts = data.candidates?.[0]?.content?.parts;
+
+      if (parts) {
+        for (const part of parts) {
+          if (part.inlineData) {
+            return part.inlineData.data;
+          }
+        }
+      }
+
+      return null;
+    }
+
+    function downloadResult() {
+      if (!state.resultImage) return;
+
+      const link = document.createElement('a');
+      link.href = 'data:image/png;base64,' + state.resultImage;
+      link.download = `nanobanana_render_${Date.now()}.png`;
+      link.click();
+    }
+
+    function clearAll() {
+      state.sourceImage = null;
+      state.resultImage = null;
+      el.sourceImage.style.display = 'none';
+      el.sourceEmpty.style.display = 'block';
+      el.sourceInfo.textContent = '';
+      el.resultImage.style.display = 'none';
+      el.resultEmpty.style.display = 'block';
+      el.resultEmpty.textContent = '렌더링 대기 중';
+      el.btnDownload.style.display = 'none';
+      el.fileInput.value = '';
+      updateRenderButton();
+    }
+
+    function showToast(message, type = '') {
+      el.toast.textContent = message;
+      el.toast.className = 'toast show ' + type;
+      setTimeout(() => el.toast.classList.remove('show'), 3000);
+    }
+
+    // SketchUp 연동 함수 (외부에서 호출 가능)
+    window.loadFromSketchUp = function(base64) {
+      loadImageFromBase64(base64);
+      showToast('SketchUp에서 이미지 로드됨', 'success');
+    };
+
+    init();
+  </script>
+</body>
+</html>
