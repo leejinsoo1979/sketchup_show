@@ -431,35 +431,22 @@
         data[i + 2] = Math.max(0, Math.min(255, b));
       }
 
-      ctx.putImageData(imageData, 0, 0);
-
-      // Texture intensity - enhances or smooths mid-frequency details
+      // Texture intensity - adjust local contrast (pixel-level, no canvas filter)
       if (adjustments.texture !== 0) {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(canvas, 0, 0);
+        const texData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const tex = texData.data;
+        const texFactor = adjustments.texture / 100;
 
-        const textureFactor = adjustments.texture / 100;
-
-        if (textureFactor > 0) {
-          // Enhance texture - apply subtle high-pass filter effect
-          ctx.globalCompositeOperation = 'overlay';
-          ctx.globalAlpha = textureFactor * 0.5;
-          ctx.filter = 'contrast(150%) brightness(100%)';
-          ctx.drawImage(tempCanvas, 0, 0);
-          ctx.filter = 'none';
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.globalAlpha = 1;
-        } else {
-          // Reduce texture - apply subtle blur effect
-          ctx.globalAlpha = Math.abs(textureFactor) * 0.3;
-          ctx.filter = 'blur(1px)';
-          ctx.drawImage(tempCanvas, 0, 0);
-          ctx.filter = 'none';
-          ctx.globalAlpha = 1;
+        for (let i = 0; i < tex.length; i += 4) {
+          const avg = (tex[i] + tex[i+1] + tex[i+2]) / 3;
+          // Texture: enhance or reduce deviation from local average
+          tex[i] = Math.max(0, Math.min(255, tex[i] + (tex[i] - avg) * texFactor * 0.5));
+          tex[i+1] = Math.max(0, Math.min(255, tex[i+1] + (tex[i+1] - avg) * texFactor * 0.5));
+          tex[i+2] = Math.max(0, Math.min(255, tex[i+2] + (tex[i+2] - avg) * texFactor * 0.5));
         }
+        ctx.putImageData(texData, 0, 0);
+      } else {
+        ctx.putImageData(imageData, 0, 0);
       }
 
       if (adjustments.sharpness > 0) {
@@ -482,6 +469,12 @@
       applyAdjustments();
     }
 
+    let debounceTimer = null;
+    function debouncedApply() {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(applyAdjustments, 30);
+    }
+
     sliderIds.forEach(function(id) {
       const slider = document.getElementById('slider-' + id);
       const valueDisplay = document.getElementById('value-' + id);
@@ -489,7 +482,7 @@
       slider.addEventListener('input', function() {
         adjustments[id] = parseInt(this.value);
         valueDisplay.textContent = this.value;
-        applyAdjustments();
+        debouncedApply();
       });
     });
 
