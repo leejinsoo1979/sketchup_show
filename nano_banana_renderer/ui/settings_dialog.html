@@ -178,25 +178,43 @@
       btnClose: document.getElementById('btn-close')
     };
 
-    // SketchUp Communication
-    window.sketchup = {
+    // SketchUp Communication - sketchup 객체 사용 (2017+)
+    function callRuby(action, param) {
+      if (window.sketchup && typeof window.sketchup[action] === 'function') {
+        // SketchUp 2017+ 방식
+        if (param !== undefined) {
+          window.sketchup[action](param);
+        } else {
+          window.sketchup[action]();
+        }
+      } else {
+        // 폴백: location 방식
+        if (param !== undefined) {
+          window.location = 'skp:' + action + '@' + encodeURIComponent(param);
+        } else {
+          window.location = 'skp:' + action;
+        }
+      }
+    }
+
+    const sketchup = {
       saveApiKey: function(key) {
-        window.location = 'skp:save_api_key@' + encodeURIComponent(key);
+        callRuby('save_api_key', key);
       },
       loadApiKey: function() {
-        window.location = 'skp:load_api_key';
+        callRuby('load_api_key');
       },
       saveModel: function(model) {
-        window.location = 'skp:save_model@' + encodeURIComponent(model);
+        callRuby('save_model', model);
       },
       loadModel: function() {
-        window.location = 'skp:load_model';
+        callRuby('load_model');
       },
       testConnection: function() {
-        window.location = 'skp:test_connection';
+        callRuby('test_connection');
       },
       closeDialog: function() {
-        window.location = 'skp:close_dialog';
+        callRuby('close_dialog');
       }
     };
 
