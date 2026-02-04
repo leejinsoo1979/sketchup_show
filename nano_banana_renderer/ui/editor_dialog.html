@@ -301,6 +301,11 @@
           <input type="range" class="slider-input" id="slider-sharpness" min="0" max="100" value="0">
           <span class="slider-value" id="value-sharpness">0</span>
         </div>
+        <div class="slider-item">
+          <span class="slider-label">Texture</span>
+          <input type="range" class="slider-input" id="slider-texture" min="-100" max="100" value="0">
+          <span class="slider-value" id="value-texture">0</span>
+        </div>
       </div>
 
       <button class="reset-btn" id="btn-reset">Reset All</button>
@@ -329,7 +334,8 @@
       tint: 0,
       saturation: 0,
       vibrance: 0,
-      sharpness: 0
+      sharpness: 0,
+      texture: 0
     };
 
     const sliderIds = Object.keys(adjustments);
@@ -426,6 +432,35 @@
       }
 
       ctx.putImageData(imageData, 0, 0);
+
+      // Texture intensity - enhances or smooths mid-frequency details
+      if (adjustments.texture !== 0) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(canvas, 0, 0);
+
+        const textureFactor = adjustments.texture / 100;
+
+        if (textureFactor > 0) {
+          // Enhance texture - apply subtle high-pass filter effect
+          ctx.globalCompositeOperation = 'overlay';
+          ctx.globalAlpha = textureFactor * 0.5;
+          ctx.filter = 'contrast(150%) brightness(100%)';
+          ctx.drawImage(tempCanvas, 0, 0);
+          ctx.filter = 'none';
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalAlpha = 1;
+        } else {
+          // Reduce texture - apply subtle blur effect
+          ctx.globalAlpha = Math.abs(textureFactor) * 0.3;
+          ctx.filter = 'blur(1px)';
+          ctx.drawImage(tempCanvas, 0, 0);
+          ctx.filter = 'none';
+          ctx.globalAlpha = 1;
+        }
+      }
 
       if (adjustments.sharpness > 0) {
         ctx.globalAlpha = adjustments.sharpness / 200;
