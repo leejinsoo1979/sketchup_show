@@ -293,8 +293,19 @@
       flex-direction: column;
       background: #111;
       min-width: 0;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.15s;
     }
 
+    .image-panel.selected {
+      border-color: #0066ff;
+    }
+
+    .image-panel.selected .panel-label {
+      background: #0066ff;
+      color: #fff;
+    }
 
     .panel-label {
       height: 24px;
@@ -2855,6 +2866,31 @@
     };
 
     let mirrorActive = false;
+    let selectedPanel = 'source'; // 'source' or 'result'
+
+    // 패널 선택 기능
+    function selectPanel(panelType) {
+      selectedPanel = panelType;
+
+      // 모든 패널에서 selected 클래스 제거
+      document.querySelectorAll('.image-panel').forEach(p => p.classList.remove('selected'));
+
+      // 선택된 패널에 selected 클래스 추가
+      if (panelType === 'source') {
+        document.getElementById('source-panel').classList.add('selected');
+      } else {
+        document.getElementById('result-panel-1').classList.add('selected');
+      }
+    }
+
+    // 선택된 패널의 이미지 가져오기
+    function getSelectedImage() {
+      if (selectedPanel === 'source') {
+        return state.originalImage;
+      } else {
+        return state.renderedImage;
+      }
+    }
 
     function onCaptureComplete(base64, materialCount) {
       state.originalImage = base64;
@@ -3253,6 +3289,22 @@
     el.btnSave.addEventListener('click', () => sketchup.saveImage());
     el.btnEdit.addEventListener('click', () => sketchup.openEditor());
     el.btnSettings.addEventListener('click', () => sketchup.openSettings());
+
+    // 패널 선택 이벤트
+    document.getElementById('source-panel').addEventListener('click', (e) => {
+      // 버튼 클릭은 제외
+      if (e.target.closest('button')) return;
+      selectPanel('source');
+    });
+
+    document.getElementById('result-panel-1').addEventListener('click', (e) => {
+      // 버튼 클릭은 제외
+      if (e.target.closest('button')) return;
+      selectPanel('result');
+    });
+
+    // 초기 선택: source
+    selectPanel('source');
 
     // RESULT 패널 2차 생성 버튼
     el.btnRegenerateResult.addEventListener('click', () => {
@@ -3982,10 +4034,11 @@
     // Mix Mode - Initialization
     // ========================================
     function initMixMode() {
-      // 이미 캡처된 이미지가 있으면 Mix 캔버스에 로드
-      if (state.originalImage) {
-        mixState.baseImageBase64 = state.originalImage;
-        loadMixBaseImage(state.originalImage);
+      // 선택된 패널의 이미지를 Mix 캔버스에 로드
+      const selectedImage = getSelectedImage();
+      if (selectedImage) {
+        mixState.baseImageBase64 = selectedImage;
+        loadMixBaseImage(selectedImage);
       }
       // 스케치업에 씬 컨텍스트 요청
       callRuby('mix_get_scene_context');
