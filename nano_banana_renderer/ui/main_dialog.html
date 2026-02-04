@@ -275,6 +275,177 @@
       min-width: 0;
     }
 
+    /* Source 패널 레이아웃 (이미지 + 프롬프트) */
+    .source-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .source-image-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: #0d0d0d;
+      min-height: 200px;
+    }
+
+    /* 프롬프트+레퍼런스 영역 (Source 패널 하단) */
+    .prompt-reference-area {
+      background: #0d0d0d;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      max-height: 180px;
+      min-height: 120px;
+    }
+
+    .prompt-ref-header {
+      height: 24px;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1a1a1a;
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .prompt-ref-content {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      min-height: 0;
+    }
+
+    .reference-thumb-area {
+      width: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .reference-thumb {
+      width: 80px;
+      height: 60px;
+      background: #1a1a1a;
+      border: 1px dashed #444;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .reference-thumb:hover {
+      border-color: #666;
+    }
+
+    .reference-thumb.has-image {
+      border-style: solid;
+      border-color: #0066ff;
+    }
+
+    .reference-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .reference-thumb-placeholder {
+      font-size: 20px;
+      color: #444;
+    }
+
+    .reference-thumb-label {
+      font-size: 9px;
+      color: #555;
+      text-align: center;
+    }
+
+    .reference-thumb-remove {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 16px;
+      height: 16px;
+      background: rgba(0,0,0,0.7);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 10px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .reference-thumb.has-image:hover .reference-thumb-remove {
+      display: flex;
+    }
+
+    .prompt-input-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .prompt-input {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 8px;
+      color: #e0e0e0;
+      font-size: 11px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      min-height: 50px;
+    }
+
+    .prompt-input:focus {
+      border-color: #0066ff;
+    }
+
+    .prompt-input::placeholder {
+      color: #555;
+    }
+
+    .use-result-btn {
+      height: 24px;
+      padding: 0 10px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #888;
+      font-size: 10px;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .use-result-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .use-result-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .panel-label {
       height: 24px;
       padding: 0 12px;
@@ -543,113 +714,6 @@
       flex-shrink: 0;
     }
 
-    /* Prompt Panel */
-    .prompt-panel {
-      background: #141414;
-      border-top: 1px solid #333;
-      flex-shrink: 0;
-      overflow: hidden;
-      transition: height 0.2s ease;
-    }
-
-    .prompt-panel.collapsed {
-      height: 32px;
-    }
-
-    .prompt-panel.expanded {
-      height: 140px;
-    }
-
-    .prompt-header {
-      height: 32px;
-      padding: 0 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .prompt-header:hover {
-      background: #1a1a1a;
-    }
-
-    .prompt-title {
-      font-size: 10px;
-      color: #666;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .prompt-toggle {
-      width: 16px;
-      height: 16px;
-      color: #666;
-      transition: transform 0.2s;
-    }
-
-    .prompt-panel.expanded .prompt-toggle {
-      transform: rotate(180deg);
-    }
-
-    .prompt-close-btn {
-      width: 20px;
-      height: 20px;
-      background: transparent;
-      border: none;
-      color: #666;
-      cursor: pointer;
-      border-radius: 3px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .prompt-close-btn:hover {
-      background: #333;
-      color: #fff;
-    }
-
-    .prompt-content {
-      padding: 0 12px 12px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .prompt-panel.collapsed .prompt-content {
-      display: none;
-    }
-
-    .prompt-textarea {
-      width: 100%;
-      height: 70px;
-      background: #0a0a0a;
-      border: 1px solid #333;
-      border-radius: 6px;
-      padding: 10px;
-      color: #e0e0e0;
-      font-size: 11px;
-      font-family: inherit;
-      resize: none;
-      outline: none;
-    }
-
-    .prompt-textarea:focus {
-      border-color: #0066ff;
-    }
-
-    .prompt-textarea::placeholder {
-      color: #555;
-    }
-
-    .prompt-info {
-      font-size: 10px;
-      color: #555;
-    }
 
     /* Loading */
     .loading-overlay {
@@ -1120,28 +1184,50 @@
             </svg>
           </button>
         </div>
-        <div class="panel-content">
-          <div class="empty-state" id="original-empty">No image</div>
-          <!-- 이미지+그리드 줌 컨테이너 -->
-          <div class="image-zoom-container" id="zoom-container-source">
-            <div class="image-zoom-wrapper" id="zoom-wrapper-source">
-              <img id="original-image" style="display:none;">
-              <canvas class="guide-grid-canvas" id="guide-canvas-source" style="display:none;"></canvas>
+        <div class="source-wrapper">
+          <!-- 이미지 영역 -->
+          <div class="source-image-area">
+            <div class="empty-state" id="original-empty">No image</div>
+            <div class="image-zoom-container" id="zoom-container-source">
+              <div class="image-zoom-wrapper" id="zoom-wrapper-source">
+                <img id="original-image" style="display:none;">
+                <canvas class="guide-grid-canvas" id="guide-canvas-source" style="display:none;"></canvas>
+              </div>
+            </div>
+            <div class="guide-controls hidden" id="guide-controls-source">
+              <label>Grid</label>
+              <input type="range" class="guide-slider" id="guide-slider-source" min="10" max="100" value="40">
+              <span class="guide-value" id="guide-value-source">40px</span>
+              <button class="guide-lock-btn" id="guide-lock-source" title="Lock">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </button>
+              <label style="margin-left:8px;">Zoom</label>
+              <input type="range" class="guide-zoom-slider" id="guide-zoom-source" min="50" max="150" value="100">
             </div>
           </div>
-          <!-- 그리드 컨트롤 -->
-          <div class="guide-controls hidden" id="guide-controls-source">
-            <label>Grid</label>
-            <input type="range" class="guide-slider" id="guide-slider-source" min="10" max="100" value="40">
-            <span class="guide-value" id="guide-value-source">40px</span>
-            <button class="guide-lock-btn" id="guide-lock-source" title="Lock">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-            </button>
-            <label style="margin-left:8px;">Zoom</label>
-            <input type="range" class="guide-zoom-slider" id="guide-zoom-source" min="50" max="150" value="100">
+
+          <!-- 프롬프트 + 레퍼런스 영역 -->
+          <div class="prompt-reference-area">
+            <div class="prompt-ref-header">
+              <span>Prompt & Reference</span>
+              <button class="use-result-btn" id="btn-use-result" disabled title="결과 이미지를 레퍼런스로 사용">← Use Result</button>
+            </div>
+            <div class="prompt-ref-content">
+              <div class="reference-thumb-area">
+                <div class="reference-thumb" id="ref-thumb" title="레퍼런스 이미지 추가 (클릭 또는 드래그)">
+                  <span class="reference-thumb-placeholder">+</span>
+                  <img id="ref-thumb-img" style="display:none;">
+                  <button class="reference-thumb-remove" id="ref-thumb-remove">×</button>
+                </div>
+                <div class="reference-thumb-label">Reference</div>
+              </div>
+              <div class="prompt-input-area">
+                <textarea class="prompt-input" id="prompt-text" placeholder="Convert 버튼을 누르면 AI가 씬을 분석하여 프롬프트를 자동 생성합니다.&#10;직접 수정하거나 추가 지시사항을 입력하세요."></textarea>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1192,28 +1278,6 @@
             <div class="loading-text">Rendering...</div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- 프롬프트 패널 -->
-    <div class="prompt-panel expanded" id="prompt-panel">
-      <div class="prompt-header" id="prompt-header">
-        <div class="prompt-title">
-          <svg class="prompt-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-          PROMPT
-        </div>
-        <button class="prompt-close-btn" id="prompt-close" title="닫기">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <div class="prompt-content">
-        <textarea class="prompt-textarea" id="prompt-text" placeholder="Convert 버튼을 누르면 AI가 씬을 분석하여 프롬프트를 자동 생성합니다.&#10;&#10;직접 수정하거나 추가 지시사항을 입력할 수 있습니다."></textarea>
-        <div class="prompt-info">AI가 생성한 프롬프트를 수정하거나 추가 지시사항을 입력하세요.</div>
       </div>
     </div>
 
@@ -1300,9 +1364,6 @@
       // 프롬프트 표시
       if (promptText) {
         document.getElementById('prompt-text').value = promptText;
-        // 프롬프트 패널 확장
-        document.getElementById('prompt-panel').classList.remove('collapsed');
-        document.getElementById('prompt-panel').classList.add('expanded');
       }
       setStatus('Convert complete - Ready to render');
     }
@@ -1345,6 +1406,9 @@
 
       // 다른 씬이 아직 렌더링 중인지 확인
       state.isRendering = renderingScenes.size > 0;
+
+      // Use Result 버튼 활성화
+      document.getElementById('btn-use-result').disabled = false;
 
       setStatus('Complete: ' + (sceneName || 'Unknown'));
     }
@@ -1635,6 +1699,93 @@
     }
 
     // ========================================
+    // 레퍼런스 이미지 + Use Result 기능
+    // ========================================
+
+    let referenceImage = null;  // Base64 레퍼런스 이미지
+    const refThumb = document.getElementById('ref-thumb');
+    const refThumbImg = document.getElementById('ref-thumb-img');
+    const refThumbRemove = document.getElementById('ref-thumb-remove');
+    const btnUseResult = document.getElementById('btn-use-result');
+    const refFileInput = document.createElement('input');
+    refFileInput.type = 'file';
+    refFileInput.accept = 'image/*';
+    refFileInput.style.display = 'none';
+    document.body.appendChild(refFileInput);
+
+    // 레퍼런스 썸네일 클릭 → 파일 선택
+    refThumb.addEventListener('click', (e) => {
+      if (e.target.closest('#ref-thumb-remove')) return;
+      refFileInput.click();
+    });
+
+    // 파일 선택 시
+    refFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) loadReferenceImage(file);
+    });
+
+    // 드래그 앤 드롭
+    refThumb.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      refThumb.style.borderColor = '#0066ff';
+    });
+
+    refThumb.addEventListener('dragleave', () => {
+      refThumb.style.borderColor = referenceImage ? '#0066ff' : '#444';
+    });
+
+    refThumb.addEventListener('drop', (e) => {
+      e.preventDefault();
+      refThumb.style.borderColor = referenceImage ? '#0066ff' : '#444';
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        loadReferenceImage(file);
+      }
+    });
+
+    // 레퍼런스 이미지 로드
+    function loadReferenceImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setReferenceImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 레퍼런스 이미지 설정 (Base64 URL)
+    function setReferenceImage(dataUrl) {
+      referenceImage = dataUrl.split(',')[1];  // Base64만 저장
+      refThumbImg.src = dataUrl;
+      refThumbImg.style.display = 'block';
+      refThumb.querySelector('.reference-thumb-placeholder').style.display = 'none';
+      refThumb.classList.add('has-image');
+    }
+
+    // 레퍼런스 이미지 제거
+    refThumbRemove.addEventListener('click', (e) => {
+      e.stopPropagation();
+      referenceImage = null;
+      refThumbImg.src = '';
+      refThumbImg.style.display = 'none';
+      refThumb.querySelector('.reference-thumb-placeholder').style.display = 'block';
+      refThumb.classList.remove('has-image');
+    });
+
+    // Use Result 버튼 - 결과 이미지를 레퍼런스로 사용
+    btnUseResult.addEventListener('click', () => {
+      if (state.renderImage) {
+        setReferenceImage('data:image/png;base64,' + state.renderImage);
+        setStatus('Result image set as reference');
+      }
+    });
+
+    // 렌더링 완료 시 Use Result 버튼 활성화
+    function enableUseResultButton() {
+      btnUseResult.disabled = false;
+    }
+
+    // ========================================
     // 그리드 가이드 시스템
     // ========================================
 
@@ -1884,22 +2035,6 @@
             break;
         }
       });
-    });
-
-    // 프롬프트 패널 토글
-    const promptPanel = document.getElementById('prompt-panel');
-    const promptHeader = document.getElementById('prompt-header');
-    const promptClose = document.getElementById('prompt-close');
-
-    promptHeader.addEventListener('click', (e) => {
-      if (e.target.closest('#prompt-close')) return;
-      promptPanel.classList.toggle('collapsed');
-      promptPanel.classList.toggle('expanded');
-    });
-
-    promptClose.addEventListener('click', () => {
-      promptPanel.classList.add('collapsed');
-      promptPanel.classList.remove('expanded');
     });
 
     // 즉시 초기화 (지연 없이)
