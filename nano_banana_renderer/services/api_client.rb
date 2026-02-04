@@ -9,16 +9,17 @@ module NanoBanana
   # Gemini API 통신 클라이언트
   class ApiClient
     BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
-    DEFAULT_MODEL = 'gemini-2.0-flash-exp'
+    DEFAULT_MODEL = 'gemini-2.5-flash'
     TIMEOUT = 180 # Pro 모델은 시간이 더 오래 걸릴 수 있음
     MAX_RETRIES = 3
 
-    # 이미지 생성 지원 모델 매핑
+    # 이미지 생성 지원 모델 매핑 (성능/가격 높은 순)
     IMAGE_GEN_MODELS = {
+      'gemini-2.5-pro' => 'gemini-2.5-pro',
+      'gemini-2.5-flash' => 'gemini-2.5-flash',
       'gemini-2.0-flash-exp' => 'gemini-2.0-flash-exp-image-generation',
       'gemini-1.5-pro' => 'gemini-1.5-pro',
-      'gemini-1.5-flash' => 'gemini-1.5-flash',
-      'gemini-pro-vision' => 'gemini-pro-vision'
+      'gemini-1.5-flash' => 'gemini-1.5-flash'
     }.freeze
 
     def initialize(api_key, model = nil)

@@ -65,7 +65,7 @@ module NanoBanana
     def initialize_plugin
       @config_store = ConfigStore.new
       api_key = @config_store.load_api_key
-      @gemini_model = @config_store.load_setting('gemini_model') || 'gemini-1.5-pro'
+      @gemini_model = @config_store.load_setting('gemini_model') || 'gemini-2.5-flash'
       @api_client = ApiClient.new(api_key, @gemini_model) if api_key && !api_key.empty?
 
       register_menu
@@ -1445,14 +1445,14 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
 
     # 모델 로드
     def load_model_to_dialog
-      model = @config_store.load_setting('gemini_model') || 'gemini-1.5-pro'
+      model = @config_store.load_setting('gemini_model') || 'gemini-2.5-flash'
       @gemini_model = model
       @settings_dialog&.execute_script("onModelLoaded('#{model}')")
     end
 
     # 모델 로드 (메인 다이얼로그용)
     def load_model_to_main_dialog
-      model = @config_store.load_setting('gemini_model') || 'gemini-1.5-pro'
+      model = @config_store.load_setting('gemini_model') || 'gemini-2.5-flash'
       @gemini_model = model
       @main_dialog&.execute_script("onModelLoaded('#{model}')")
     end
