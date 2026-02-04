@@ -801,29 +801,33 @@ module NanoBanana
       Thread.new do
         begin
           analysis_prompt = <<~PROMPT
-이 스케치업 씬을 형태와 구도를 완벽하게 일치하도록 실사 이미지로 생성하기 위한 프롬프트를 만들어줘.
-마감재와 조명, 조명 위치, 가구 등 씬에 있는 그대로 형태와 재질이 그대로 유지되어야 해.
+이 스케치업 씬을 분석하여, 형태/구도/재질을 100% 동일하게 유지하는 실사 렌더링 프롬프트를 생성해줘.
 
-다음 형식으로 작성해줘:
+★★★ 중요: 스케치업에 보이는 재질 색상과 텍스처를 절대 변경하지 마세요 ★★★
+- 나무 패널이면 나무 패널 그대로
+- 회색 벽이면 회색 벽 그대로
+- 흰색 천장이면 흰색 천장 그대로
+- 가구 색상도 원본 그대로
 
-[INPUT IMAGE = REFERENCE]
-첨부된 스케치업 씬의 카메라 구도/원근/프레이밍을 100% 유지한 상태로, 포토리얼(실사) 인테리어 아키비즈 렌더로 변환하세요.
+다음 형식으로 프롬프트를 작성해줘:
 
-절대 레이아웃 변경 금지: (이미지에 보이는 모든 요소의 위치, 개수, 형태를 상세히 나열)
+[STRICT REFERENCE MODE]
+이 스케치업 이미지를 실사 렌더링으로 변환. 카메라 앵글, 구도, 원근감 100% 유지.
 
-재질도 그대로 유지:
-- 바닥: (바닥재 설명)
-- 천장: (천장 설명)
-- 벽체/패널: (각 벽면의 재질 설명)
-- 가구: (각 가구의 재질, 색상 설명)
+[절대 변경 금지 - 레이아웃]
+(보이는 모든 요소의 정확한 위치와 형태를 나열)
 
-조명:
-(조명 위치, 개수, 상태 설명)
+[절대 변경 금지 - 재질 색상]
+- 바닥: (정확한 재질과 색상)
+- 천장: (정확한 재질과 색상)
+- 벽면: (각 벽면의 정확한 재질과 색상)
+- 가구: (각 가구의 정확한 재질과 색상)
 
-카메라:
-(카메라 구도, 높이, 화각 설명)
+[조명 기구 위치]
+(보이는 조명 기구의 위치와 형태만 설명, 켜짐/꺼짐은 사용자가 별도 지정)
 
-결과물은 초고해상도, PBR 재질, 글로벌 일루미네이션, 현실적인 반사/거칠기, 과도한 스타일링/소품 추가 없이 "현실 사진 같은" 톤으로.
+[출력 품질]
+8K 포토리얼, PBR 재질, 글로벌 일루미네이션. 소품 추가 금지, 스타일 변경 금지.
           PROMPT
 
           puts "[NanoBanana] 씬 분석 시작..."
@@ -1009,16 +1013,18 @@ module NanoBanana
       if @converted_prompt && !@converted_prompt.empty?
         # ★ Convert 완료 - AI가 생성한 상세 프롬프트 사용
         puts "[NanoBanana] Convert 모드 - AI 생성 프롬프트 사용"
+        puts "[NanoBanana] 조명 설정: #{light_desc}"
 
-        # 조명 설정 추가
-        lighting_addon = <<~LIGHTING
+        # 조명 설정을 프롬프트 앞에 강조
+        lighting_prefix = <<~LIGHTING
+★★★ CRITICAL LIGHTING INSTRUCTION - MUST FOLLOW ★★★
+- Time: #{time_desc}
+- Interior Lights: #{light_desc}
+#{light_switch == 'off' ? '- ALL INTERIOR LIGHTS MUST BE OFF. No lamp glow, no ceiling lights, no artificial lighting. Only natural daylight from windows.' : '- Interior lights should be ON with warm 3000K tone.'}
 
-추가 조명 설정:
-- 시간대: #{time_desc}
-- 실내조명: #{light_desc}
         LIGHTING
 
-        @converted_prompt + lighting_addon
+        lighting_prefix + @converted_prompt
       else
         # Convert 안함 - 기본 렌더링
         puts "[NanoBanana] 일반 모드 - 기본 프롬프트"
