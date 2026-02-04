@@ -826,11 +826,12 @@
     }
 
     .image-panel.hidden {
-      display: none;
+      display: none !important;
     }
 
     .image-panel.fullscreen {
-      flex: 1;
+      flex: 1 1 100% !important;
+      max-width: 100% !important;
     }
 
     .panel-content {
