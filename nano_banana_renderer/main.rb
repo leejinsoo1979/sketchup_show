@@ -397,6 +397,16 @@ module NanoBanana
         check_api_status
       end
 
+      # 모델 저장 (메인 다이얼로그용)
+      dialog.add_action_callback('save_model') do |_ctx, model|
+        save_model(model)
+      end
+
+      # 모델 로드 (메인 다이얼로그용)
+      dialog.add_action_callback('load_model') do |_ctx|
+        load_model_to_main_dialog
+      end
+
       # 카메라 이동
       dialog.add_action_callback('cam_move') do |_ctx, direction|
         camera_move(direction)
@@ -1438,6 +1448,13 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
       model = @config_store.load_setting('gemini_model') || 'gemini-1.5-pro'
       @gemini_model = model
       @settings_dialog&.execute_script("onModelLoaded('#{model}')")
+    end
+
+    # 모델 로드 (메인 다이얼로그용)
+    def load_model_to_main_dialog
+      model = @config_store.load_setting('gemini_model') || 'gemini-1.5-pro'
+      @gemini_model = model
+      @main_dialog&.execute_script("onModelLoaded('#{model}')")
     end
 
     # API 연결 테스트

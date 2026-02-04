@@ -125,6 +125,26 @@
       border: 1px solid #333;
     }
 
+    .model-select {
+      width: 100%;
+      padding: 8px 10px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 11px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .model-select:hover {
+      border-color: #555;
+    }
+
+    .model-select:focus {
+      border-color: #0066ff;
+    }
+
     .seg-btn {
       flex: 1;
       padding: 8px 4px;
@@ -2145,6 +2165,16 @@
       </div>
 
       <div class="control-section">
+        <span class="section-label">Model</span>
+        <select class="model-select" id="model-select">
+          <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
+          <option value="gemini-1.5-pro" selected>Gemini 1.5 Pro</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+          <option value="gemini-pro-vision">Gemini Pro Vision</option>
+        </select>
+      </div>
+
+      <div class="control-section">
         <span class="section-label">Size</span>
         <div class="segmented" id="size-group">
           <button class="seg-btn" data-size="1920">FHD</button>
@@ -2801,6 +2831,9 @@
       openEditor: () => callRuby('open_editor'),
       openSettings: () => callRuby('open_settings'),
       checkApiStatus: () => callRuby('check_api_status'),
+      // Model selection
+      saveModel: (model) => callRuby('save_model', model),
+      loadModel: () => callRuby('load_model'),
       // Camera controls
       camMove: (dir) => callRuby('cam_move', dir),
       camRotate: (dir) => callRuby('cam_rotate', dir),
@@ -4511,9 +4544,23 @@
     document.getElementById('mix-inpaint-instruction').addEventListener('input', updateMixApplyButton);
     document.getElementById('mix-material-description').addEventListener('input', updateMixApplyButton);
 
+    // 모델 선택 이벤트
+    const modelSelect = document.getElementById('model-select');
+    modelSelect.addEventListener('change', function() {
+      sketchup.saveModel(this.value);
+    });
+
+    // Ruby에서 호출되는 콜백 - 모델 로드
+    function onModelLoaded(model) {
+      if (model && modelSelect) {
+        modelSelect.value = model;
+      }
+    }
+
     // 즉시 초기화 (지연 없이)
     sketchup.checkApiStatus();
     sketchup.getScenes();
+    sketchup.loadModel();
   </script>
 </body>
 </html>
