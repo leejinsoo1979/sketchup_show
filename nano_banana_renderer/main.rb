@@ -1042,11 +1042,19 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
 (보이는 조명 기구의 위치와 형태만 설명, 켜짐/꺼짐은 사용자가 별도 지정)
 
 [출력 품질]
-8K 포토리얼, PBR 재질, 글로벌 일루미네이션. 소품 추가 금지, 스타일 변경 금지.
+8K 포토리얼, PBR 재질, 글로벌 일루미네이션.
+
+★★★ CRITICAL - OBJECT COUNT RULE ★★★
+- DO NOT ADD any objects, plants, decorations, accessories, or items that do not exist in the source image
+- DO NOT REMOVE any objects that exist in the source image
+- EXACT SAME number of items: if source has 2 chairs, output must have exactly 2 chairs
+- EXACT SAME positions: every object must remain in its original location
+- NO creative additions: no vases, no plants, no books, no decorations unless they exist in source
+- If it's not visible in the SketchUp source, it MUST NOT appear in the render
 
 ---
 [NEGATIVE]
-레이아웃 변경, 가구 추가/삭제, 재질 색상 변경, 만화/일러스트 스타일, 사람, 동물, 텍스트, 워터마크
+adding objects, removing objects, extra furniture, additional plants, extra decorations, new accessories, creative additions, object count change, 레이아웃 변경, 가구 추가, 가구 삭제, 소품 추가, 식물 추가, 장식 추가, 재질 색상 변경, 만화/일러스트 스타일, 사람, 동물, 텍스트, 워터마크
           PROMPT
 
           result = @api_client.analyze_scene(@current_image, prompt_request)
