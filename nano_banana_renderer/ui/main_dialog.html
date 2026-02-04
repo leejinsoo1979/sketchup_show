@@ -947,6 +947,158 @@
       width: 0%;
     }
 
+    /* Style Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-content {
+      background: #1a1a1a;
+      border-radius: 12px;
+      width: 480px;
+      max-width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      border: 1px solid #333;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #333;
+    }
+
+    .modal-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .modal-close:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .style-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    .preset-label {
+      font-size: 12px;
+      color: #888;
+      margin-right: 4px;
+    }
+
+    .style-preset-btn {
+      padding: 6px 12px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 16px;
+      color: #ccc;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .style-preset-btn:hover {
+      background: #333;
+      border-color: #666;
+      color: #fff;
+    }
+
+    .style-preset-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .style-input-group {
+      margin-bottom: 12px;
+    }
+
+    .style-input-group label {
+      display: block;
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+
+    .style-input-group textarea {
+      width: 100%;
+      height: 80px;
+      padding: 12px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      resize: none;
+      font-family: inherit;
+    }
+
+    .style-input-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .style-input-group textarea::placeholder {
+      color: #555;
+    }
+
+    .style-help-text {
+      font-size: 11px;
+      color: #666;
+      margin: 0;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 20px;
+      border-top: 1px solid #333;
+    }
+
+    .modal-footer .btn {
+      padding: 8px 20px;
+      font-size: 12px;
+    }
+
     .loading-progress-bar.indeterminate {
       animation: progress-indeterminate 1.5s ease-in-out infinite;
     }
@@ -2504,6 +2656,36 @@
     <div class="status-bar">
       <span id="status-text">Ready</span>
     </div>
+
+    <!-- Style Input Modal -->
+    <div class="modal-overlay hidden" id="style-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>스타일 기반 프롬프트 생성</h3>
+          <button class="modal-close" id="style-modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="style-presets">
+            <span class="preset-label">프리셋:</span>
+            <button class="style-preset-btn" data-style="modern minimal">모던 미니멀</button>
+            <button class="style-preset-btn" data-style="warm scandinavian">북유럽 따뜻한</button>
+            <button class="style-preset-btn" data-style="luxury hotel">럭셔리 호텔</button>
+            <button class="style-preset-btn" data-style="industrial loft">인더스트리얼</button>
+            <button class="style-preset-btn" data-style="japanese zen">일본 젠</button>
+            <button class="style-preset-btn" data-style="mediterranean">지중해풍</button>
+          </div>
+          <div class="style-input-group">
+            <label>원하는 스타일 입력:</label>
+            <textarea id="style-input" placeholder="예: 따뜻한 조명의 모던 스칸디나비안 스타일, 자연광이 들어오는 밝은 분위기"></textarea>
+          </div>
+          <p class="style-help-text">씬 분석 데이터 + 입력한 스타일로 최적화된 프롬프트를 AI가 생성합니다.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="style-modal-cancel">취소</button>
+          <button class="btn btn-primary" id="style-modal-generate">프롬프트 생성</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -2569,7 +2751,7 @@
     const sketchup = {
       captureScene: (size) => callRuby('capture_scene', size),
       startRender: (time, light, prompt, negativePrompt) => callRuby('start_render', time, light, prompt, negativePrompt),
-      generateAutoPrompt: () => callRuby('generate_auto_prompt'),
+      generateAutoPrompt: (style) => callRuby('generate_auto_prompt', style || ''),
       saveImage: () => callRuby('save_image', ''),
       openEditor: () => callRuby('open_editor'),
       openSettings: () => callRuby('open_settings'),
@@ -2914,9 +3096,63 @@
       sketchup.startRender(state.timePreset, state.lightSwitch, prompt, negativePrompt);
     });
 
-    // Auto 프롬프트 버튼
+    // Auto 프롬프트 버튼 - 스타일 모달 열기
     el.btnAutoPrompt.addEventListener('click', () => {
-      sketchup.generateAutoPrompt();
+      openStyleModal();
+    });
+
+    // 스타일 모달 관련 요소
+    const styleModal = document.getElementById('style-modal');
+    const styleInput = document.getElementById('style-input');
+    const styleModalClose = document.getElementById('style-modal-close');
+    const styleModalCancel = document.getElementById('style-modal-cancel');
+    const styleModalGenerate = document.getElementById('style-modal-generate');
+    const stylePresetBtns = document.querySelectorAll('.style-preset-btn');
+
+    function openStyleModal() {
+      styleModal.classList.remove('hidden');
+      styleInput.value = '';
+      stylePresetBtns.forEach(btn => btn.classList.remove('active'));
+      styleInput.focus();
+    }
+
+    function closeStyleModal() {
+      styleModal.classList.add('hidden');
+    }
+
+    // 프리셋 버튼 클릭
+    stylePresetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        stylePresetBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        styleInput.value = btn.dataset.style;
+      });
+    });
+
+    // 모달 닫기
+    styleModalClose.addEventListener('click', closeStyleModal);
+    styleModalCancel.addEventListener('click', closeStyleModal);
+
+    // 모달 배경 클릭 시 닫기
+    styleModal.addEventListener('click', (e) => {
+      if (e.target === styleModal) closeStyleModal();
+    });
+
+    // 프롬프트 생성 버튼
+    styleModalGenerate.addEventListener('click', () => {
+      const style = styleInput.value.trim();
+      closeStyleModal();
+      sketchup.generateAutoPrompt(style);
+    });
+
+    // Enter 키로 생성
+    styleInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const style = styleInput.value.trim();
+        closeStyleModal();
+        sketchup.generateAutoPrompt(style);
+      }
     });
 
     // 프롬프트 입력 시 Render 버튼 활성화

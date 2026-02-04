@@ -372,9 +372,9 @@ module NanoBanana
         start_render_with_preset(time_preset, light_switch)
       end
 
-      # Auto 프롬프트 생성 요청
-      dialog.add_action_callback('generate_auto_prompt') do |_ctx|
-        generate_auto_prompt
+      # Auto 프롬프트 생성 요청 (스타일 파라미터 추가)
+      dialog.add_action_callback('generate_auto_prompt') do |_ctx, style|
+        generate_auto_prompt(style || '')
       end
 
       # 이미지 저장
@@ -973,8 +973,8 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
       end
     end
 
-    # Auto 프롬프트 생성 (분석 데이터 기반)
-    def generate_auto_prompt
+    # Auto 프롬프트 생성 (분석 데이터 + 스타일 기반)
+    def generate_auto_prompt(user_style = '')
       unless @api_client
         puts "[NanoBanana] API 클라이언트 없음"
         return
@@ -989,11 +989,24 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
         begin
           @main_dialog&.execute_script("onAutoPromptStart()")
 
+          # 스타일이 있으면 스타일 기반 프롬프트 생성
+          style_instruction = if user_style && !user_style.empty?
+            <<~STYLE
+**[사용자 요청 스타일]**
+#{user_style}
+
+위 스타일을 반영하여 공간의 분위기, 조명, 마감재 표현을 최적화하세요.
+단, 레이아웃과 가구 배치는 절대 변경하지 마세요.
+            STYLE
+          else
+            ""
+          end
+
           prompt_request = <<~PROMPT
 IMPORTANT: Output ONLY the rendering prompt. No preamble, no explanation. Start DIRECTLY with the content.
 
 Based on this interior/architecture image, generate a photorealistic rendering prompt.
-
+#{style_instruction}
 Format:
 **[STRICT REFERENCE MODE]**
 이 이미지를 실사 렌더링으로 변환. 카메라 앵글, 구도, 원근감 100% 유지.
@@ -1008,15 +1021,16 @@ Format:
 - 벽면: 각 벽면별 재질과 색상
 - 가구: 각 가구별 재질과 색상
 
-**[조명 기구]**
-- 모든 조명 기구 위치와 개수
+**[조명 분위기]**
+- 조명 기구 위치와 개수
+- 조명 분위기 (스타일에 맞게 조절)
 
 **[출력 품질]**
 8K 포토리얼, PBR 재질, 글로벌 일루미네이션
 
 ---
 [NEGATIVE]
-레이아웃 변경, 가구 추가/삭제, 스타일 변경, 만화/일러스트 스타일, 사람, 동물, 텍스트, 워터마크
+레이아웃 변경, 가구 추가/삭제, 만화/일러스트 스타일, 사람, 동물, 텍스트, 워터마크
           PROMPT
 
           result = @api_client.analyze_scene(@current_image, prompt_request)
