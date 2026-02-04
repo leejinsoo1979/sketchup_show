@@ -152,32 +152,6 @@
         </button>
       </div>
     </section>
-
-    <!-- Output Settings -->
-    <section class="settings-section">
-      <h2 class="settings-section-title">
-        🖼️ 출력 설정
-      </h2>
-
-      <div class="form-group">
-        <label class="form-label">해상도</label>
-        <select id="resolution-select" class="form-select">
-          <option value="1280x720">1280 x 720 (HD)</option>
-          <option value="1920x1080" selected>1920 x 1080 (Full HD)</option>
-          <option value="2560x1440">2560 x 1440 (2K)</option>
-          <option value="3840x2160">3840 x 2160 (4K)</option>
-        </select>
-      </div>
-
-      <div class="form-group mb-0">
-        <label class="form-label">이미지 품질</label>
-        <select id="quality-select" class="form-select">
-          <option value="standard">표준 (빠름)</option>
-          <option value="high" selected>높음</option>
-          <option value="ultra">최고 (느림)</option>
-        </select>
-      </div>
-    </section>
   </main>
 
   <!-- Footer -->
@@ -199,8 +173,6 @@
       statusIndicator: document.getElementById('status-indicator'),
       connectionStatusText: document.getElementById('connection-status-text'),
       modelSelect: document.getElementById('model-select'),
-      resolutionSelect: document.getElementById('resolution-select'),
-      qualitySelect: document.getElementById('quality-select'),
       btnSave: document.getElementById('btn-save'),
       btnCancel: document.getElementById('btn-cancel'),
       btnClose: document.getElementById('btn-close')
