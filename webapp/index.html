@@ -904,15 +904,6 @@
     </div>
 
     <div class="sidebar-content">
-      <!-- API Key -->
-      <div class="control-section">
-        <span class="section-label">API Key</span>
-        <div class="api-input-group">
-          <input type="password" class="api-input" id="api-key" placeholder="Gemini API Key">
-          <button class="btn btn-secondary btn-sm" id="btn-save-key">저장</button>
-        </div>
-      </div>
-
       <div class="control-section">
         <span class="section-label">Time</span>
         <div class="segmented" id="time-group">
@@ -1144,8 +1135,6 @@
 
     // Elements
     const el = {
-      apiKey: document.getElementById('api-key'),
-      btnSaveKey: document.getElementById('btn-save-key'),
       uploadArea: document.getElementById('upload-area'),
       fileInput: document.getElementById('file-input'),
       sourceImage: document.getElementById('source-image'),
@@ -1169,12 +1158,10 @@
     // Initialize
     function init() {
       if (state.apiKey) {
-        el.apiKey.value = '••••' + state.apiKey.slice(-4);
         updateApiStatus(true);
       }
 
       // Event listeners
-      el.btnSaveKey.addEventListener('click', saveApiKey);
       el.uploadArea.addEventListener('click', () => el.fileInput.click());
       el.fileInput.addEventListener('change', handleFileSelect);
       el.btnRender.addEventListener('click', startRender);
@@ -1228,9 +1215,8 @@
         if (key) {
           state.apiKey = key;
           localStorage.setItem('nanobanana_api_key', key);
-          el.apiKey.value = '••••' + key.slice(-4);
           updateApiStatus(true);
-          showToast('Settings saved', 'success');
+          showToast('API Key saved', 'success');
         }
         el.settingsModal.classList.add('hidden');
       });
@@ -1280,17 +1266,6 @@
       document.getElementById('brush-section').style.display = (mode === 'inpaint' || mode === 'material') ? 'block' : 'none';
       document.getElementById('material-section').style.display = mode === 'material' ? 'block' : 'none';
       document.getElementById('floorplan-section').style.display = mode === 'floorplan' ? 'block' : 'none';
-    }
-
-    function saveApiKey() {
-      const key = el.apiKey.value.trim();
-      if (key && !key.startsWith('••')) {
-        state.apiKey = key;
-        localStorage.setItem('nanobanana_api_key', key);
-        el.apiKey.value = '••••' + key.slice(-4);
-        updateApiStatus(true);
-        showToast('API Key saved', 'success');
-      }
     }
 
     function updateApiStatus(connected) {
