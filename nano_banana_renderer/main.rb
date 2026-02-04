@@ -35,6 +35,7 @@ module NanoBanana
   @editor_dialog = nil
   @hotspot_dialog = nil
   @mix_dialog = nil
+  @prompt_dialog = nil
   @current_image = nil
   @current_hotspots = []
   @config_store = nil
@@ -45,6 +46,7 @@ module NanoBanana
   @view_observer = nil
   @pages_observer = nil
   @converted_prompt = nil  # Convert 시 AI가 생성한 프롬프트
+  @reference_image = nil   # 레퍼런스 이미지 (2차 생성용)
   @web_sync_active = false
   @web_session_id = nil
   @web_sync_timer = nil
@@ -79,7 +81,7 @@ module NanoBanana
       menu = UI.menu('Extensions')
       submenu = menu.add_submenu(PLUGIN_NAME)
 
-      submenu.add_item('루비실행') { show_main_dialog }
+      submenu.add_item('렌더링 시작') { show_main_dialog }
       submenu.add_separator
       submenu.add_item('설정') { show_settings_dialog }
       submenu.add_separator
@@ -361,9 +363,17 @@ module NanoBanana
         capture_scene(size || '3840')
       end
 
-      # 렌더링 시작 (새 UI: time + light 파라미터)
-      dialog.add_action_callback('start_render') do |_ctx, time_preset, light_switch|
+      # 렌더링 시작 (새 UI: time + light + prompt + negative 파라미터)
+      dialog.add_action_callback('start_render') do |_ctx, time_preset, light_switch, prompt, negative_prompt|
+        # UI에서 직접 입력한 프롬프트가 있으면 사용
+        @converted_prompt = prompt if prompt && !prompt.empty?
+        @negative_prompt = negative_prompt if negative_prompt && !negative_prompt.empty?
         start_render_with_preset(time_preset, light_switch)
+      end
+
+      # Auto 프롬프트 생성 요청
+      dialog.add_action_callback('generate_auto_prompt') do |_ctx|
+        generate_auto_prompt
       end
 
       # 이미지 저장
@@ -439,6 +449,16 @@ module NanoBanana
       # Mix 다이얼로그 열기
       dialog.add_action_callback('open_mix') do |_ctx|
         show_mix_dialog
+      end
+
+      # Prompt 다이얼로그 열기
+      dialog.add_action_callback('open_prompt') do |_ctx|
+        show_prompt_dialog
+      end
+
+      # 2차 생성 (이전 결과를 소스로 사용)
+      dialog.add_action_callback('regenerate') do |_ctx, source_base64, prompt, panel_id|
+        regenerate_image(source_base64, prompt, panel_id.to_i)
       end
 
       # 웹 동기화 시작
@@ -668,9 +688,90 @@ module NanoBanana
         save_edited_image(image_base64)
       end
 
+      # AI 이미지 재생성 (레퍼런스 + 프롬프트)
+      dialog.add_action_callback('editor_generate_ai') do |_ctx, data_json|
+        editor_generate_ai(data_json)
+      end
+
       # 취소
       dialog.add_action_callback('cancel_edit') do |_ctx|
         dialog.close
+      end
+    end
+
+    # 에디터에서 AI 이미지 재생성
+    def editor_generate_ai(data_json)
+      unless @api_client
+        @editor_dialog&.execute_script("onAIGenerateError('API Key가 설정되지 않았습니다.')")
+        return
+      end
+
+      begin
+        data = JSON.parse(data_json)
+        base_image = data['baseImage']
+        reference_image = data['referenceImage']
+        user_prompt = data['prompt'] || ''
+        texture_intensity = data['textureIntensity'] || 'med'
+
+        Thread.new do
+          begin
+            # 텍스처 강도 설명
+            texture_desc = case texture_intensity
+            when 'low'
+              "Low texture detail - smoother, more simplified surfaces"
+            when 'high'
+              "High texture detail - rich, detailed surface textures with visible grain and patterns"
+            else
+              "Medium texture detail - balanced realistic textures"
+            end
+
+            # 프롬프트 구성
+            prompt = <<~PROMPT
+★★★ IMAGE REFINEMENT REQUEST ★★★
+Using the provided base image as the primary reference, apply the following modifications:
+
+User Instructions: #{user_prompt.empty? ? 'Enhance the image quality and realism' : user_prompt}
+
+Texture Setting: #{texture_desc}
+
+#{reference_image ? 'A reference image is provided - incorporate its style, colors, or elements as specified in the user instructions.' : ''}
+
+CRITICAL RULES:
+- PRESERVE the exact camera angle, composition, and perspective
+- PRESERVE the overall layout and spatial arrangement
+- Apply modifications seamlessly while maintaining photorealistic quality
+- Ensure consistent lighting and shadows throughout
+- Output should be a high-quality photorealistic image
+
+            PROMPT
+
+            puts "[NanoBanana] Editor AI Generate - Texture: #{texture_intensity}"
+            puts "[NanoBanana] Prompt: #{prompt[0..200]}..."
+
+            result = if reference_image
+              @api_client.generate_with_references(base_image, [reference_image], prompt)
+            else
+              @api_client.generate(base_image, prompt)
+            end
+
+            if result && result[:image]
+              # 결과 이미지 저장 (메인 화면에도 반영)
+              @current_image = result[:image]
+              @editor_dialog&.execute_script("onAIGenerateComplete('#{result[:image]}')")
+              # 메인 다이얼로그에도 업데이트
+              @main_dialog&.execute_script("onRenderComplete('#{result[:image]}', 'Edit')")
+            else
+              @editor_dialog&.execute_script("onAIGenerateError('결과를 받지 못했습니다.')")
+            end
+
+          rescue StandardError => e
+            puts "[NanoBanana] Editor AI Error: #{e.message}"
+            @editor_dialog&.execute_script("onAIGenerateError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}')")
+          end
+        end
+
+      rescue StandardError => e
+        @editor_dialog&.execute_script("onAIGenerateError('데이터 파싱 오류: #{e.message}')")
       end
     end
 
@@ -778,8 +879,8 @@ module NanoBanana
           @main_dialog.execute_script("setStatus('Analyzing scene...')")
         end
 
-        # ★ Convert 핵심: AI에게 씬 분석 요청하여 프롬프트 생성
-        generate_scene_prompt
+        # ★ Convert 핵심: 씬 분석하여 재질/구조 데이터만 추출 (프롬프트는 별도)
+        analyze_scene_only
 
       rescue StandardError => e
         puts "[NanoBanana] 캡처 에러: #{e.message}"
@@ -790,67 +891,160 @@ module NanoBanana
       end
     end
 
-    # AI가 씬을 분석하여 렌더링 프롬프트 생성
-    def generate_scene_prompt
+    # 씬 분석 - 재질/구조 데이터만 추출 (프롬프트 생성 X)
+    def analyze_scene_only
       unless @api_client
-        puts "[NanoBanana] API 클라이언트 없음 - 프롬프트 생성 스킵"
-        @converted_prompt = nil
+        puts "[NanoBanana] API 클라이언트 없음 - 분석 스킵"
+        @scene_analysis = nil
+        @main_dialog&.execute_script("onConvertComplete('')")
         return
       end
 
       Thread.new do
         begin
           analysis_prompt = <<~PROMPT
-이 스케치업 씬을 분석하여, 형태/구도/재질을 100% 동일하게 유지하는 실사 렌더링 프롬프트를 생성해줘.
+Analyze this SketchUp interior/architecture image and extract ONLY the following data in JSON format.
+Do NOT generate any rendering prompt. Output ONLY valid JSON.
 
-★★★ 중요: 스케치업에 보이는 재질 색상과 텍스처를 절대 변경하지 마세요 ★★★
-- 나무 패널이면 나무 패널 그대로
-- 회색 벽이면 회색 벽 그대로
-- 흰색 천장이면 흰색 천장 그대로
-- 가구 색상도 원본 그대로
-
-다음 형식으로 프롬프트를 작성해줘:
-
-[STRICT REFERENCE MODE]
-이 스케치업 이미지를 실사 렌더링으로 변환. 카메라 앵글, 구도, 원근감 100% 유지.
-
-[절대 변경 금지 - 레이아웃]
-(보이는 모든 요소의 정확한 위치와 형태를 나열)
-
-[절대 변경 금지 - 재질 색상]
-- 바닥: (정확한 재질과 색상)
-- 천장: (정확한 재질과 색상)
-- 벽면: (각 벽면의 정확한 재질과 색상)
-- 가구: (각 가구의 정확한 재질과 색상)
-
-[조명 기구 위치]
-(보이는 조명 기구의 위치와 형태만 설명, 켜짐/꺼짐은 사용자가 별도 지정)
-
-[출력 품질]
-8K 포토리얼, PBR 재질, 글로벌 일루미네이션. 소품 추가 금지, 스타일 변경 금지.
+{
+  "space_type": "거실/침실/주방/사무실/etc",
+  "layout": {
+    "description": "공간 구성 설명",
+    "walls": ["좌측벽 특징", "우측벽 특징", "후면벽 특징"],
+    "windows": ["창문1 위치/크기", "창문2 위치/크기"],
+    "doors": ["문1 위치"]
+  },
+  "materials": {
+    "floor": {"type": "재질명", "color": "색상", "pattern": "패턴"},
+    "ceiling": {"type": "재질명", "color": "색상"},
+    "walls": [{"location": "위치", "type": "재질명", "color": "색상"}]
+  },
+  "furniture": [
+    {"name": "가구명", "position": "위치", "material": "재질", "color": "색상"}
+  ],
+  "lighting": [
+    {"type": "조명종류", "position": "위치", "count": 개수}
+  ],
+  "style": "모던/클래식/미니멀/etc"
+}
           PROMPT
 
-          puts "[NanoBanana] 씬 분석 시작..."
+          puts "[NanoBanana] 씬 분석 시작 (데이터 추출만)..."
 
-          # Gemini에게 이미지 분석 요청 (텍스트만 응답받음)
+          @main_dialog&.execute_script("updateConvertProgress('이미지 캡처 완료', '공간 구조 분석 중...')")
+          sleep(0.3)
+
+          @main_dialog&.execute_script("updateConvertProgress('AI 분석 요청', '재질 및 색상 데이터 추출 중...')")
+
+          # Gemini에게 이미지 분석 요청
           result = @api_client.analyze_scene(@current_image, analysis_prompt)
 
-          if result && result[:text]
-            @converted_prompt = result[:text]
-            puts "[NanoBanana] 프롬프트 생성 완료:"
-            puts @converted_prompt[0..500] + "..."
+          @main_dialog&.execute_script("updateConvertProgress('AI 응답 수신', '데이터 처리 중...')")
 
-            @main_dialog&.execute_script("onConvertComplete()")
+          if result && result[:text]
+            @scene_analysis = result[:text]
+            puts "[NanoBanana] 씬 분석 완료"
+            puts @scene_analysis[0..300] + "..."
+
+            # Convert 완료 - 프롬프트는 비워두고 활성화만
+            @main_dialog&.execute_script("onConvertComplete('')")
           else
-            puts "[NanoBanana] 프롬프트 생성 실패"
-            @converted_prompt = nil
-            @main_dialog&.execute_script("setStatus('Convert failed - no prompt generated')")
+            puts "[NanoBanana] 씬 분석 실패"
+            @scene_analysis = nil
+            @main_dialog&.execute_script("onConvertError('씬 분석 실패')")
           end
 
         rescue StandardError => e
-          puts "[NanoBanana] 프롬프트 생성 에러: #{e.message}"
-          @converted_prompt = nil
-          @main_dialog&.execute_script("setStatus('Convert error: #{e.message.gsub("'", "\\'")}')")
+          puts "[NanoBanana] 씬 분석 에러: #{e.message}"
+          @scene_analysis = nil
+          @main_dialog&.execute_script("onConvertError('#{e.message.gsub("'", "\\'")}')")
+        end
+      end
+    end
+
+    # Auto 프롬프트 생성 (분석 데이터 기반)
+    def generate_auto_prompt
+      unless @api_client
+        puts "[NanoBanana] API 클라이언트 없음"
+        return
+      end
+
+      unless @current_image
+        puts "[NanoBanana] 이미지 없음"
+        return
+      end
+
+      Thread.new do
+        begin
+          @main_dialog&.execute_script("onAutoPromptStart()")
+
+          prompt_request = <<~PROMPT
+IMPORTANT: Output ONLY the rendering prompt. No preamble, no explanation. Start DIRECTLY with the content.
+
+Based on this interior/architecture image, generate a photorealistic rendering prompt.
+
+Format:
+**[STRICT REFERENCE MODE]**
+이 이미지를 실사 렌더링으로 변환. 카메라 앵글, 구도, 원근감 100% 유지.
+
+**[절대 변경 금지 - 레이아웃]**
+- 공간 구성 및 가구 배치 상세 설명
+- 창문, 문, 빌트인 가구 위치
+
+**[절대 변경 금지 - 재질 색상]**
+- 바닥: 재질, 색상, 패턴
+- 천장: 재질, 색상
+- 벽면: 각 벽면별 재질과 색상
+- 가구: 각 가구별 재질과 색상
+
+**[조명 기구]**
+- 모든 조명 기구 위치와 개수
+
+**[출력 품질]**
+8K 포토리얼, PBR 재질, 글로벌 일루미네이션
+
+---
+[NEGATIVE]
+레이아웃 변경, 가구 추가/삭제, 스타일 변경, 만화/일러스트 스타일, 사람, 동물, 텍스트, 워터마크
+          PROMPT
+
+          result = @api_client.analyze_scene(@current_image, prompt_request)
+
+          if result && result[:text]
+            raw_prompt = result[:text]
+
+            # [STRICT 또는 **[STRICT 로 시작하는 부분부터 사용
+            if raw_prompt =~ /(\*?\*?\[STRICT|\[INPUT|\[OUTPUT|\[ABSOLUTE)/
+              clean_prompt = raw_prompt[$~.begin(0)..-1]
+            else
+              clean_prompt = raw_prompt
+            end
+
+            # 메인 프롬프트와 네거티브 분리
+            main_prompt = clean_prompt
+            negative_prompt = ""
+
+            if clean_prompt =~ /\[NEGATIVE\](.+)/mi
+              negative_prompt = $1.strip
+              main_prompt = clean_prompt.sub(/\[NEGATIVE\].+/mi, '').strip
+            elsif clean_prompt =~ /---\s*\n(.+)/m
+              negative_prompt = $1.strip
+              main_prompt = clean_prompt.sub(/---\s*\n.+/m, '').strip
+            end
+
+            puts "[NanoBanana] Auto 프롬프트 생성 완료"
+
+            escaped_main = main_prompt.to_json
+            escaped_negative = negative_prompt.to_json
+            @main_dialog&.execute_script("onAutoPromptComplete(#{escaped_main}, #{escaped_negative})")
+          else
+            puts "[NanoBanana] Auto 프롬프트 생성 실패"
+            @main_dialog&.execute_script("onAutoPromptError('프롬프트 생성 실패')")
+          end
+
+        rescue StandardError => e
+          puts "[NanoBanana] Auto 프롬프트 에러: #{e.message}"
+          @main_dialog&.execute_script("onAutoPromptError('#{e.message.gsub("'", "\\'")}')")
         end
       end
     end
@@ -884,8 +1078,13 @@ module NanoBanana
           puts "[NanoBanana] Prompt: #{prompt[0..200]}..."
           puts "[NanoBanana] 렌더링 씬: #{current_scene}"
 
-          # API 호출 (복사된 이미지 사용 - 원본과 독립적)
-          result = @api_client.generate(render_source_image, prompt)
+          # API 호출 (레퍼런스 이미지 있으면 사용)
+          result = if @reference_image
+            puts "[NanoBanana] 레퍼런스 이미지 사용"
+            @api_client.generate_with_references(render_source_image, [@reference_image], prompt)
+          else
+            @api_client.generate(render_source_image, prompt)
+          end
 
           if result && result[:image]
             # 렌더링 결과를 저장 (Export 기능에서 사용)
@@ -1009,6 +1208,18 @@ module NanoBanana
         "실내 조명 점등"
       end
 
+      # 네거티브 프롬프트 처리
+      negative_section = ""
+      if @negative_prompt && !@negative_prompt.empty?
+        puts "[NanoBanana] 네거티브 프롬프트 적용: #{@negative_prompt[0..50]}..."
+        negative_section = <<~NEGATIVE
+
+★★★ NEGATIVE PROMPT - DO NOT INCLUDE THESE ★★★
+#{@negative_prompt}
+
+        NEGATIVE
+      end
+
       # Convert 여부에 따라 다른 프롬프트 생성
       if @converted_prompt && !@converted_prompt.empty?
         # ★ Convert 완료 - AI가 생성한 상세 프롬프트 사용
@@ -1024,7 +1235,7 @@ module NanoBanana
 
         LIGHTING
 
-        lighting_prefix + @converted_prompt
+        lighting_prefix + @converted_prompt + negative_section
       else
         # Convert 안함 - 기본 렌더링
         puts "[NanoBanana] 일반 모드 - 기본 프롬프트"
@@ -1035,6 +1246,7 @@ module NanoBanana
 조명 설정:
 - 시간대: #{time_desc}
 - 실내조명: #{light_desc}
+#{negative_section}
         PROMPT
       end
     end
@@ -1252,6 +1464,79 @@ module NanoBanana
           end
         rescue StandardError => e
           @hotspot_dialog&.execute_script("onRegenerateError('#{e.message.gsub("'", "\\'")}')")
+        end
+      end
+    end
+
+    # ========================================
+    # Prompt 다이얼로그 (프롬프트 편집 + 레퍼런스 이미지)
+    # ========================================
+    def show_prompt_dialog
+      if @prompt_dialog && @prompt_dialog.visible?
+        @prompt_dialog.bring_to_front
+        return
+      end
+
+      options = {
+        dialog_title: 'Prompt - NanoBanana',
+        preferences_key: 'NanoBanana_PromptDialog',
+        width: 500,
+        height: 450,
+        min_width: 400,
+        min_height: 380,
+        resizable: true
+      }
+
+      @prompt_dialog = UI::HtmlDialog.new(options)
+      @prompt_dialog.set_file(File.join(PLUGIN_ROOT, 'ui/prompt_dialog.html'))
+
+      register_prompt_callbacks(@prompt_dialog)
+
+      @prompt_dialog.show
+    end
+
+    def register_prompt_callbacks(dialog)
+      # 다이얼로그 준비 완료
+      dialog.add_action_callback('prompt_ready') do |_ctx|
+        # 현재 프롬프트가 있으면 전달
+        if @converted_prompt && !@converted_prompt.empty?
+          escaped_prompt = @converted_prompt.to_json
+          dialog.execute_script("setPrompt(#{escaped_prompt})")
+        end
+        # 결과 이미지가 있으면 Use Result 버튼 활성화
+        if @current_image
+          dialog.execute_script("enableUseResult(true)")
+        end
+      end
+
+      # 프롬프트 적용
+      dialog.add_action_callback('prompt_apply') do |_ctx, data_json|
+        begin
+          data = JSON.parse(data_json)
+          @converted_prompt = data['prompt'] || ''
+          @reference_image = data['referenceImage']  # 레퍼런스 이미지 저장
+
+          puts "[NanoBanana] Prompt 적용: #{@converted_prompt[0..100]}..."
+          puts "[NanoBanana] Reference 이미지: #{@reference_image ? '있음' : '없음'}"
+
+          # 메인 다이얼로그에 프롬프트 업데이트 알림
+          @main_dialog&.execute_script("onPromptUpdated()")
+
+          dialog.close
+        rescue StandardError => e
+          puts "[NanoBanana] Prompt 적용 에러: #{e.message}"
+        end
+      end
+
+      # 취소
+      dialog.add_action_callback('prompt_cancel') do |_ctx|
+        dialog.close
+      end
+
+      # 결과 이미지를 레퍼런스로 사용
+      dialog.add_action_callback('prompt_use_result') do |_ctx|
+        if @current_image
+          dialog.execute_script("setReference('#{@current_image}')")
         end
       end
     end
@@ -1692,6 +1977,72 @@ Output: High-quality isometric rendering with furniture, materials, and lighting
 
     def sync_rendered_to_web
       # 로컬 서버에서는 @current_image가 자동으로 공유됨
+    end
+
+    # ========================================
+    # 2차 생성 (이전 결과를 소스로 재생성)
+    # ========================================
+    def regenerate_image(source_base64, prompt, panel_id)
+      unless @api_client
+        @main_dialog&.execute_script("onRegenerateError('API Key가 설정되지 않았습니다.', #{panel_id})")
+        return
+      end
+
+      Thread.new do
+        begin
+          puts "[NanoBanana] 2차 생성 시작 (패널 #{panel_id})"
+
+          # 프롬프트가 비어있으면 기본 프롬프트 사용
+          render_prompt = if prompt && !prompt.empty?
+            <<~PROMPT
+★★★ IMAGE REFINEMENT REQUEST ★★★
+Based on the attached rendered image, apply the following modifications while preserving the overall composition.
+
+User Instructions: #{prompt}
+
+CRITICAL RULES:
+- PRESERVE the exact camera angle, perspective, and framing
+- PRESERVE the spatial layout and furniture positions
+- Apply requested modifications seamlessly
+- Maintain photorealistic quality with consistent lighting
+- DO NOT add elements that weren't requested
+- DO NOT remove elements unless specifically requested
+            PROMPT
+          else
+            <<~PROMPT
+★★★ IMAGE ENHANCEMENT REQUEST ★★★
+Enhance the attached rendered image while preserving all elements.
+
+Improvements to apply:
+- Enhance material textures and realism
+- Improve lighting quality and shadow definition
+- Increase overall photorealistic quality
+- Refine details without changing the composition
+
+CRITICAL RULES:
+- PRESERVE the exact camera angle and composition
+- PRESERVE all furniture positions and materials
+- PRESERVE color tones (do not shift colors)
+- DO NOT add or remove any objects
+            PROMPT
+          end
+
+          puts "[NanoBanana] 2차 생성 프롬프트: #{render_prompt[0..200]}..."
+
+          # API 호출 (이전 결과 이미지를 소스로)
+          result = @api_client.generate(source_base64, render_prompt)
+
+          if result && result[:image]
+            @main_dialog&.execute_script("onRegenerateComplete('#{result[:image]}', #{panel_id})")
+            puts "[NanoBanana] 2차 생성 완료 (패널 #{panel_id})"
+          else
+            @main_dialog&.execute_script("onRegenerateError('결과를 받지 못했습니다.', #{panel_id})")
+          end
+        rescue StandardError => e
+          puts "[NanoBanana] 2차 생성 에러: #{e.message}"
+          @main_dialog&.execute_script("onRegenerateError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}', #{panel_id})")
+        end
+      end
     end
 
     # ========================================

@@ -15,41 +15,63 @@ module NanoBanana
       @view = @model.active_view
     end
 
-    # 현재 뷰를 이미지로 추출 (초고속 버전)
+    # 현재 뷰를 이미지로 추출
     def export_current_view(options = {})
       width = options[:width] || DEFAULT_WIDTH
       height = options[:height] || DEFAULT_HEIGHT
+      antialias = options.fetch(:antialias, true)
+      transparent = options.fetch(:transparent, false)
 
-      temp_path = File.join(Dir.tmpdir, "nb_#{$$}.jpg")
+      # 원래 상태 저장
+      original_state = save_render_state
 
-      # JPG로 빠르게 저장
-      @view.write_image(temp_path, width, height)
+      begin
+        # 씬 전처리
+        prepare_scene_for_export
 
-      # Base64 인코딩
-      base64_image = Base64.strict_encode64(File.binread(temp_path))
+        # 임시 파일 생성
+        temp_file = Tempfile.new(['nanobanana_export', '.png'])
+        temp_path = temp_file.path
+        temp_file.close
 
-      File.delete(temp_path) rescue nil
+        # 이미지 내보내기
+        export_options = {
+          filename: temp_path,
+          width: width,
+          height: height,
+          antialias: antialias,
+          transparent: transparent
+        }
 
-      {
-        image: base64_image,
-        scene_info: { space_type: 'interior' },
-        width: width,
-        height: height
-      }
+        success = @view.write_image(export_options)
+
+        unless success
+          raise "이미지 내보내기에 실패했습니다."
+        end
+
+        # Base64 인코딩
+        image_data = File.binread(temp_path)
+        base64_image = Base64.strict_encode64(image_data)
+
+        # 씬 정보 수집
+        scene_info = collect_scene_info
+
+        {
+          image: base64_image,
+          scene_info: scene_info,
+          width: width,
+          height: height
+        }
+      ensure
+        # 원래 상태 복원
+        restore_render_state(original_state)
+
+        # 임시 파일 삭제
+        File.delete(temp_path) if File.exist?(temp_path)
+      end
     end
 
-    # 씬 정보 수집 (빠른 버전 - 필수 정보만)
-    def collect_scene_info_fast
-      camera = @view.camera
-      {
-        camera_position: [camera.eye.x, camera.eye.y, camera.eye.z],
-        fov: camera.fov,
-        perspective: camera.perspective?,
-        space_type: 'interior'
-      }
-    end
-
-    # 씬 정보 수집 (전체 - 필요시 사용)
+    # 씬 정보 수집
     def collect_scene_info
       camera = @view.camera
 

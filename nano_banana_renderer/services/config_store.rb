@@ -45,37 +45,6 @@ module NanoBanana
       config[key.to_s] || default
     end
 
-    # 여러 설정 한번에 저장
-    def save_settings(settings_hash)
-      config = load_config
-      settings_hash.each do |key, value|
-        config[key.to_s] = value
-      end
-      save_config(config)
-    end
-
-    # 앱 설정만 로드 (API Key 제외)
-    def load_settings
-      config = load_config
-      {
-        'download_path' => config['download_path'] || default_download_path,
-        'filename_format' => config['filename_format'] || 'timestamp',
-        'resolution' => config['resolution'] || '1920x1080',
-        'quality' => config['quality'] || 'high'
-      }
-    end
-
-    # 기본 다운로드 경로
-    def default_download_path
-      if RUBY_PLATFORM =~ /darwin/
-        File.expand_path('~/Desktop')
-      elsif RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-        File.expand_path('~/Desktop')
-      else
-        File.expand_path('~')
-      end
-    end
-
     # 모든 설정 로드
     def load_all_settings
       load_config

@@ -72,16 +72,12 @@ window.sketchup = {
 // Ruby Callbacks
 // ========================================
 
-// 씬 캡처 완료 (이미지는 Ruby에 저장됨, UI는 상태만 업데이트)
+// 씬 캡처 완료
 function onCaptureComplete(imageBase64) {
-  // imageBase64가 있으면 캔버스에 로드, 없으면 상태만 업데이트
-  if (imageBase64) {
-    loadImageToCanvas(imageBase64);
-  }
+  loadImageToCanvas(imageBase64);
   state.hasImage = true;
-  hideLoading();
   updateUI();
-  setStatus('씬 캡처 완료 - 렌더링 버튼을 눌러주세요');
+  setStatus('씬 캡처 완료');
 }
 
 // 씬 정보 업데이트

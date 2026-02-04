@@ -60,6 +60,7 @@ module NanoBanana
 
     # 단일 이미지 요청 본문 구성 (이미지 생성)
     def build_single_image_body(image_base64, prompt)
+      # 사용자 프롬프트를 그대로 전달 (불필요한 래핑 제거)
       {
         contents: [
           {

@@ -532,7 +532,7 @@
     .loading-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.9);
+      background: rgba(0,0,0,0.95);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -544,13 +544,97 @@
       display: none;
     }
 
-    .spinner {
-      width: 24px;
-      height: 24px;
-      border: 2px solid #333;
-      border-top-color: #FFD700;
+    /* AI 로딩 애니메이션 */
+    .ai-loader {
+      position: relative;
+      width: 80px;
+      height: 80px;
+    }
+
+    .ai-loader .ring {
+      position: absolute;
+      inset: 0;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      border: 2px solid transparent;
+    }
+
+    .ai-loader .ring:nth-child(1) {
+      border-top-color: #FFD700;
+      animation: ai-spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+    }
+
+    .ai-loader .ring:nth-child(2) {
+      inset: 8px;
+      border-right-color: #FFA500;
+      animation: ai-spin 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite reverse;
+    }
+
+    .ai-loader .ring:nth-child(3) {
+      inset: 16px;
+      border-bottom-color: #FF8C00;
+      animation: ai-spin 2.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+    }
+
+    .ai-loader .core {
+      position: absolute;
+      inset: 24px;
+      background: radial-gradient(circle, #FFD700 0%, #FF8C00 50%, transparent 70%);
+      border-radius: 50%;
+      animation: ai-pulse 1.5s ease-in-out infinite;
+    }
+
+    .ai-loader .particles {
+      position: absolute;
+      inset: 0;
+    }
+
+    .ai-loader .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #FFD700;
+      border-radius: 50%;
+      animation: ai-particle 2s ease-in-out infinite;
+    }
+
+    .ai-loader .particle:nth-child(1) { top: 0; left: 50%; animation-delay: 0s; }
+    .ai-loader .particle:nth-child(2) { top: 50%; right: 0; animation-delay: 0.25s; }
+    .ai-loader .particle:nth-child(3) { bottom: 0; left: 50%; animation-delay: 0.5s; }
+    .ai-loader .particle:nth-child(4) { top: 50%; left: 0; animation-delay: 0.75s; }
+
+    @keyframes ai-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes ai-pulse {
+      0%, 100% { transform: scale(0.8); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    @keyframes ai-particle {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(2); opacity: 0.3; }
+    }
+
+    .loading-text {
+      margin-top: 24px;
+      color: #FFD700;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      animation: text-glow 2s ease-in-out infinite;
+    }
+
+    .loading-subtext {
+      margin-top: 8px;
+      color: #666;
+      font-size: 11px;
+    }
+
+    @keyframes text-glow {
+      0%, 100% { text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+      50% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
     }
 
     .icon-menu-item.active {
@@ -575,14 +659,72 @@
       color: #000;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    /* Prompt Area */
+    .prompt-area {
+      height: 150px;
+      background: #141414;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
     }
 
-    .loading-text {
-      margin-top: 12px;
-      color: #666;
+    .prompt-header {
+      height: 28px;
+      padding: 0 12px;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .prompt-clear-btn {
+      width: 22px;
+      height: 22px;
+      background: transparent;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .prompt-clear-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    #prompt-text {
+      flex: 1;
+      background: #0d0d0d;
+      border: none;
+      padding: 10px 12px;
+      color: #ccc;
       font-size: 11px;
+      font-family: inherit;
+      resize: none;
+      line-height: 1.5;
+    }
+
+    #prompt-text:focus {
+      outline: none;
+    }
+
+    #prompt-text::placeholder {
+      color: #444;
+    }
+
+    #prompt-text.converted {
+      color: #FFD700;
     }
 
     /* Mix Panel */
@@ -962,10 +1104,19 @@
           <button class="seg-btn" data-style="artistic">Art</button>
         </div>
       </div>
+
+      <div class="control-section">
+        <span class="section-label">Texture</span>
+        <div class="segmented" id="texture-group">
+          <button class="seg-btn" data-texture="low">Low</button>
+          <button class="seg-btn active" data-texture="medium">Med</button>
+          <button class="seg-btn" data-texture="high">High</button>
+        </div>
+      </div>
     </div>
 
     <div class="sidebar-actions">
-      <button class="btn btn-primary" id="btn-render" disabled>Render</button>
+      <button class="btn btn-primary" id="btn-render" disabled>이미지 생성</button>
       <button class="btn btn-secondary" id="btn-save" disabled>Export</button>
     </div>
 
@@ -1038,17 +1189,38 @@
           </div>
         </div>
         <div class="panel-content">
-          <div class="empty-state" id="result-empty">Ready to render</div>
+          <div class="empty-state" id="result-empty">이미지 생성 대기중</div>
           <img id="result-image" class="hidden">
           <div class="guide-overlay hidden" id="guide-result">
             <canvas class="guide-canvas" id="guide-canvas-result"></canvas>
           </div>
           <div class="loading-overlay hidden" id="loading">
-            <div class="spinner"></div>
-            <div class="loading-text">Rendering...</div>
+            <div class="ai-loader">
+              <div class="ring"></div>
+              <div class="ring"></div>
+              <div class="ring"></div>
+              <div class="core"></div>
+              <div class="particles">
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+              </div>
+            </div>
+            <div class="loading-text">AI 이미지 생성중...</div>
+            <div class="loading-subtext">Gemini가 이미지를 분석하고 있습니다</div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Prompt Area -->
+    <div class="prompt-area" id="prompt-area">
+      <div class="prompt-header">
+        <span>Prompt</span>
+        <button class="prompt-clear-btn" id="btn-clear-prompt" title="Clear">×</button>
+      </div>
+      <textarea id="prompt-text" placeholder="Convert 버튼을 누르면 AI가 씬을 분석하여 프롬프트를 자동 생성합니다.&#10;&#10;직접 수정하거나 추가 지시사항을 입력할 수 있습니다."></textarea>
     </div>
 
     <!-- Mix Panel -->
@@ -1152,6 +1324,7 @@
       lightSwitch: 'on',
       imageSize: '3840',
       stylePreset: 'realistic',
+      texturePreset: 'medium',
       currentMode: 'render', // render, mix
       mixMode: 'add-remove',
       mixImage: null,
@@ -1211,6 +1384,7 @@
       setupSegmented('light-group', 'light', (v) => state.lightSwitch = v);
       setupSegmented('size-group', 'size', (v) => state.imageSize = v);
       setupSegmented('style-group', 'style', (v) => state.stylePreset = v);
+      setupSegmented('texture-group', 'texture', (v) => state.texturePreset = v);
 
       // Menu items
       document.querySelectorAll('.icon-menu-item').forEach(item => {
@@ -1264,6 +1438,12 @@
 
       // Initialize mix canvas
       initMixCanvas();
+
+      // Prompt clear button
+      const btnClearPrompt = document.getElementById('btn-clear-prompt');
+      if (btnClearPrompt) {
+        btnClearPrompt.addEventListener('click', clearPrompt);
+      }
     }
 
     // ========================================
@@ -1473,7 +1653,7 @@
       updateRenderButton();
       el.loading.classList.remove('hidden');
       el.resultEmpty.classList.add('hidden');
-      setStatus('Rendering...');
+      setStatus('AI 이미지 생성중...');
 
       try {
         const prompt = buildPrompt();
@@ -1485,16 +1665,16 @@
           el.resultImage.classList.remove('hidden');
           el.btnSave.disabled = false;
           addToHistory(state.sourceImage, result);
-          showToast('Render complete', 'success');
-          setStatus('Complete');
+          showToast('이미지 생성 완료', 'success');
+          setStatus('완료');
         } else {
           throw new Error('No result received');
         }
       } catch (error) {
         showToast('Error: ' + error.message, 'error');
         el.resultEmpty.classList.remove('hidden');
-        el.resultEmpty.textContent = 'Render failed';
-        setStatus('Error');
+        el.resultEmpty.textContent = '이미지 생성 실패';
+        setStatus('오류 발생');
       } finally {
         state.isRendering = false;
         updateRenderButton();
@@ -1520,6 +1700,12 @@
         artistic: 'Artistic interpretation, cinematic lighting'
       }[state.stylePreset];
 
+      const textureDesc = {
+        low: 'Smooth, minimal texture detail, clean surfaces',
+        medium: 'Balanced texture detail, natural material appearance',
+        high: 'High-detail textures, visible grain, pronounced material patterns'
+      }[state.texturePreset];
+
       return `[INPUT IMAGE = REFERENCE]
 Transform this architectural/interior image into a photorealistic render.
 Maintain 100% identical geometry, camera angle, and composition.
@@ -1530,6 +1716,9 @@ CRITICAL RULES:
 - No additions, deletions, or modifications to layout
 - Apply realistic PBR materials with proper reflections
 - ${styleDesc}
+
+TEXTURE INTENSITY:
+- ${textureDesc}
 
 LIGHTING:
 - Time: ${timeDesc}
@@ -1821,6 +2010,26 @@ Add furniture, materials, and lighting appropriate for each room.`;
       el.toast.textContent = message;
       el.toast.className = 'toast show ' + type;
       setTimeout(() => el.toast.classList.remove('show'), 3000);
+    }
+
+    // Convert 완료 시 호출 - AI 생성 프롬프트 표시
+    function onConvertComplete(prompt) {
+      const promptText = document.getElementById('prompt-text');
+      if (promptText && prompt) {
+        promptText.value = prompt;
+        promptText.classList.add('converted');
+        setStatus('Convert complete - prompt generated');
+        showToast('Scene analyzed successfully!', 'success');
+      }
+    }
+
+    // 프롬프트 클리어
+    function clearPrompt() {
+      const promptText = document.getElementById('prompt-text');
+      if (promptText) {
+        promptText.value = '';
+        promptText.classList.remove('converted');
+      }
     }
 
     init();

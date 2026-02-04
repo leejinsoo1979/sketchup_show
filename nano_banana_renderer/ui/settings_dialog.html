@@ -167,41 +167,6 @@
         </select>
       </div>
     </section>
-
-    <!-- Download Settings -->
-    <section class="settings-section">
-      <h2 class="settings-section-title">
-        📁 다운로드 설정
-      </h2>
-
-      <div class="form-group">
-        <label class="form-label">저장 경로</label>
-        <div class="api-key-input-group">
-          <input
-            type="text"
-            id="download-path-input"
-            class="form-input"
-            placeholder="다운로드 폴더 경로"
-            readonly
-          >
-          <button class="btn btn-secondary" id="btn-browse-folder" title="폴더 선택">
-            📂
-          </button>
-        </div>
-        <p class="help-text">
-          렌더링 결과물이 저장될 폴더를 선택하세요.
-        </p>
-      </div>
-
-      <div class="form-group mb-0">
-        <label class="form-label">파일명 형식</label>
-        <select id="filename-format-select" class="form-select">
-          <option value="timestamp" selected>날짜시간 (render_20240101_120000.png)</option>
-          <option value="scene">씬 이름 (Scene1_render.png)</option>
-          <option value="sequential">순번 (render_001.png)</option>
-        </select>
-      </div>
-    </section>
   </main>
 
   <!-- Footer -->
@@ -224,9 +189,6 @@
       connectionStatusText: document.getElementById('connection-status-text'),
       resolutionSelect: document.getElementById('resolution-select'),
       qualitySelect: document.getElementById('quality-select'),
-      downloadPathInput: document.getElementById('download-path-input'),
-      btnBrowseFolder: document.getElementById('btn-browse-folder'),
-      filenameFormatSelect: document.getElementById('filename-format-select'),
       btnSave: document.getElementById('btn-save'),
       btnCancel: document.getElementById('btn-cancel'),
       btnClose: document.getElementById('btn-close')
@@ -242,15 +204,6 @@
       },
       testConnection: function() {
         window.location = 'skp:test_connection';
-      },
-      browseFolder: function() {
-        window.location = 'skp:browse_download_folder';
-      },
-      saveSettings: function(settings) {
-        window.location = 'skp:save_settings@' + encodeURIComponent(JSON.stringify(settings));
-      },
-      loadSettings: function() {
-        window.location = 'skp:load_settings';
       },
       closeDialog: function() {
         window.location = 'skp:close_dialog';
@@ -277,29 +230,6 @@
         updateStatus('success', '연결 성공: ' + message);
       } else {
         updateStatus('error', '연결 실패: ' + message);
-      }
-    }
-
-    function onFolderSelected(path) {
-      if (path) {
-        elements.downloadPathInput.value = path;
-      }
-    }
-
-    function onSettingsLoaded(settings) {
-      if (settings) {
-        if (settings.download_path) {
-          elements.downloadPathInput.value = settings.download_path;
-        }
-        if (settings.filename_format) {
-          elements.filenameFormatSelect.value = settings.filename_format;
-        }
-        if (settings.resolution) {
-          elements.resolutionSelect.value = settings.resolution;
-        }
-        if (settings.quality) {
-          elements.qualitySelect.value = settings.quality;
-        }
       }
     }
 
@@ -334,29 +264,12 @@
       }, 500);
     });
 
-    elements.btnBrowseFolder.addEventListener('click', function() {
-      sketchup.browseFolder();
-    });
-
     elements.btnSave.addEventListener('click', function() {
       const apiKey = elements.apiKeyInput.value.trim();
-
-      // 설정 저장
-      const settings = {
-        download_path: elements.downloadPathInput.value,
-        filename_format: elements.filenameFormatSelect.value,
-        resolution: elements.resolutionSelect.value,
-        quality: elements.qualitySelect.value
-      };
-      sketchup.saveSettings(settings);
-
       if (apiKey) {
         sketchup.saveApiKey(apiKey);
       } else {
-        updateStatus('success', '설정 저장 완료');
-        setTimeout(function() {
-          sketchup.closeDialog();
-        }, 500);
+        sketchup.closeDialog();
       }
     });
 
@@ -371,7 +284,6 @@
     // Initialization
     document.addEventListener('DOMContentLoaded', function() {
       sketchup.loadApiKey();
-      sketchup.loadSettings();
     });
   </script>
 </body>
