@@ -973,7 +973,7 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
       end
     end
 
-    # Auto 프롬프트 생성 (분석 데이터 + 스타일 기반)
+    # Auto 프롬프트 생성 (분석 데이터 + 스타일 기반 + SketchUp 재질 정보)
     def generate_auto_prompt(user_style = '')
       unless @api_client
         puts "[NanoBanana] API 클라이언트 없음"
@@ -989,6 +989,11 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
         begin
           @main_dialog&.execute_script("onAutoPromptStart()")
 
+          # ★★★ SketchUp 모델에서 재질 정보 추출 ★★★
+          materials_info = extract_materials_info
+          puts "[NanoBanana] 추출된 재질 정보:"
+          puts materials_info[0..500] + "..."
+
           # 스타일이 있으면 스타일 기반 프롬프트 생성
           style_instruction = if user_style && !user_style.empty?
             <<~STYLE
@@ -1003,34 +1008,45 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
           end
 
           prompt_request = <<~PROMPT
-IMPORTANT: Output ONLY the rendering prompt. No preamble, no explanation. Start DIRECTLY with the content.
+이 스케치업 씬을 분석하여, 형태/구도/재질을 100% 동일하게 유지하는 실사 렌더링 프롬프트를 생성해줘.
 
-Based on this interior/architecture image, generate a photorealistic rendering prompt.
+★★★ 중요: 아래 SketchUp 모델의 재질 정보를 반드시 참고하세요 ★★★
+이 정보는 스케치업 모델에서 직접 추출한 정확한 재질 데이터입니다.
+각 재질의 이름, RGB 색상, 명도 톤을 정확히 유지해야 합니다.
+
+[SketchUp 모델 재질 데이터]
+#{materials_info}
+
+★★★ 중요: 스케치업에 보이는 재질 색상과 텍스처를 절대 변경하지 마세요 ★★★
+- 나무 패널이면 나무 패널 그대로
+- 회색 벽이면 회색 벽 그대로
+- 흰색 천장이면 흰색 천장 그대로
+- 가구 색상도 원본 그대로
 #{style_instruction}
-Format:
-**[STRICT REFERENCE MODE]**
-이 이미지를 실사 렌더링으로 변환. 카메라 앵글, 구도, 원근감 100% 유지.
+다음 형식으로 프롬프트를 작성해줘:
 
-**[절대 변경 금지 - 레이아웃]**
-- 공간 구성 및 가구 배치 상세 설명
-- 창문, 문, 빌트인 가구 위치
+[STRICT REFERENCE MODE]
+이 스케치업 이미지를 실사 렌더링으로 변환. 카메라 앵글, 구도, 원근감 100% 유지.
 
-**[절대 변경 금지 - 재질 색상]**
-- 바닥: 재질, 색상, 패턴
-- 천장: 재질, 색상
-- 벽면: 각 벽면별 재질과 색상
-- 가구: 각 가구별 재질과 색상
+[절대 변경 금지 - 레이아웃]
+(보이는 모든 요소의 정확한 위치와 형태를 나열)
 
-**[조명 분위기]**
-- 조명 기구 위치와 개수
-- 조명 분위기 (스타일에 맞게 조절)
+[절대 변경 금지 - 재질 색상]
+위 [SketchUp 모델 재질 데이터]를 참고하여 정확한 재질명과 색상을 명시:
+- 바닥: (재질명, RGB값, 톤 포함)
+- 천장: (재질명, RGB값, 톤 포함)
+- 벽면: (각 벽면의 재질명, RGB값, 톤 포함)
+- 가구: (각 가구의 재질명, RGB값, 톤 포함)
 
-**[출력 품질]**
-8K 포토리얼, PBR 재질, 글로벌 일루미네이션
+[조명 기구 위치]
+(보이는 조명 기구의 위치와 형태만 설명, 켜짐/꺼짐은 사용자가 별도 지정)
+
+[출력 품질]
+8K 포토리얼, PBR 재질, 글로벌 일루미네이션. 소품 추가 금지, 스타일 변경 금지.
 
 ---
 [NEGATIVE]
-레이아웃 변경, 가구 추가/삭제, 만화/일러스트 스타일, 사람, 동물, 텍스트, 워터마크
+레이아웃 변경, 가구 추가/삭제, 재질 색상 변경, 만화/일러스트 스타일, 사람, 동물, 텍스트, 워터마크
           PROMPT
 
           result = @api_client.analyze_scene(@current_image, prompt_request)
