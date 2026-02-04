@@ -8,13 +8,32 @@ require 'base64'
 module NanoBanana
   # Gemini API 통신 클라이언트
   class ApiClient
-    ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent'
-    MODEL_INFO_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation'
+    BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
+    DEFAULT_MODEL = 'gemini-2.0-flash-exp'
     TIMEOUT = 180 # Pro 모델은 시간이 더 오래 걸릴 수 있음
     MAX_RETRIES = 3
 
-    def initialize(api_key)
+    # 이미지 생성 지원 모델 매핑
+    IMAGE_GEN_MODELS = {
+      'gemini-2.0-flash-exp' => 'gemini-2.0-flash-exp-image-generation',
+      'gemini-1.5-pro' => 'gemini-1.5-pro',
+      'gemini-1.5-flash' => 'gemini-1.5-flash',
+      'gemini-pro-vision' => 'gemini-pro-vision'
+    }.freeze
+
+    def initialize(api_key, model = nil)
       @api_key = api_key
+      @model = model || DEFAULT_MODEL
+    end
+
+    # 모델 설정
+    def model=(model)
+      @model = model
+    end
+
+    # 현재 모델 반환
+    def model
+      @model
     end
 
     # 단일 이미지 + 프롬프트로 생성
@@ -37,7 +56,7 @@ module NanoBanana
 
     # API 연결 테스트
     def test_connection
-      uri = URI(MODEL_INFO_ENDPOINT)
+      uri = URI("#{BASE_URL}/#{get_api_model}")
       uri.query = URI.encode_www_form(key: @api_key)
 
       http = create_http_client(uri)
@@ -140,9 +159,19 @@ module NanoBanana
       }
     end
 
+    # API 모델명 반환
+    def get_api_model
+      IMAGE_GEN_MODELS[@model] || IMAGE_GEN_MODELS[DEFAULT_MODEL]
+    end
+
+    # 엔드포인트 URL 생성
+    def endpoint_url
+      "#{BASE_URL}/#{get_api_model}:generateContent"
+    end
+
     # HTTP 요청 전송
     def send_request(body, retry_count = 0)
-      uri = URI(ENDPOINT)
+      uri = URI(endpoint_url)
       uri.query = URI.encode_www_form(key: @api_key)
 
       http = create_http_client(uri)

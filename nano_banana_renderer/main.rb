@@ -65,7 +65,8 @@ module NanoBanana
     def initialize_plugin
       @config_store = ConfigStore.new
       api_key = @config_store.load_api_key
-      @api_client = ApiClient.new(api_key) if api_key && !api_key.empty?
+      @gemini_model = @config_store.load_setting('gemini_model') || 'gemini-1.5-pro'
+      @api_client = ApiClient.new(api_key, @gemini_model) if api_key && !api_key.empty?
 
       register_menu
       register_toolbar
@@ -603,6 +604,16 @@ module NanoBanana
       # API Key 로드
       dialog.add_action_callback('load_api_key') do |_ctx|
         load_api_key_to_dialog
+      end
+
+      # 모델 저장
+      dialog.add_action_callback('save_model') do |_ctx, model|
+        save_model(model)
+      end
+
+      # 모델 로드
+      dialog.add_action_callback('load_model') do |_ctx|
+        load_model_to_dialog
       end
 
       # 연결 테스트
@@ -1365,7 +1376,7 @@ Format:
     # API Key 저장
     def save_api_key(key)
       @config_store.save_api_key(key)
-      @api_client = ApiClient.new(key)
+      @api_client = ApiClient.new(key, @gemini_model)
       @settings_dialog&.execute_script("onApiKeySaved()")
     end
 
@@ -1374,6 +1385,21 @@ Format:
       key = @config_store.load_api_key
       masked_key = key ? ('•' * [key.length - 4, 0].max) + key[-4..-1].to_s : ''
       @settings_dialog&.execute_script("onApiKeyLoaded('#{masked_key}')")
+    end
+
+    # 모델 저장
+    def save_model(model)
+      @config_store.save_setting('gemini_model', model)
+      @gemini_model = model
+      @api_client.model = model if @api_client
+      puts "[NanoBanana] Gemini 모델 설정: #{model}"
+    end
+
+    # 모델 로드
+    def load_model_to_dialog
+      model = @config_store.load_setting('gemini_model') || 'gemini-1.5-pro'
+      @gemini_model = model
+      @settings_dialog&.execute_script("onModelLoaded('#{model}')")
     end
 
     # API 연결 테스트
