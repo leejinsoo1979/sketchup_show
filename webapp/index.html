@@ -1122,12 +1122,8 @@
           <input type="password" class="form-input" id="settings-api-key" placeholder="Enter your API key">
         </div>
         <div class="form-group">
-          <label class="form-label">SketchUp Session ID</label>
-          <div class="api-input-group">
-            <input type="text" class="form-input" id="session-id" placeholder="Enter session ID from SketchUp" style="text-transform:uppercase">
-            <button class="btn btn-secondary btn-sm" id="btn-connect-session">Connect</button>
-          </div>
-          <div id="session-status" style="font-size:10px;color:#666;margin-top:4px"></div>
+          <label class="form-label">SketchUp Connection</label>
+          <div id="session-status" style="font-size:11px;color:#666;margin-top:4px">Searching for SketchUp...</div>
         </div>
         <div class="form-group">
           <label class="form-label">Default Save Location</label>
@@ -1163,10 +1159,12 @@
       brushSize: 20,
       history: [],
       historyIndex: -1,
-      // SketchUp 동기화
-      sessionId: localStorage.getItem('nanobanana_session_id') || '',
+      // SketchUp 로컬 동기화
+      localServerUrl: null,
       syncInterval: null,
-      syncConnected: false
+      syncConnected: false,
+      lastSourceTimestamp: 0,
+      lastRenderedTimestamp: 0
     };
 
     // Elements
@@ -1261,121 +1259,120 @@
       document.getElementById('btn-guide-source').addEventListener('click', (e) => toggleGuide('source', e.target.closest('button')));
       document.getElementById('btn-guide-result').addEventListener('click', (e) => toggleGuide('result', e.target.closest('button')));
 
-      // SketchUp 세션 연결
-      document.getElementById('btn-connect-session').addEventListener('click', connectToSketchUp);
-
-      // 저장된 세션 자동 연결
-      if (state.sessionId) {
-        document.getElementById('session-id').value = state.sessionId;
-        connectToSketchUp();
-      }
-
-      // URL 파라미터로 세션 ID 받기
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionFromUrl = urlParams.get('session');
-      if (sessionFromUrl) {
-        document.getElementById('session-id').value = sessionFromUrl;
-        connectToSketchUp();
-      }
+      // 로컬 네트워크에서 SketchUp 자동 검색
+      autoDiscoverSketchUp();
 
       // Initialize mix canvas
       initMixCanvas();
     }
 
     // ========================================
-    // SketchUp 동기화
+    // SketchUp 로컬 네트워크 자동 검색
     // ========================================
-    async function connectToSketchUp() {
-      const sessionId = document.getElementById('session-id').value.trim().toUpperCase();
-      if (!sessionId) {
-        showToast('Session ID를 입력하세요', 'error');
-        return;
+    async function autoDiscoverSketchUp() {
+      const statusEl = document.getElementById('session-status');
+      statusEl.innerHTML = '<span style="color:#FFD700">⏳ Searching for SketchUp on local network...</span>';
+
+      // localhost 먼저 시도 (같은 컴퓨터)
+      const tryConnect = async (url) => {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 1000);
+
+          const response = await fetch(`${url}/api/ping`, {
+            signal: controller.signal
+          });
+          clearTimeout(timeout);
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.app === 'BananaShow') {
+              return url;
+            }
+          }
+        } catch (e) {
+          // 연결 실패 - 무시
+        }
+        return null;
+      };
+
+      // 1. localhost 시도
+      let found = await tryConnect('http://localhost:9876');
+
+      // 2. 로컬 IP 대역 스캔 (192.168.x.x)
+      if (!found) {
+        // 일반적인 로컬 IP 대역
+        const subnets = ['192.168.0', '192.168.1', '192.168.219', '10.0.0', '10.0.1'];
+        const promises = [];
+
+        for (const subnet of subnets) {
+          for (let i = 1; i <= 20; i++) {
+            const url = `http://${subnet}.${i}:9876`;
+            promises.push(tryConnect(url));
+          }
+        }
+
+        const results = await Promise.all(promises);
+        found = results.find(r => r !== null);
       }
 
-      const statusEl = document.getElementById('session-status');
-      statusEl.textContent = 'Connecting...';
-      statusEl.style.color = '#FFD700';
+      if (found) {
+        state.localServerUrl = found;
+        state.syncConnected = true;
+        statusEl.innerHTML = `<span style="color:#30d158">✓ Connected to SketchUp (${found})</span>`;
+        showToast('SketchUp 자동 연결됨', 'success');
+        startLocalSync();
+      } else {
+        statusEl.innerHTML = '<span style="color:#888">SketchUp not found. Start SketchUp with BananaShow plugin.</span>';
 
-      try {
-        const response = await fetch(`/api/sync?sessionId=${sessionId}`);
-
-        if (response.ok) {
-          state.sessionId = sessionId;
-          state.syncConnected = true;
-          localStorage.setItem('nanobanana_session_id', sessionId);
-
-          statusEl.textContent = `✓ Connected to SketchUp (${sessionId})`;
-          statusEl.style.color = '#30d158';
-
-          showToast(`SketchUp 연결됨: ${sessionId}`, 'success');
-
-          // 동기화 폴링 시작
-          startSyncPolling();
-        } else {
-          statusEl.textContent = '✗ Session not found';
-          statusEl.style.color = '#ff3b30';
-          showToast('Session not found. SketchUp에서 웹 동기화를 시작하세요.', 'error');
-        }
-      } catch (error) {
-        statusEl.textContent = '✗ Connection failed';
-        statusEl.style.color = '#ff3b30';
-        showToast('연결 실패: ' + error.message, 'error');
+        // 5초 후 다시 검색
+        setTimeout(autoDiscoverSketchUp, 5000);
       }
     }
 
-    function startSyncPolling() {
+    function startLocalSync() {
       if (state.syncInterval) {
         clearInterval(state.syncInterval);
       }
 
-      // 2초마다 동기화 확인
+      // 1초마다 동기화
       state.syncInterval = setInterval(async () => {
-        if (!state.syncConnected || !state.sessionId) return;
+        if (!state.syncConnected || !state.localServerUrl) return;
 
         try {
-          const response = await fetch(`/api/sync?sessionId=${state.sessionId}`);
+          const response = await fetch(`${state.localServerUrl}/api/data`);
           if (response.ok) {
             const data = await response.json();
 
-            // 소스 이미지 업데이트
-            if (data.source && data.source !== state.lastSyncSource) {
-              state.lastSyncSource = data.source;
+            // 소스 이미지 업데이트 (타임스탬프로 변경 감지)
+            if (data.source && data.timestamp !== state.lastSourceTimestamp) {
+              state.lastSourceTimestamp = data.timestamp;
               state.sourceImage = data.source;
               el.sourceImage.src = 'data:image/png;base64,' + data.source;
               el.sourceImage.classList.remove('hidden');
               el.uploadArea.classList.add('hidden');
               updateRenderButton();
-              setStatus('SketchUp에서 이미지 수신됨');
             }
 
             // 렌더링 결과 업데이트
-            if (data.rendered && data.rendered !== state.lastSyncRendered) {
-              state.lastSyncRendered = data.rendered;
+            if (data.rendered && data.rendered !== state.lastRendered) {
+              state.lastRendered = data.rendered;
               state.resultImage = data.rendered;
               el.resultImage.src = 'data:image/png;base64,' + data.rendered;
               el.resultImage.classList.remove('hidden');
               el.resultEmpty.classList.add('hidden');
               el.btnSave.disabled = false;
-              setStatus('SketchUp에서 렌더링 결과 수신됨');
             }
           }
         } catch (error) {
-          console.error('Sync error:', error);
+          // 연결 끊김 - 재검색
+          console.log('Connection lost, reconnecting...');
+          state.syncConnected = false;
+          const statusEl = document.getElementById('session-status');
+          statusEl.innerHTML = '<span style="color:#ff3b30">Connection lost. Reconnecting...</span>';
+          setTimeout(autoDiscoverSketchUp, 2000);
         }
-      }, 2000);
-    }
-
-    function disconnectFromSketchUp() {
-      if (state.syncInterval) {
-        clearInterval(state.syncInterval);
-        state.syncInterval = null;
-      }
-      state.syncConnected = false;
-      state.sessionId = '';
-      localStorage.removeItem('nanobanana_session_id');
-
-      const statusEl = document.getElementById('session-status');
-      statusEl.textContent = '';
+      }, 1000);
     }
 
     function setupSegmented(groupId, attr, callback) {

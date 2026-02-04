@@ -9,6 +9,8 @@ require 'net/http'
 require 'uri'
 require 'json'
 require 'base64'
+require 'socket'
+require 'webrick'
 
 module NanoBanana
   PLUGIN_NAME = 'NanoBanana Renderer'
@@ -46,6 +48,10 @@ module NanoBanana
   @web_sync_active = false
   @web_session_id = nil
   @web_sync_timer = nil
+  @local_server = nil
+  @local_server_thread = nil
+  @local_port = 9876
+  @current_source_image = nil
 
   # 웹 동기화 서버 URL
   WEB_SYNC_URL = 'https://sketchup-show.vercel.app/api/sync'
@@ -61,6 +67,10 @@ module NanoBanana
 
       register_menu
       register_toolbar
+
+      # 로컬 웹 서버 자동 시작
+      start_local_server
+
       puts "[NanoBanana] 플러그인 초기화 완료 (v#{PLUGIN_VERSION})"
     end
 
@@ -1559,98 +1569,123 @@ Output: High-quality isometric rendering with furniture, materials, and lighting
     end
 
     # ========================================
-    # 웹 동기화 기능
+    # 로컬 웹 서버 (동기화용)
     # ========================================
 
     def web_sync_active?
-      @web_sync_active
+      @local_server != nil
     end
 
-    def start_web_sync
-      # 새 세션 ID 생성 (6자리 랜덤)
-      @web_session_id = (0...6).map { ('A'..'Z').to_a[rand(26)] }.join
-      @web_sync_active = true
+    def get_local_ip
+      Socket.ip_address_list.find { |addr|
+        addr.ipv4? && !addr.ipv4_loopback?
+      }&.ip_address || '127.0.0.1'
+    end
 
-      # 초기 이미지 전송
-      sync_to_web
+    def start_local_server
+      return if @local_server
 
-      # 주기적 동기화 (2초마다)
-      @web_sync_timer = UI.start_timer(2, true) do
-        sync_to_web if @web_sync_active
+      @local_port = 9876
+      local_ip = get_local_ip
+
+      @local_server_thread = Thread.new do
+        begin
+          @local_server = WEBrick::HTTPServer.new(
+            Port: @local_port,
+            BindAddress: '0.0.0.0',
+            Logger: WEBrick::Log.new("/dev/null"),
+            AccessLog: []
+          )
+
+          # CORS 및 데이터 API
+          @local_server.mount_proc '/api/data' do |req, res|
+            res['Access-Control-Allow-Origin'] = '*'
+            res['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+            res['Access-Control-Allow-Headers'] = 'Content-Type'
+            res['Content-Type'] = 'application/json'
+
+            if req.request_method == 'OPTIONS'
+              res.status = 200
+            else
+              res.body = {
+                source: @current_source_image,
+                rendered: @current_image,
+                timestamp: Time.now.to_i
+              }.to_json
+            end
+          end
+
+          # 상태 확인 API
+          @local_server.mount_proc '/api/ping' do |req, res|
+            res['Access-Control-Allow-Origin'] = '*'
+            res['Content-Type'] = 'application/json'
+            res.body = { status: 'ok', app: 'BananaShow', ip: local_ip, port: @local_port }.to_json
+          end
+
+          puts "[NanoBanana] 로컬 서버 시작: http://#{local_ip}:#{@local_port}"
+          @local_server.start
+        rescue StandardError => e
+          puts "[NanoBanana] 로컬 서버 에러: #{e.message}"
+        end
       end
 
-      puts "[NanoBanana] 웹 동기화 시작 - 세션: #{@web_session_id}"
-      @web_session_id
+      # 캡처 타이머 시작 (1초마다)
+      @web_sync_timer = UI.start_timer(1, true) do
+        capture_current_view if @local_server
+      end
+
+      "#{local_ip}:#{@local_port}"
     end
 
-    def stop_web_sync
-      @web_sync_active = false
-      UI.stop_timer(@web_sync_timer) if @web_sync_timer
-      @web_sync_timer = nil
-      puts "[NanoBanana] 웹 동기화 중지"
+    def stop_local_server
+      if @web_sync_timer
+        UI.stop_timer(@web_sync_timer)
+        @web_sync_timer = nil
+      end
+
+      if @local_server
+        @local_server.shutdown
+        @local_server = nil
+      end
+
+      if @local_server_thread
+        @local_server_thread.kill
+        @local_server_thread = nil
+      end
+
+      puts "[NanoBanana] 로컬 서버 중지"
     end
 
-    def sync_to_web
-      return unless @web_sync_active && @web_session_id
+    def capture_current_view
+      return unless @local_server
 
       begin
         view = Sketchup.active_model.active_view
-        camera = view.camera
-
-        # 현재 뷰 캡처
-        temp_path = File.join(ENV['TMPDIR'] || '/tmp', "nanobanana_sync_#{Time.now.to_i}.png")
-        view.write_image(temp_path, 1920, 1080, true)
+        temp_path = File.join(ENV['TMPDIR'] || '/tmp', "nanobanana_live.png")
+        view.write_image(temp_path, 1280, 720, true)
 
         if File.exist?(temp_path)
-          image_data = Base64.strict_encode64(File.binread(temp_path))
-          File.delete(temp_path)
-
-          # 카메라 정보
-          camera_info = {
-            eye: [camera.eye.x, camera.eye.y, camera.eye.z],
-            target: [camera.target.x, camera.target.y, camera.target.z],
-            fov: camera.fov
-          }
-
-          # HTTP POST 요청
-          uri = URI("#{WEB_SYNC_URL}?sessionId=#{@web_session_id}")
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = true
-          http.read_timeout = 5
-          http.open_timeout = 5
-
-          request = Net::HTTP::Post.new(uri)
-          request['Content-Type'] = 'application/json'
-          request.body = {
-            image: image_data,
-            camera: camera_info
-          }.to_json
-
-          response = http.request(request)
-          puts "[NanoBanana] 웹 동기화 완료: #{response.code}" if response.code == '200'
+          @current_source_image = Base64.strict_encode64(File.binread(temp_path))
         end
       rescue StandardError => e
-        puts "[NanoBanana] 웹 동기화 에러: #{e.message}"
+        # 조용히 실패
       end
     end
 
+    # 하위 호환성
+    def start_web_sync
+      addr = start_local_server
+      @main_dialog&.execute_script("onWebSyncStarted('#{addr}')")
+      addr
+    end
+
+    def stop_web_sync
+      stop_local_server
+      @main_dialog&.execute_script("onWebSyncStopped()")
+    end
+
     def sync_rendered_to_web
-      return unless @web_sync_active && @web_session_id && @current_image
-
-      begin
-        uri = URI("#{WEB_SYNC_URL}?sessionId=#{@web_session_id}")
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
-
-        request = Net::HTTP::Post.new(uri)
-        request['Content-Type'] = 'application/json'
-        request.body = { rendered: @current_image }.to_json
-
-        http.request(request)
-        puts "[NanoBanana] 렌더링 결과 웹 전송 완료"
-      rescue StandardError => e
-        puts "[NanoBanana] 렌더링 전송 에러: #{e.message}"
-      end
+      # 로컬 서버에서는 @current_image가 자동으로 공유됨
     end
 
     # ========================================
