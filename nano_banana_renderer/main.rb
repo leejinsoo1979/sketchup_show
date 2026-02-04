@@ -79,7 +79,7 @@ module NanoBanana
       menu = UI.menu('Extensions')
       submenu = menu.add_submenu(PLUGIN_NAME)
 
-      submenu.add_item('렌더링 시작') { show_main_dialog }
+      submenu.add_item('루비실행') { show_main_dialog }
       submenu.add_separator
       submenu.add_item('설정') { show_settings_dialog }
       submenu.add_separator
