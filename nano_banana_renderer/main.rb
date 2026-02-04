@@ -5,6 +5,10 @@
 
 require 'sketchup'
 require 'extensions'
+require 'net/http'
+require 'uri'
+require 'json'
+require 'base64'
 
 module NanoBanana
   PLUGIN_NAME = 'NanoBanana Renderer'
@@ -39,6 +43,12 @@ module NanoBanana
   @view_observer = nil
   @pages_observer = nil
   @converted_prompt = nil  # Convert 시 AI가 생성한 프롬프트
+  @web_sync_active = false
+  @web_session_id = nil
+  @web_sync_timer = nil
+
+  # 웹 동기화 서버 URL
+  WEB_SYNC_URL = 'https://sketchup-show.vercel.app/api/sync'
 
   class << self
     attr_accessor :current_image, :current_hotspots
@@ -419,6 +429,18 @@ module NanoBanana
       # Mix 다이얼로그 열기
       dialog.add_action_callback('open_mix') do |_ctx|
         show_mix_dialog
+      end
+
+      # 웹 동기화 시작
+      dialog.add_action_callback('start_web_sync') do |_ctx|
+        session_id = start_web_sync
+        dialog.execute_script("onWebSyncStarted('#{session_id}')")
+      end
+
+      # 웹 동기화 중지
+      dialog.add_action_callback('stop_web_sync') do |_ctx|
+        stop_web_sync
+        dialog.execute_script("onWebSyncStopped()")
       end
 
       # PagesObserver 등록 (씬 변경 감지)
@@ -856,6 +878,8 @@ module NanoBanana
             @current_image = result[:image]
             # 렌더링 완료 (씬 이름과 함께 전달)
             @main_dialog&.execute_script("onRenderComplete('#{result[:image]}', '#{current_scene}')")
+            # 웹 동기화 전송
+            sync_rendered_to_web if @web_sync_active
           else
             @main_dialog&.execute_script("onRenderError('렌더링 결과를 받지 못했습니다.', '#{current_scene}')")
           end
@@ -1532,6 +1556,101 @@ Output: High-quality isometric rendering with furniture, materials, and lighting
       PROMPT
 
       @api_client.generate(floorplan_image, prompt)
+    end
+
+    # ========================================
+    # 웹 동기화 기능
+    # ========================================
+
+    def web_sync_active?
+      @web_sync_active
+    end
+
+    def start_web_sync
+      # 새 세션 ID 생성 (6자리 랜덤)
+      @web_session_id = (0...6).map { ('A'..'Z').to_a[rand(26)] }.join
+      @web_sync_active = true
+
+      # 초기 이미지 전송
+      sync_to_web
+
+      # 주기적 동기화 (2초마다)
+      @web_sync_timer = UI.start_timer(2, true) do
+        sync_to_web if @web_sync_active
+      end
+
+      puts "[NanoBanana] 웹 동기화 시작 - 세션: #{@web_session_id}"
+      @web_session_id
+    end
+
+    def stop_web_sync
+      @web_sync_active = false
+      UI.stop_timer(@web_sync_timer) if @web_sync_timer
+      @web_sync_timer = nil
+      puts "[NanoBanana] 웹 동기화 중지"
+    end
+
+    def sync_to_web
+      return unless @web_sync_active && @web_session_id
+
+      begin
+        view = Sketchup.active_model.active_view
+        camera = view.camera
+
+        # 현재 뷰 캡처
+        temp_path = File.join(ENV['TMPDIR'] || '/tmp', "nanobanana_sync_#{Time.now.to_i}.png")
+        view.write_image(temp_path, 1920, 1080, true)
+
+        if File.exist?(temp_path)
+          image_data = Base64.strict_encode64(File.binread(temp_path))
+          File.delete(temp_path)
+
+          # 카메라 정보
+          camera_info = {
+            eye: [camera.eye.x, camera.eye.y, camera.eye.z],
+            target: [camera.target.x, camera.target.y, camera.target.z],
+            fov: camera.fov
+          }
+
+          # HTTP POST 요청
+          uri = URI("#{WEB_SYNC_URL}?sessionId=#{@web_session_id}")
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
+          http.read_timeout = 5
+          http.open_timeout = 5
+
+          request = Net::HTTP::Post.new(uri)
+          request['Content-Type'] = 'application/json'
+          request.body = {
+            image: image_data,
+            camera: camera_info
+          }.to_json
+
+          response = http.request(request)
+          puts "[NanoBanana] 웹 동기화 완료: #{response.code}" if response.code == '200'
+        end
+      rescue StandardError => e
+        puts "[NanoBanana] 웹 동기화 에러: #{e.message}"
+      end
+    end
+
+    def sync_rendered_to_web
+      return unless @web_sync_active && @web_session_id && @current_image
+
+      begin
+        uri = URI("#{WEB_SYNC_URL}?sessionId=#{@web_session_id}")
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+
+        request = Net::HTTP::Post.new(uri)
+        request['Content-Type'] = 'application/json'
+        request.body = { rendered: @current_image }.to_json
+
+        http.request(request)
+        puts "[NanoBanana] 렌더링 결과 웹 전송 완료"
+      rescue StandardError => e
+        puts "[NanoBanana] 렌더링 전송 에러: #{e.message}"
+      end
     end
 
     # ========================================
