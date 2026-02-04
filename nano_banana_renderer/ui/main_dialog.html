@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Banana Show</title>
+  <title>NanoBanana Renderer</title>
   <style>
     * {
       margin: 0;
@@ -54,8 +54,8 @@
     }
 
     .icon-menu-item.active {
-      background: #FFD700;
-      color: #000;
+      background: #0066ff;
+      color: #fff;
     }
 
     .icon-menu-item svg {
@@ -76,7 +76,7 @@
 
     /* 좌측 컨트롤 패널 */
     .sidebar {
-      width: 220px;
+      width: 200px;
       background: #141414;
       border-right: 1px solid #333;
       display: flex;
@@ -90,13 +90,9 @@
     }
 
     .logo {
-      font-size: 18px;
+      font-size: 13px;
       font-weight: 600;
       color: #fff;
-    }
-
-    .logo span {
-      color: #FFD700;
     }
 
     .sidebar-content {
@@ -104,7 +100,7 @@
       padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
       overflow-y: auto;
     }
 
@@ -119,27 +115,6 @@
       color: #666;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-    }
-
-    /* API Key Input */
-    .api-input-group {
-      display: flex;
-      gap: 6px;
-    }
-
-    .api-input {
-      flex: 1;
-      background: #0a0a0a;
-      border: 1px solid #333;
-      border-radius: 6px;
-      padding: 8px 10px;
-      color: #fff;
-      font-size: 11px;
-    }
-
-    .api-input:focus {
-      outline: none;
-      border-color: #FFD700;
     }
 
     .segmented {
@@ -192,17 +167,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
     }
 
     .btn-primary {
-      background: #FFD700;
-      color: #000;
+      background: #0066ff;
+      color: #fff;
     }
 
     .btn-primary:hover {
-      background: #E6C200;
-      color: #000;
+      background: #0055dd;
     }
 
     .btn-primary:disabled {
@@ -224,12 +197,6 @@
       background: #222;
       color: #555;
       cursor: not-allowed;
-    }
-
-    .btn-sm {
-      height: 28px;
-      padding: 0 10px;
-      font-size: 11px;
     }
 
     .sidebar-footer {
@@ -283,82 +250,13 @@
       height: 14px;
     }
 
-    /* 메인 영역 */
+    /* 우측 이미지 영역 */
     .main-area {
       flex: 1;
       display: flex;
       flex-direction: column;
       background: #0a0a0a;
       min-width: 0;
-    }
-
-    /* 히스토리 탭 바 */
-    .history-tabs {
-      display: flex;
-      background: #141414;
-      border-bottom: 1px solid #333;
-      padding: 0 8px;
-      overflow-x: auto;
-      flex-shrink: 0;
-      height: 32px;
-      align-items: flex-end;
-      gap: 2px;
-    }
-
-    .history-tab {
-      padding: 6px 14px;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-bottom: none;
-      border-radius: 6px 6px 0 0;
-      color: #888;
-      font-size: 11px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s;
-      position: relative;
-      top: 1px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .history-tab:hover {
-      background: #252525;
-      color: #ccc;
-    }
-
-    .history-tab.active {
-      background: #0a0a0a;
-      color: #fff;
-      border-color: #333;
-    }
-
-    .history-tab .thumb {
-      width: 20px;
-      height: 20px;
-      border-radius: 3px;
-      object-fit: cover;
-    }
-
-    .history-tab .close-btn {
-      width: 14px;
-      height: 14px;
-      background: transparent;
-      border: none;
-      color: #666;
-      cursor: pointer;
-      border-radius: 2px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      line-height: 1;
-    }
-
-    .history-tab .close-btn:hover {
-      background: #ff3b30;
-      color: #fff;
     }
 
     .image-container {
@@ -378,7 +276,7 @@
     }
 
     .panel-label {
-      height: 28px;
+      height: 24px;
       padding: 0 12px;
       background: #1a1a1a;
       display: flex;
@@ -395,38 +293,217 @@
       flex: 1;
     }
 
-    .panel-tools {
-      display: flex;
-      gap: 4px;
-    }
-
-    .panel-tool-btn {
-      width: 22px;
-      height: 22px;
+    .panel-expand-btn {
+      width: 20px;
+      height: 20px;
       background: transparent;
       border: none;
       color: #555;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 3px;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all 0.15s;
     }
 
-    .panel-tool-btn:hover {
+    .panel-expand-btn:hover {
       background: #333;
       color: #fff;
     }
 
-    .panel-tool-btn.active {
-      background: #FFD700;
-      color: #000;
+    .panel-expand-btn svg {
+      width: 12px;
+      height: 12px;
     }
 
-    .panel-tool-btn svg {
-      width: 14px;
-      height: 14px;
+    .panel-guide-btn {
+      width: 20px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-right: 4px;
+    }
+
+    .panel-guide-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .panel-guide-btn.active {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .panel-guide-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* 가이드 오버레이 */
+    .guide-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      overflow: hidden;
+    }
+
+    .guide-overlay.hidden {
+      display: none;
+    }
+
+    /* 그리드 캔버스 */
+    .guide-grid-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 그리드 슬라이더 컨트롤 */
+    .guide-controls {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    .guide-controls.hidden {
+      display: none;
+    }
+
+    .guide-controls label {
+      font-size: 10px;
+      color: #aaa;
+    }
+
+    .guide-slider {
+      width: 100px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #444;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .guide-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #0066ff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .guide-value {
+      font-size: 10px;
+      color: #fff;
+      min-width: 35px;
+    }
+
+    .guide-lock-btn {
+      width: 24px;
+      height: 24px;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #aaa;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+    }
+
+    .guide-lock-btn:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .guide-lock-btn.locked {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .guide-lock-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .guide-controls.locked .guide-slider {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .guide-zoom-slider {
+      width: 80px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #444;
+      border-radius: 2px;
+      outline: none;
+      margin-left: 8px;
+    }
+
+    .guide-zoom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #ff6600;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .image-zoom-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .image-zoom-wrapper {
+      position: relative;
+      transform-origin: center center;
+    }
+
+    .image-zoom-wrapper img {
+      display: block;
+      max-width: none;
+      max-height: none;
+    }
+
+    .image-zoom-wrapper canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .image-panel.hidden {
+      display: none;
+    }
+
+    .image-panel.fullscreen {
+      flex: 1;
     }
 
     .panel-content {
@@ -440,145 +517,17 @@
     }
 
     .panel-content img {
-      max-width: 100%;
-      max-height: 100%;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
       user-select: none;
       -webkit-user-drag: none;
+      pointer-events: none;
     }
 
     .empty-state {
       color: #333;
       font-size: 11px;
-      text-align: center;
-    }
-
-    /* 프롬프트 영역 */
-    .prompt-area {
-      height: 150px;
-      background: #141414;
-      border-top: 1px solid #333;
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-    }
-
-    .prompt-header {
-      height: 28px;
-      padding: 0 12px;
-      background: #1a1a1a;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 10px;
-      color: #555;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .prompt-clear-btn {
-      width: 20px;
-      height: 20px;
-      background: transparent;
-      border: none;
-      color: #555;
-      font-size: 16px;
-      cursor: pointer;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .prompt-clear-btn:hover {
-      background: #333;
-      color: #fff;
-    }
-
-    #prompt-text {
-      flex: 1;
-      background: #0d0d0d;
-      border: none;
-      padding: 10px 12px;
-      color: #ccc;
-      font-size: 11px;
-      font-family: inherit;
-      resize: none;
-      line-height: 1.5;
-    }
-
-    #prompt-text:focus {
-      outline: none;
-    }
-
-    #prompt-text::placeholder {
-      color: #444;
-    }
-
-    #prompt-text.converted {
-      color: #FFD700;
-    }
-
-    /* 업로드 영역 */
-    .upload-area {
-      position: absolute;
-      inset: 20px;
-      border: 2px dashed #333;
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .upload-area:hover {
-      border-color: #FFD700;
-      background: rgba(0, 102, 255, 0.05);
-    }
-
-    .upload-area.dragover {
-      border-color: #FFD700;
-      background: rgba(0, 102, 255, 0.1);
-    }
-
-    .upload-area.hidden {
-      display: none;
-    }
-
-    .upload-icon {
-      font-size: 48px;
-      color: #333;
-      margin-bottom: 12px;
-    }
-
-    .upload-text {
-      font-size: 13px;
-      color: #666;
-    }
-
-    .upload-hint {
-      font-size: 11px;
-      color: #444;
-      margin-top: 4px;
-    }
-
-    /* 가이드 오버레이 */
-    .guide-overlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 5;
-    }
-
-    .guide-overlay.hidden {
-      display: none;
-    }
-
-    .guide-canvas {
-      width: 100%;
-      height: 100%;
     }
 
     /* Status Bar */
@@ -594,11 +543,119 @@
       flex-shrink: 0;
     }
 
+    /* Prompt Panel */
+    .prompt-panel {
+      background: #141414;
+      border-top: 1px solid #333;
+      flex-shrink: 0;
+      overflow: hidden;
+      transition: height 0.2s ease;
+    }
+
+    .prompt-panel.collapsed {
+      height: 32px;
+    }
+
+    .prompt-panel.expanded {
+      height: 140px;
+    }
+
+    .prompt-header {
+      height: 32px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .prompt-header:hover {
+      background: #1a1a1a;
+    }
+
+    .prompt-title {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .prompt-toggle {
+      width: 16px;
+      height: 16px;
+      color: #666;
+      transition: transform 0.2s;
+    }
+
+    .prompt-panel.expanded .prompt-toggle {
+      transform: rotate(180deg);
+    }
+
+    .prompt-close-btn {
+      width: 20px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .prompt-close-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .prompt-content {
+      padding: 0 12px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .prompt-panel.collapsed .prompt-content {
+      display: none;
+    }
+
+    .prompt-textarea {
+      width: 100%;
+      height: 70px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px;
+      color: #e0e0e0;
+      font-size: 11px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+    }
+
+    .prompt-textarea:focus {
+      border-color: #0066ff;
+    }
+
+    .prompt-textarea::placeholder {
+      color: #555;
+    }
+
+    .prompt-info {
+      font-size: 10px;
+      color: #555;
+    }
+
     /* Loading */
     .loading-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.95);
+      background: rgba(0,0,0,0.9);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -610,407 +667,261 @@
       display: none;
     }
 
-    .loading-timer {
-      font-size: 36px;
-      font-weight: 700;
-      color: #FFD700;
-      margin-bottom: 24px;
-      font-variant-numeric: tabular-nums;
-      text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-    }
-
-    /* AI 로딩 애니메이션 */
-    .ai-loader {
-      position: relative;
-      width: 80px;
-      height: 80px;
-    }
-
-    .ai-loader .ring {
-      position: absolute;
-      inset: 0;
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #333;
+      border-top-color: #0066ff;
       border-radius: 50%;
-      border: 2px solid transparent;
+      animation: spin 0.8s linear infinite;
     }
 
-    .ai-loader .ring:nth-child(1) {
-      border-top-color: #FFD700;
-      animation: ai-spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-    }
-
-    .ai-loader .ring:nth-child(2) {
-      inset: 8px;
-      border-right-color: #FFA500;
-      animation: ai-spin 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite reverse;
-    }
-
-    .ai-loader .ring:nth-child(3) {
-      inset: 16px;
-      border-bottom-color: #FF8C00;
-      animation: ai-spin 2.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-    }
-
-    .ai-loader .core {
-      position: absolute;
-      inset: 24px;
-      background: radial-gradient(circle, #FFD700 0%, #FF8C00 50%, transparent 70%);
-      border-radius: 50%;
-      animation: ai-pulse 1.5s ease-in-out infinite;
-    }
-
-    .ai-loader .particles {
-      position: absolute;
-      inset: 0;
-    }
-
-    .ai-loader .particle {
-      position: absolute;
-      width: 4px;
-      height: 4px;
-      background: #FFD700;
-      border-radius: 50%;
-      animation: ai-particle 2s ease-in-out infinite;
-    }
-
-    .ai-loader .particle:nth-child(1) { top: 0; left: 50%; animation-delay: 0s; }
-    .ai-loader .particle:nth-child(2) { top: 50%; right: 0; animation-delay: 0.25s; }
-    .ai-loader .particle:nth-child(3) { bottom: 0; left: 50%; animation-delay: 0.5s; }
-    .ai-loader .particle:nth-child(4) { top: 50%; left: 0; animation-delay: 0.75s; }
-
-    @keyframes ai-spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    @keyframes ai-pulse {
-      0%, 100% { transform: scale(0.8); opacity: 0.5; }
-      50% { transform: scale(1.1); opacity: 1; }
-    }
-
-    @keyframes ai-particle {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(2); opacity: 0.3; }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     .loading-text {
-      margin-top: 24px;
-      color: #FFD700;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 1px;
-      animation: text-glow 2s ease-in-out infinite;
-    }
-
-    .loading-subtext {
-      margin-top: 8px;
+      margin-top: 12px;
       color: #666;
       font-size: 11px;
     }
 
-    @keyframes text-glow {
-      0%, 100% { text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
-      50% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+    /* Camera Controls */
+    .camera-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
     }
 
-    .icon-menu-item.active {
-      background: #FFD700;
-      color: #000;
-    }
-
-    .panel-tool-btn.active {
-      background: #FFD700;
-      color: #000;
-    }
-
-    .mix-mode-btn.active {
-      background: #FFD700;
-      border-color: #FFD700;
-      color: #000;
-    }
-
-    .brush-size-btn.active {
-      background: #FFD700;
-      border-color: #FFD700;
-      color: #000;
-    }
-
-    /* Mix Panel */
-    .mix-panel {
-      display: none;
+    .camera-move {
+      display: flex;
       flex-direction: column;
-      height: 100%;
+      align-items: center;
+      gap: 2px;
     }
 
-    .mix-panel.active {
+    .move-row {
       display: flex;
+      gap: 2px;
     }
 
-    .mix-modes {
+    .camera-height, .camera-rotate {
       display: flex;
-      gap: 4px;
-      padding: 8px 12px;
-      background: #141414;
-      border-bottom: 1px solid #333;
+      flex-direction: column;
+      gap: 2px;
     }
 
-    .mix-mode-btn {
-      flex: 1;
-      padding: 8px;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: #888;
+    .cam-btn {
+      width: 28px;
+      height: 28px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #ccc;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+    }
+
+    .cam-btn:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .cam-btn:active {
+      background: #0066ff;
+    }
+
+    .cam-btn.small {
+      width: 24px;
+      height: 24px;
       font-size: 10px;
+    }
+
+    .btn-mirror {
+      width: 100%;
+      height: 32px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: all 0.15s;
+    }
+
+    .btn-mirror:hover {
+      background: #444;
+    }
+
+    .btn-mirror.active {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .camera-btns-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .camera-btns-row .btn-mirror {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .btn-2point {
+      width: 40px;
+      height: 32px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
       cursor: pointer;
       transition: all 0.15s;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .mix-mode-btn:hover {
+    .btn-2point svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-2point:hover {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .cam-btn.wasd {
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    .cam-btn.active-key {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .keyboard-hint {
+      font-size: 9px;
+      color: #555;
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    /* Scene Tabs */
+    .scene-tabs {
+      display: flex;
+      background: #141414;
+      border-bottom: 1px solid #333;
+      padding: 0 8px;
+      overflow-x: auto;
+      flex-shrink: 0;
+      height: 32px;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .scene-tabs::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .scene-tabs::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 2px;
+    }
+
+    .scene-tab {
+      padding: 6px 14px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: #888;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      position: relative;
+      top: 1px;
+    }
+
+    .scene-tab:hover {
       background: #252525;
       color: #ccc;
     }
 
-    .mix-mode-btn.active {
-      background: #FFD700;
-      border-color: #FFD700;
-      color: #000;
-    }
-
-    .mix-content {
-      flex: 1;
-      display: flex;
-      gap: 1px;
-      background: #333;
-      min-height: 0;
-    }
-
-    .mix-canvas-panel {
-      flex: 2;
-      background: #0d0d0d;
-      position: relative;
-    }
-
-    .mix-canvas-panel canvas {
-      width: 100%;
-      height: 100%;
-      cursor: crosshair;
-    }
-
-    .mix-controls {
-      width: 250px;
-      background: #141414;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      overflow-y: auto;
-    }
-
-    .mix-section {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .mix-section-title {
-      font-size: 10px;
-      color: #666;
-      text-transform: uppercase;
-    }
-
-    .mix-textarea {
+    .scene-tab.active {
       background: #0a0a0a;
-      border: 1px solid #333;
-      border-radius: 6px;
-      padding: 10px;
       color: #fff;
-      font-size: 11px;
-      resize: none;
-      min-height: 80px;
+      border-color: #333;
     }
 
-    .mix-textarea:focus {
-      outline: none;
-      border-color: #FFD700;
-    }
-
-    .brush-sizes {
-      display: flex;
-      gap: 6px;
-    }
-
-    .brush-size-btn {
-      width: 32px;
-      height: 32px;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: #888;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s;
-    }
-
-    .brush-size-btn:hover {
-      background: #252525;
-    }
-
-    .brush-size-btn.active {
-      background: #FFD700;
-      border-color: #FFD700;
-      color: #000;
-    }
-
-    .brush-size-btn .dot {
-      border-radius: 50%;
-      background: currentColor;
-    }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: #222;
-      color: #fff;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 12px;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all 0.3s;
-      z-index: 1000;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .toast.error {
-      background: #ff3b30;
-    }
-
-    .toast.success {
-      background: #FFD700;
-      color: #000;
-    }
-
-    /* Settings Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-    }
-
-    .modal-overlay.hidden {
-      display: none;
-    }
-
-    .modal {
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 12px;
-      width: 400px;
-      max-width: 90%;
-    }
-
-    .modal-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid #333;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .modal-close {
+    .scene-add-btn {
       width: 28px;
-      height: 28px;
-      background: transparent;
-      border: none;
-      color: #666;
+      height: 24px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: #888;
+      font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
+      margin-left: 4px;
+      transition: all 0.15s;
+      position: relative;
+      top: 1px;
     }
 
-    .modal-close:hover {
-      background: #333;
+    .scene-add-btn:hover {
+      background: #0066ff;
+      border-color: #0066ff;
       color: #fff;
     }
 
-    .modal-body {
-      padding: 20px;
+    /* 씬 탭 렌더링 로딩 아이콘 */
+    .scene-tab-content {
       display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .modal-footer {
-      padding: 16px 20px;
-      border-top: 1px solid #333;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 6px;
     }
 
-    .form-label {
-      font-size: 11px;
-      color: #888;
+    .scene-tab-spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid #555;
+      border-top-color: #0066ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
 
-    .form-input {
-      background: #0a0a0a;
-      border: 1px solid #333;
-      border-radius: 6px;
-      padding: 10px 12px;
-      color: #fff;
-      font-size: 12px;
+    .scene-tab.rendering {
+      background: #1a2a3a;
+      border-color: #0066ff;
+      color: #0066ff;
     }
 
-    .form-input:focus {
-      outline: none;
-      border-color: #FFD700;
+    .scene-tab.render-complete {
+      background: #1a3a2a;
+      border-color: #30d158;
+      color: #30d158;
     }
 
-    /* Hidden */
-    .hidden {
-      display: none !important;
-    }
-
-    #file-input,
-    #material-input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
+    .scene-tab.render-error {
+      background: #3a1a1a;
+      border-color: #ff3b30;
+      color: #ff3b30;
     }
   </style>
 </head>
@@ -1022,6 +933,19 @@
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
         <circle cx="8.5" cy="8.5" r="1.5"></circle>
         <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-camera" title="Camera">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+    </button>
+    <button class="icon-menu-item" id="menu-scenes" title="Scenes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+        <line x1="8" y1="21" x2="16" y2="21"></line>
+        <line x1="12" y1="17" x2="12" y2="21"></line>
       </svg>
     </button>
     <button class="icon-menu-item" id="menu-mix" title="Mix">
@@ -1038,20 +962,12 @@
         <polyline points="12 6 12 12 16 14"></polyline>
       </svg>
     </button>
-    <button class="icon-menu-item" id="menu-batch" title="Batch">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="2" y="2" width="8" height="8" rx="1"></rect>
-        <rect x="14" y="2" width="8" height="8" rx="1"></rect>
-        <rect x="2" y="14" width="8" height="8" rx="1"></rect>
-        <rect x="14" y="14" width="8" height="8" rx="1"></rect>
-      </svg>
-    </button>
     <div class="icon-menu-divider"></div>
-    <button class="icon-menu-item" id="menu-gallery" title="Gallery">
+    <button class="icon-menu-item" id="menu-layers" title="Layers">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="3" y1="9" x2="21" y2="9"></line>
-        <line x1="9" y1="21" x2="9" y2="9"></line>
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
       </svg>
     </button>
     <div class="icon-menu-spacer"></div>
@@ -1073,7 +989,7 @@
   <!-- 좌측 사이드바 -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="logo">🍌 Banana<span>Show</span></div>
+      <div class="logo">NanoBanana</div>
     </div>
 
     <div class="sidebar-content">
@@ -1104,75 +1020,128 @@
       </div>
 
       <div class="control-section">
-        <span class="section-label">Style</span>
-        <div class="segmented" id="style-group">
-          <button class="seg-btn active" data-style="realistic">Real</button>
-          <button class="seg-btn" data-style="archviz">ArchViz</button>
-          <button class="seg-btn" data-style="artistic">Art</button>
+        <span class="section-label">Camera</span>
+        <div class="camera-btns-row">
+          <button class="btn btn-mirror" id="btn-mirror">Mirror</button>
+          <button class="btn btn-2point" id="btn-2point" title="2점 투시 자동 보정">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="12" y1="3" x2="12" y2="21"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="camera-controls">
+          <div class="camera-move">
+            <div class="move-row">
+              <button class="cam-btn wasd" id="cam-forward" title="Forward (W)">W</button>
+            </div>
+            <div class="move-row">
+              <button class="cam-btn wasd" id="cam-left" title="Left (A)">A</button>
+              <button class="cam-btn wasd" id="cam-back" title="Back (S)">S</button>
+              <button class="cam-btn wasd" id="cam-right" title="Right (D)">D</button>
+            </div>
+          </div>
+          <div class="camera-height">
+            <button class="cam-btn small" id="cam-up" title="Up (Q)">Q</button>
+            <button class="cam-btn small" id="cam-down" title="Down (E)">E</button>
+          </div>
+          <div class="camera-rotate">
+            <button class="cam-btn small" id="cam-rot-left" title="Rotate Left (Z)">Z</button>
+            <button class="cam-btn small" id="cam-rot-right" title="Rotate Right (X)">X</button>
+          </div>
+        </div>
+        <div class="keyboard-hint">WASD 이동 | QE 높이 | ZX 회전</div>
+      </div>
+
+      <div class="control-section">
+        <span class="section-label">Height</span>
+        <div class="segmented" id="height-group">
+          <button class="seg-btn" data-height="standing">서기</button>
+          <button class="seg-btn active" data-height="seated">앉기</button>
+          <button class="seg-btn" data-height="low_angle">낮음</button>
         </div>
       </div>
 
       <div class="control-section">
-        <span class="section-label">Texture</span>
-        <div class="segmented" id="texture-group">
-          <button class="seg-btn" data-texture="low">Low</button>
-          <button class="seg-btn active" data-texture="medium">Med</button>
-          <button class="seg-btn" data-texture="high">High</button>
+        <span class="section-label">FOV</span>
+        <div class="segmented" id="fov-group">
+          <button class="seg-btn" data-fov="wide">광각</button>
+          <button class="seg-btn active" data-fov="standard">표준</button>
+          <button class="seg-btn" data-fov="telephoto">망원</button>
         </div>
       </div>
     </div>
 
     <div class="sidebar-actions">
-      <button class="btn btn-primary" id="btn-render" disabled>이미지 생성</button>
+      <button class="btn btn-secondary" id="btn-capture">Convert</button>
+      <button class="btn btn-primary" id="btn-render" disabled>Render</button>
+      <button class="btn btn-secondary" id="btn-edit" disabled>Edit</button>
       <button class="btn btn-secondary" id="btn-save" disabled>Export</button>
     </div>
 
     <div class="sidebar-footer">
       <div class="status-indicator">
         <span class="status-dot" id="status-dot"></span>
-        <span id="api-status">No API Key</span>
+        <span id="api-status">Checking...</span>
       </div>
+      <button class="icon-btn" id="btn-settings" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
     </div>
   </aside>
 
-  <!-- 메인 영역 -->
+  <!-- 우측 메인 영역 -->
   <main class="main-area">
-    <!-- 히스토리 탭 -->
-    <div class="history-tabs" id="history-tabs">
-      <div class="history-tab active" data-id="new">
-        <span>New</span>
-      </div>
+    <!-- 씬 탭 바 -->
+    <div class="scene-tabs" id="scene-tabs">
+      <button class="scene-add-btn" id="btn-add-scene" title="현재 뷰를 씬으로 저장">+</button>
     </div>
 
-    <!-- Render Panel -->
-    <div class="image-container" id="render-panel">
+    <div class="image-container" id="image-container">
       <div class="image-panel" id="source-panel">
         <div class="panel-label">
           <span>Source</span>
-          <div class="panel-tools">
-            <button class="panel-tool-btn" id="btn-guide-source" title="Guide Grid">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="2" x2="12" y2="22"></line>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-              </svg>
-            </button>
-            <button class="panel-tool-btn" id="btn-expand-source" title="Expand">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <polyline points="9 21 3 21 3 15"></polyline>
-              </svg>
-            </button>
-          </div>
+          <button class="panel-guide-btn" id="btn-guide" title="가이드 표시">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="2" x2="12" y2="22"></line>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+            </svg>
+          </button>
+          <button class="panel-expand-btn" id="btn-expand-source" title="Expand">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+          </button>
         </div>
-        <div class="panel-content" id="source-content">
-          <div class="upload-area" id="upload-area">
-            <div class="upload-icon">+</div>
-            <div class="upload-text">클릭 또는 드래그하여 업로드</div>
-            <div class="upload-hint">PNG, JPG (최대 20MB)</div>
+        <div class="panel-content">
+          <div class="empty-state" id="original-empty">No image</div>
+          <!-- 이미지+그리드 줌 컨테이너 -->
+          <div class="image-zoom-container" id="zoom-container-source">
+            <div class="image-zoom-wrapper" id="zoom-wrapper-source">
+              <img id="original-image" style="display:none;">
+              <canvas class="guide-grid-canvas" id="guide-canvas-source" style="display:none;"></canvas>
+            </div>
           </div>
-          <img id="source-image" class="hidden">
-          <div class="guide-overlay hidden" id="guide-source">
-            <canvas class="guide-canvas" id="guide-canvas-source"></canvas>
+          <!-- 그리드 컨트롤 -->
+          <div class="guide-controls hidden" id="guide-controls-source">
+            <label>Grid</label>
+            <input type="range" class="guide-slider" id="guide-slider-source" min="10" max="100" value="40">
+            <span class="guide-value" id="guide-value-source">40px</span>
+            <button class="guide-lock-btn" id="guide-lock-source" title="Lock">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </button>
+            <label style="margin-left:8px;">Zoom</label>
+            <input type="range" class="guide-zoom-slider" id="guide-zoom-source" min="50" max="150" value="100">
           </div>
         </div>
       </div>
@@ -1180,107 +1149,71 @@
       <div class="image-panel" id="result-panel">
         <div class="panel-label">
           <span>Result</span>
-          <div class="panel-tools">
-            <button class="panel-tool-btn" id="btn-guide-result" title="Guide Grid">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="2" x2="12" y2="22"></line>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-              </svg>
-            </button>
-            <button class="panel-tool-btn" id="btn-expand-result" title="Expand">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <polyline points="9 21 3 21 3 15"></polyline>
-              </svg>
-            </button>
-          </div>
+          <button class="panel-guide-btn" id="btn-guide-result" title="가이드 표시">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="2" x2="12" y2="22"></line>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+            </svg>
+          </button>
+          <button class="panel-expand-btn" id="btn-expand-result" title="Expand">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+          </button>
         </div>
         <div class="panel-content">
-          <div class="empty-state" id="result-empty">이미지 생성 대기중</div>
-          <img id="result-image" class="hidden">
-          <div class="guide-overlay hidden" id="guide-result">
-            <canvas class="guide-canvas" id="guide-canvas-result"></canvas>
+          <div class="empty-state" id="render-empty">Ready</div>
+          <!-- 이미지+그리드 줌 컨테이너 -->
+          <div class="image-zoom-container" id="zoom-container-result">
+            <div class="image-zoom-wrapper" id="zoom-wrapper-result">
+              <img id="render-image" style="display:none;">
+              <canvas class="guide-grid-canvas" id="guide-canvas-result" style="display:none;"></canvas>
+            </div>
+          </div>
+          <!-- 그리드 컨트롤 -->
+          <div class="guide-controls hidden" id="guide-controls-result">
+            <label>Grid</label>
+            <input type="range" class="guide-slider" id="guide-slider-result" min="10" max="100" value="40">
+            <span class="guide-value" id="guide-value-result">40px</span>
+            <button class="guide-lock-btn" id="guide-lock-result" title="Lock">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </button>
+            <label style="margin-left:8px;">Zoom</label>
+            <input type="range" class="guide-zoom-slider" id="guide-zoom-result" min="50" max="150" value="100">
           </div>
           <div class="loading-overlay hidden" id="loading">
-            <div class="loading-timer" id="loading-timer">0:00</div>
-            <div class="ai-loader">
-              <div class="ring"></div>
-              <div class="ring"></div>
-              <div class="ring"></div>
-              <div class="core"></div>
-              <div class="particles">
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-              </div>
-            </div>
-            <div class="loading-text">AI 이미지 생성중...</div>
-            <div class="loading-subtext">Gemini가 이미지를 분석하고 있습니다</div>
+            <div class="spinner"></div>
+            <div class="loading-text">Rendering...</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 프롬프트 입력 영역 -->
-    <div class="prompt-area" id="prompt-area">
-      <div class="prompt-header">
-        <span>Prompt</span>
-        <button class="prompt-clear-btn" id="btn-clear-prompt" title="Clear">×</button>
-      </div>
-      <textarea id="prompt-text" placeholder="Convert 버튼을 누르면 AI가 씬을 분석하여 프롬프트를 자동 생성합니다.&#10;&#10;직접 수정하거나 추가 지시사항을 입력할 수 있습니다."></textarea>
-    </div>
-
-    <!-- Mix Panel -->
-    <div class="mix-panel" id="mix-panel">
-      <div class="mix-modes">
-        <button class="mix-mode-btn active" data-mode="add-remove">Object Add/Remove</button>
-        <button class="mix-mode-btn" data-mode="inpaint">Inpainting</button>
-        <button class="mix-mode-btn" data-mode="material">Material</button>
-        <button class="mix-mode-btn" data-mode="floorplan">Floorplan→3D</button>
-      </div>
-      <div class="mix-content">
-        <div class="mix-canvas-panel">
-          <canvas id="mix-canvas"></canvas>
-          <div class="upload-area" id="mix-upload-area">
-            <div class="upload-icon">+</div>
-            <div class="upload-text">이미지 업로드</div>
-          </div>
+    <!-- 프롬프트 패널 -->
+    <div class="prompt-panel expanded" id="prompt-panel">
+      <div class="prompt-header" id="prompt-header">
+        <div class="prompt-title">
+          <svg class="prompt-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+          PROMPT
         </div>
-        <div class="mix-controls">
-          <div class="mix-section">
-            <div class="mix-section-title">Instructions</div>
-            <textarea class="mix-textarea" id="mix-instruction" placeholder="수정할 내용을 입력하세요..."></textarea>
-          </div>
-          <div class="mix-section" id="brush-section">
-            <div class="mix-section-title">Brush Size</div>
-            <div class="brush-sizes">
-              <button class="brush-size-btn" data-size="10"><div class="dot" style="width:6px;height:6px"></div></button>
-              <button class="brush-size-btn active" data-size="20"><div class="dot" style="width:10px;height:10px"></div></button>
-              <button class="brush-size-btn" data-size="40"><div class="dot" style="width:16px;height:16px"></div></button>
-              <button class="brush-size-btn" data-size="60"><div class="dot" style="width:22px;height:22px"></div></button>
-            </div>
-          </div>
-          <div class="mix-section" id="material-section" style="display:none">
-            <div class="mix-section-title">Material Image</div>
-            <div class="upload-area" id="material-upload" style="position:relative;inset:auto;height:100px;margin:0">
-              <div class="upload-text" style="font-size:11px">재질 이미지 업로드</div>
-            </div>
-          </div>
-          <div class="mix-section" id="floorplan-section" style="display:none">
-            <div class="mix-section-title">Wall Height (mm)</div>
-            <input type="number" class="form-input" id="wall-height" value="2700">
-            <div class="mix-section-title" style="margin-top:12px">Wall Thickness (mm)</div>
-            <input type="number" class="form-input" id="wall-thickness" value="150">
-            <div class="mix-section-title" style="margin-top:12px">Style</div>
-            <div class="segmented" id="floorplan-style">
-              <button class="seg-btn active" data-style="modern">Modern</button>
-              <button class="seg-btn" data-style="scandi">Nordic</button>
-              <button class="seg-btn" data-style="luxury">Luxury</button>
-            </div>
-          </div>
-          <button class="btn btn-primary" id="btn-mix-apply" style="margin-top:auto">Apply</button>
-        </div>
+        <button class="prompt-close-btn" id="prompt-close" title="닫기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="prompt-content">
+        <textarea class="prompt-textarea" id="prompt-text" placeholder="Convert 버튼을 누르면 AI가 씬을 분석하여 프롬프트를 자동 생성합니다.&#10;&#10;직접 수정하거나 추가 지시사항을 입력할 수 있습니다."></textarea>
+        <div class="prompt-info">AI가 생성한 프롬프트를 수정하거나 추가 지시사항을 입력하세요.</div>
       </div>
     </div>
 
@@ -1289,666 +1222,689 @@
     </div>
   </main>
 
-  <!-- Settings Modal -->
-  <div class="modal-overlay hidden" id="settings-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title">Settings</div>
-        <button class="modal-close" id="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Gemini API Key</label>
-          <input type="password" class="form-input" id="settings-api-key" placeholder="Enter your API key">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Default Save Location</label>
-          <input type="text" class="form-input" id="settings-save-path" placeholder="Downloads folder" disabled>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="settings-cancel">Cancel</button>
-        <button class="btn btn-primary" id="settings-save">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <input type="file" id="file-input" accept="image/*">
-  <input type="file" id="material-input" accept="image/*">
-  <div class="toast" id="toast"></div>
-
   <script>
-    // State
     const state = {
-      apiKey: localStorage.getItem('nanobanana_api_key') || '',
-      sourceImage: null,
-      resultImage: null,
+      originalImage: null,
+      renderImage: null,
       isRendering: false,
+      apiConnected: false,
       timePreset: 'day',
       lightSwitch: 'on',
-      imageSize: '3840',
-      stylePreset: 'realistic',
-      texturePreset: 'medium',
-      currentMode: 'render', // render, mix
-      mixMode: 'add-remove',
-      mixImage: null,
-      materialImage: null,
-      brushSize: 20,
-      history: [],
-      historyIndex: -1,
-      renderTimer: null,
-      renderStartTime: null
+      imageSize: '3840'
     };
 
-    // Elements
     const el = {
-      uploadArea: document.getElementById('upload-area'),
-      fileInput: document.getElementById('file-input'),
-      sourceImage: document.getElementById('source-image'),
-      resultImage: document.getElementById('result-image'),
-      resultEmpty: document.getElementById('result-empty'),
+      originalImage: document.getElementById('original-image'),
+      originalEmpty: document.getElementById('original-empty'),
+      renderImage: document.getElementById('render-image'),
+      renderEmpty: document.getElementById('render-empty'),
       loading: document.getElementById('loading'),
+      btnCapture: document.getElementById('btn-capture'),
       btnRender: document.getElementById('btn-render'),
+      btnEdit: document.getElementById('btn-edit'),
       btnSave: document.getElementById('btn-save'),
-      statusDot: document.getElementById('status-dot'),
-      apiStatus: document.getElementById('api-status'),
+      btnSettings: document.getElementById('btn-settings'),
       statusText: document.getElementById('status-text'),
-      toast: document.getElementById('toast'),
-      renderPanel: document.getElementById('render-panel'),
-      mixPanel: document.getElementById('mix-panel'),
-      mixCanvas: document.getElementById('mix-canvas'),
-      mixInstruction: document.getElementById('mix-instruction'),
-      historyTabs: document.getElementById('history-tabs'),
-      settingsModal: document.getElementById('settings-modal')
+      statusDot: document.getElementById('status-dot'),
+      apiStatus: document.getElementById('api-status')
     };
 
-    // Initialize
-    function init() {
-      if (state.apiKey) {
-        updateApiStatus(true);
-      }
-
-      // Event listeners
-      el.uploadArea.addEventListener('click', () => el.fileInput.click());
-      el.fileInput.addEventListener('change', handleFileSelect);
-      el.btnRender.addEventListener('click', startRender);
-      el.btnSave.addEventListener('click', downloadResult);
-
-      // Drag and drop
-      el.uploadArea.addEventListener('dragover', handleDragOver);
-      el.uploadArea.addEventListener('dragleave', handleDragLeave);
-      el.uploadArea.addEventListener('drop', handleDrop);
-
-      // Segmented controls
-      setupSegmented('time-group', 'time', (v) => state.timePreset = v);
-      setupSegmented('light-group', 'light', (v) => state.lightSwitch = v);
-      setupSegmented('size-group', 'size', (v) => state.imageSize = v);
-      setupSegmented('style-group', 'style', (v) => state.stylePreset = v);
-      setupSegmented('texture-group', 'texture', (v) => state.texturePreset = v);
-
-      // Menu items
-      document.querySelectorAll('.icon-menu-item').forEach(item => {
-        item.addEventListener('click', () => handleMenuClick(item.id));
-      });
-
-      // Mix modes
-      document.querySelectorAll('.mix-mode-btn').forEach(btn => {
-        btn.addEventListener('click', () => setMixMode(btn.dataset.mode));
-      });
-
-      // Brush sizes
-      document.querySelectorAll('.brush-size-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.brush-size-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          state.brushSize = parseInt(btn.dataset.size);
-        });
-      });
-
-      // Mix upload
-      document.getElementById('mix-upload-area').addEventListener('click', () => el.fileInput.click());
-
-      // Mix apply
-      document.getElementById('btn-mix-apply').addEventListener('click', applyMix);
-
-      // Settings modal
-      document.getElementById('menu-settings').addEventListener('click', () => {
-        document.getElementById('settings-api-key').value = state.apiKey;
-        el.settingsModal.classList.remove('hidden');
-      });
-      document.getElementById('modal-close').addEventListener('click', () => el.settingsModal.classList.add('hidden'));
-      document.getElementById('settings-cancel').addEventListener('click', () => el.settingsModal.classList.add('hidden'));
-      document.getElementById('settings-save').addEventListener('click', () => {
-        const key = document.getElementById('settings-api-key').value.trim();
-        if (key) {
-          state.apiKey = key;
-          localStorage.setItem('nanobanana_api_key', key);
-          updateApiStatus(true);
-          showToast('API Key saved', 'success');
-        }
-        el.settingsModal.classList.add('hidden');
-      });
-
-      // Guide grids
-      document.getElementById('btn-guide-source').addEventListener('click', (e) => toggleGuide('source', e.target.closest('button')));
-      document.getElementById('btn-guide-result').addEventListener('click', (e) => toggleGuide('result', e.target.closest('button')));
-
-      // Initialize mix canvas
-      initMixCanvas();
-
-      // Prompt clear button
-      const btnClearPrompt = document.getElementById('btn-clear-prompt');
-      if (btnClearPrompt) {
-        btnClearPrompt.addEventListener('click', clearPrompt);
+    // SketchUp Ruby 콜백 호출
+    function callRuby(action, ...args) {
+      if (window.sketchup && window.sketchup[action]) {
+        window.sketchup[action](...args);
+      } else {
+        // Fallback for older SketchUp versions
+        window.location = 'skp:' + action + (args.length ? '@' + args.join('@') : '');
       }
     }
 
-    function setupSegmented(groupId, attr, callback) {
-      const group = document.getElementById(groupId);
-      group.querySelectorAll('.seg-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          group.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          callback(btn.dataset[attr]);
-        });
-      });
+    const sketchup = {
+      captureScene: (size) => callRuby('capture_scene', size),
+      startRender: (time, light) => callRuby('start_render', time, light),
+      saveImage: () => callRuby('save_image', ''),
+      openEditor: () => callRuby('open_editor'),
+      openSettings: () => callRuby('open_settings'),
+      checkApiStatus: () => callRuby('check_api_status'),
+      // Camera controls
+      camMove: (dir) => callRuby('cam_move', dir),
+      camRotate: (dir) => callRuby('cam_rotate', dir),
+      camHeight: (preset) => callRuby('cam_height', preset),
+      camFov: (preset) => callRuby('cam_fov', preset),
+      startMirror: () => callRuby('start_mirror'),
+      stopMirror: () => callRuby('stop_mirror'),
+      // Scene controls
+      getScenes: () => callRuby('get_scenes'),
+      selectScene: (name) => callRuby('select_scene', name),
+      addScene: () => callRuby('add_scene'),
+      // 2점 투시
+      apply2Point: () => callRuby('apply_2point'),
+      // Mix
+      openMix: () => callRuby('open_mix')
+    };
+
+    let mirrorActive = false;
+
+    function onCaptureComplete(base64, materialCount) {
+      state.originalImage = base64;
+      el.originalImage.src = 'data:image/png;base64,' + base64;
+      el.originalImage.style.display = 'block';
+      el.originalEmpty.style.display = 'none';
+      // Render 버튼은 Convert 완료 후 활성화
     }
 
-    function handleMenuClick(menuId) {
-      document.querySelectorAll('.icon-menu-item').forEach(i => i.classList.remove('active'));
-      document.getElementById(menuId).classList.add('active');
-
-      if (menuId === 'menu-render') {
-        state.currentMode = 'render';
-        el.renderPanel.style.display = 'flex';
-        el.mixPanel.classList.remove('active');
-      } else if (menuId === 'menu-mix') {
-        state.currentMode = 'mix';
-        el.renderPanel.style.display = 'none';
-        el.mixPanel.classList.add('active');
-      } else if (menuId === 'menu-settings') {
-        el.settingsModal.classList.remove('hidden');
+    // Convert 완료 (AI 프롬프트 생성 완료)
+    function onConvertComplete(promptText) {
+      state.converted = true;
+      el.btnRender.disabled = false;
+      // 프롬프트 표시
+      if (promptText) {
+        document.getElementById('prompt-text').value = promptText;
+        // 프롬프트 패널 확장
+        document.getElementById('prompt-panel').classList.remove('collapsed');
+        document.getElementById('prompt-panel').classList.add('expanded');
       }
+      setStatus('Convert complete - Ready to render');
     }
 
-    function setMixMode(mode) {
-      state.mixMode = mode;
-      document.querySelectorAll('.mix-mode-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+    // 렌더링 중인 씬 목록 관리
+    const renderingScenes = new Map(); // sceneName -> { startTime }
 
-      // Show/hide relevant sections
-      document.getElementById('brush-section').style.display = (mode === 'inpaint' || mode === 'material') ? 'block' : 'none';
-      document.getElementById('material-section').style.display = mode === 'material' ? 'block' : 'none';
-      document.getElementById('floorplan-section').style.display = mode === 'floorplan' ? 'block' : 'none';
-    }
-
-    function updateApiStatus(connected) {
-      el.statusDot.classList.toggle('connected', connected);
-      el.apiStatus.textContent = connected ? 'Connected' : 'No API Key';
-      updateRenderButton();
-    }
-
-    function handleDragOver(e) {
-      e.preventDefault();
-      el.uploadArea.classList.add('dragover');
-    }
-
-    function handleDragLeave() {
-      el.uploadArea.classList.remove('dragover');
-    }
-
-    function handleFileSelect(e) {
-      const file = e.target.files[0];
-      if (file) loadImage(file);
-    }
-
-    function handleDrop(e) {
-      e.preventDefault();
-      el.uploadArea.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('image/')) {
-        loadImage(file);
-      }
-    }
-
-    function loadImage(file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        state.sourceImage = e.target.result.split(',')[1];
-        el.sourceImage.src = e.target.result;
-        el.sourceImage.classList.remove('hidden');
-        el.uploadArea.classList.add('hidden');
-        updateRenderButton();
-        setStatus(`Loaded: ${file.name}`);
-
-        // Also load to mix canvas if in mix mode
-        if (state.currentMode === 'mix') {
-          loadMixImage(e.target.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function updateRenderButton() {
-      const canRender = state.apiKey && state.sourceImage && !state.isRendering;
-      el.btnRender.disabled = !canRender;
-    }
-
-    async function startRender() {
-      if (!state.apiKey || !state.sourceImage) return;
-
+    function onRenderStart(sceneName) {
       state.isRendering = true;
-      updateRenderButton();
       el.loading.classList.remove('hidden');
-      el.resultEmpty.classList.add('hidden');
-      setStatus('AI 이미지 생성중...');
-      startRenderTimer();
+      // Render 버튼은 활성화 상태 유지 (연속 렌더링 가능)
+      // el.btnRender.disabled = true;
 
-      try {
-        const prompt = buildPrompt();
-        const result = await callGeminiAPI(state.sourceImage, prompt);
-
-        if (result) {
-          state.resultImage = result;
-          el.resultImage.src = 'data:image/png;base64,' + result;
-          el.resultImage.classList.remove('hidden');
-          el.btnSave.disabled = false;
-          addToHistory(state.sourceImage, result);
-          const elapsed = stopRenderTimer();
-          showToast(`이미지 생성 완료 (${elapsed})`, 'success');
-          setStatus(`완료 - ${elapsed}`);
-        } else {
-          throw new Error('No result received');
-        }
-      } catch (error) {
-        stopRenderTimer();
-        showToast('Error: ' + error.message, 'error');
-        el.resultEmpty.classList.remove('hidden');
-        el.resultEmpty.textContent = '이미지 생성 실패';
-        setStatus('오류 발생');
-      } finally {
-        state.isRendering = false;
-        updateRenderButton();
-        el.loading.classList.add('hidden');
-      }
-    }
-
-    // 렌더링 타이머
-    function startRenderTimer() {
-      state.renderStartTime = Date.now();
-      const timerEl = document.getElementById('loading-timer');
-      timerEl.textContent = '0:00';
-
-      state.renderTimer = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - state.renderStartTime) / 1000);
-        const mins = Math.floor(elapsed / 60);
-        const secs = elapsed % 60;
-        timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-      }, 1000);
-    }
-
-    function stopRenderTimer() {
-      if (state.renderTimer) {
-        clearInterval(state.renderTimer);
-        state.renderTimer = null;
-      }
-      const elapsed = Math.floor((Date.now() - state.renderStartTime) / 1000);
-      const mins = Math.floor(elapsed / 60);
-      const secs = elapsed % 60;
-      return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    function buildPrompt() {
-      const timeDesc = {
-        day: '정오 12:00 PM, 맑은 낮 하늘',
-        evening: 'Golden hour 오후 5:00 PM, 따뜻한 석양빛',
-        night: '밤 9:00 PM, 어두운 외부, 실내 조명만'
-      }[state.timePreset];
-
-      const lightDesc = {
-        on: '실내 조명 ON (3000K 따뜻한 조명)',
-        off: '실내 조명 OFF - 자연광만'
-      }[state.lightSwitch];
-
-      const styleDesc = {
-        realistic: 'Photorealistic, RAW photo, 8K',
-        archviz: 'Architectural visualization, V-Ray quality',
-        artistic: 'Artistic interpretation, cinematic lighting'
-      }[state.stylePreset];
-
-      const textureDesc = {
-        low: 'Smooth, minimal texture detail, clean surfaces',
-        medium: 'Balanced texture detail, natural material appearance',
-        high: 'High-detail textures, visible grain, pronounced material patterns'
-      }[state.texturePreset];
-
-      return `[INPUT IMAGE = REFERENCE]
-Transform this architectural/interior image into a photorealistic render.
-Maintain 100% identical geometry, camera angle, and composition.
-
-CRITICAL RULES:
-- Keep ALL structural elements exactly as shown
-- Preserve camera angle, FOV, and perspective
-- No additions, deletions, or modifications to layout
-- Apply realistic PBR materials with proper reflections
-- ${styleDesc}
-
-TEXTURE INTENSITY:
-- ${textureDesc}
-
-LIGHTING:
-- Time: ${timeDesc}
-- Interior lights: ${lightDesc}
-
-OUTPUT: Ultra-high resolution photorealistic architectural photograph`;
-    }
-
-    async function callGeminiAPI(imageBase64, prompt) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${state.apiKey}`;
-
-      const body = {
-        contents: [{
-          parts: [
-            { inlineData: { mimeType: 'image/png', data: imageBase64 } },
-            { text: prompt }
-          ]
-        }],
-        generationConfig: {
-          responseModalities: ['TEXT', 'IMAGE']
-        }
-      };
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error?.message || 'Request failed');
+      // 해당 씬 탭에 로딩 표시
+      if (sceneName) {
+        renderingScenes.set(sceneName, { startTime: Date.now() });
+        updateSceneTabStatus(sceneName, 'rendering');
       }
 
-      const data = await response.json();
-      const parts = data.candidates?.[0]?.content?.parts;
+      setStatus('Rendering: ' + (sceneName || 'Unknown'));
+    }
 
-      if (parts) {
-        for (const part of parts) {
-          if (part.inlineData) {
-            return part.inlineData.data;
+    function onRenderComplete(base64, sceneName) {
+      state.renderImage = base64;
+      el.renderImage.src = 'data:image/png;base64,' + base64;
+      el.renderImage.style.display = 'block';
+      el.renderEmpty.style.display = 'none';
+      el.loading.classList.add('hidden');
+      el.btnRender.disabled = false;
+      el.btnEdit.disabled = false;
+      el.btnSave.disabled = false;
+
+      // 해당 씬 탭 상태 업데이트
+      if (sceneName) {
+        renderingScenes.delete(sceneName);
+        updateSceneTabStatus(sceneName, 'complete');
+        // 3초 후 상태 초기화
+        setTimeout(() => updateSceneTabStatus(sceneName, 'normal'), 3000);
+      }
+
+      // 다른 씬이 아직 렌더링 중인지 확인
+      state.isRendering = renderingScenes.size > 0;
+
+      setStatus('Complete: ' + (sceneName || 'Unknown'));
+    }
+
+    function onRenderError(msg, sceneName) {
+      el.loading.classList.add('hidden');
+      el.btnRender.disabled = false;
+
+      // 해당 씬 탭 상태 업데이트
+      if (sceneName) {
+        renderingScenes.delete(sceneName);
+        updateSceneTabStatus(sceneName, 'error');
+        // 5초 후 상태 초기화
+        setTimeout(() => updateSceneTabStatus(sceneName, 'normal'), 5000);
+      }
+
+      // 다른 씬이 아직 렌더링 중인지 확인
+      state.isRendering = renderingScenes.size > 0;
+
+      setStatus('Error: ' + msg);
+    }
+
+    // 씬 탭 상태 업데이트
+    function updateSceneTabStatus(sceneName, status) {
+      const tabs = document.querySelectorAll('.scene-tab');
+      tabs.forEach(tab => {
+        if (tab.dataset.scene === sceneName) {
+          // 기존 상태 클래스 제거
+          tab.classList.remove('rendering', 'render-complete', 'render-error');
+
+          // 스피너 제거/추가
+          const existingSpinner = tab.querySelector('.scene-tab-spinner');
+          if (existingSpinner) existingSpinner.remove();
+
+          if (status === 'rendering') {
+            tab.classList.add('rendering');
+            // 스피너 추가
+            const spinner = document.createElement('div');
+            spinner.className = 'scene-tab-spinner';
+            tab.insertBefore(spinner, tab.firstChild);
+          } else if (status === 'complete') {
+            tab.classList.add('render-complete');
+          } else if (status === 'error') {
+            tab.classList.add('render-error');
           }
         }
-      }
-
-      return null;
-    }
-
-    function downloadResult() {
-      if (!state.resultImage) return;
-
-      const link = document.createElement('a');
-      link.href = 'data:image/png;base64,' + state.resultImage;
-      link.download = `nanobanana_${Date.now()}.png`;
-      link.click();
-      showToast('Image saved', 'success');
-    }
-
-    function addToHistory(source, result) {
-      const id = Date.now().toString();
-      state.history.push({ id, source, result, time: new Date() });
-
-      const tab = document.createElement('div');
-      tab.className = 'history-tab';
-      tab.dataset.id = id;
-      tab.innerHTML = `
-        <img class="thumb" src="data:image/png;base64,${result}">
-        <span>${new Date().toLocaleTimeString()}</span>
-        <button class="close-btn">&times;</button>
-      `;
-
-      tab.addEventListener('click', (e) => {
-        if (!e.target.classList.contains('close-btn')) {
-          loadFromHistory(id);
-        }
       });
-
-      tab.querySelector('.close-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        removeFromHistory(id);
-      });
-
-      el.historyTabs.appendChild(tab);
     }
 
-    function loadFromHistory(id) {
-      const item = state.history.find(h => h.id === id);
-      if (item) {
-        state.sourceImage = item.source;
-        state.resultImage = item.result;
-        el.sourceImage.src = 'data:image/png;base64,' + item.source;
-        el.sourceImage.classList.remove('hidden');
-        el.uploadArea.classList.add('hidden');
-        el.resultImage.src = 'data:image/png;base64,' + item.result;
-        el.resultImage.classList.remove('hidden');
-        el.resultEmpty.classList.add('hidden');
-        el.btnSave.disabled = false;
-
-        document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active'));
-        document.querySelector(`[data-id="${id}"]`).classList.add('active');
-      }
-    }
-
-    function removeFromHistory(id) {
-      state.history = state.history.filter(h => h.id !== id);
-      document.querySelector(`[data-id="${id}"]`).remove();
-    }
-
-    // Mix Canvas
-    let mixCtx = null;
-    let isDrawing = false;
-    let maskData = null;
-
-    function initMixCanvas() {
-      const canvas = el.mixCanvas;
-      mixCtx = canvas.getContext('2d');
-
-      canvas.addEventListener('mousedown', startDrawing);
-      canvas.addEventListener('mousemove', draw);
-      canvas.addEventListener('mouseup', stopDrawing);
-      canvas.addEventListener('mouseout', stopDrawing);
-    }
-
-    function loadMixImage(dataUrl) {
-      const img = new Image();
-      img.onload = () => {
-        el.mixCanvas.width = img.width;
-        el.mixCanvas.height = img.height;
-        mixCtx.drawImage(img, 0, 0);
-        state.mixImage = dataUrl.split(',')[1];
-        document.getElementById('mix-upload-area').classList.add('hidden');
-      };
-      img.src = dataUrl;
-    }
-
-    function startDrawing(e) {
-      if (state.mixMode !== 'inpaint' && state.mixMode !== 'material') return;
-      isDrawing = true;
-      draw(e);
-    }
-
-    function draw(e) {
-      if (!isDrawing) return;
-
-      const rect = el.mixCanvas.getBoundingClientRect();
-      const scaleX = el.mixCanvas.width / rect.width;
-      const scaleY = el.mixCanvas.height / rect.height;
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
-
-      mixCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-      mixCtx.beginPath();
-      mixCtx.arc(x, y, state.brushSize, 0, Math.PI * 2);
-      mixCtx.fill();
-    }
-
-    function stopDrawing() {
-      isDrawing = false;
-    }
-
-    async function applyMix() {
-      if (!state.apiKey || !state.mixImage) {
-        showToast('Please load an image first', 'error');
-        return;
-      }
-
-      const instruction = el.mixInstruction.value.trim();
-      if (!instruction && state.mixMode !== 'floorplan') {
-        showToast('Please enter instructions', 'error');
-        return;
-      }
-
-      el.loading.classList.remove('hidden');
-      setStatus('Processing...');
-
-      try {
-        let prompt = '';
-
-        switch (state.mixMode) {
-          case 'add-remove':
-            prompt = `Modify this interior image: ${instruction}
-CRITICAL: Keep camera angle and all other elements unchanged. Only make the specified changes.`;
-            break;
-
-          case 'inpaint':
-            prompt = `In the marked/red areas of this image: ${instruction}
-Keep everything else exactly the same. Seamless blend required.`;
-            break;
-
-          case 'material':
-            prompt = `Replace the material/texture in the marked red areas with: ${instruction}
-Maintain geometry and lighting. Apply realistic PBR material properties.`;
-            break;
-
-          case 'floorplan':
-            const wallHeight = document.getElementById('wall-height').value;
-            const wallThickness = document.getElementById('wall-thickness').value;
-            const style = document.querySelector('#floorplan-style .seg-btn.active').dataset.style;
-            prompt = `Convert this 2D floorplan to isometric 3D view.
-Wall height: ${wallHeight}mm, Wall thickness: ${wallThickness}mm
-Style: ${style === 'modern' ? 'Modern minimalist' : style === 'scandi' ? 'Scandinavian' : 'Luxury'}
-Add furniture, materials, and lighting appropriate for each room.`;
-            break;
-        }
-
-        const result = await callGeminiAPI(state.mixImage, prompt);
-
-        if (result) {
-          state.resultImage = result;
-          el.resultImage.src = 'data:image/png;base64,' + result;
-          el.resultImage.classList.remove('hidden');
-          el.resultEmpty.classList.add('hidden');
-          el.btnSave.disabled = false;
-
-          // Switch to render view to show result
-          handleMenuClick('menu-render');
-          showToast('Mix complete', 'success');
-          setStatus('Complete');
-        }
-      } catch (error) {
-        showToast('Error: ' + error.message, 'error');
-        setStatus('Error');
-      } finally {
-        el.loading.classList.add('hidden');
-      }
-    }
-
-    // Guide Grid
-    function toggleGuide(panel, btn) {
-      const overlay = document.getElementById(`guide-${panel}`);
-      const canvas = document.getElementById(`guide-canvas-${panel}`);
-      const isHidden = overlay.classList.toggle('hidden');
-
-      btn.classList.toggle('active', !isHidden);
-
-      if (!isHidden) {
-        const container = overlay.parentElement;
-        canvas.width = container.offsetWidth;
-        canvas.height = container.offsetHeight;
-        drawGrid(canvas);
-      }
-    }
-
-    function drawGrid(canvas) {
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-      const gridSize = 40;
-
-      ctx.clearRect(0, 0, w, h);
-      ctx.strokeStyle = 'rgba(255, 100, 100, 0.3)';
-      ctx.lineWidth = 1;
-
-      // Grid lines
-      for (let x = gridSize; x < w; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
-      }
-
-      for (let y = gridSize; y < h; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-      }
-
-      // Center lines
-      ctx.strokeStyle = 'rgba(255, 100, 100, 0.7)';
-      ctx.lineWidth = 2;
-
-      ctx.beginPath();
-      ctx.moveTo(w / 2, 0);
-      ctx.lineTo(w / 2, h);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(0, h / 2);
-      ctx.lineTo(w, h / 2);
-      ctx.stroke();
+    function onApiStatusUpdate(connected) {
+      state.apiConnected = connected;
+      el.statusDot.classList.toggle('connected', connected);
+      el.apiStatus.textContent = connected ? 'Connected' : 'Disconnected';
     }
 
     function setStatus(text) {
       el.statusText.textContent = text;
     }
 
-    // Convert 완료 시 호출 - AI 생성 프롬프트 표시
-    function onConvertComplete(prompt) {
-      const promptText = document.getElementById('prompt-text');
-      if (promptText && prompt) {
-        promptText.value = prompt;
-        promptText.classList.add('converted');
-        setStatus('Convert complete - prompt generated');
-        showToast('Scene analyzed successfully!', 'success');
+    el.btnCapture.addEventListener('click', () => {
+      setStatus('Converting...');
+      sketchup.captureScene(state.imageSize);
+    });
+
+    el.btnRender.addEventListener('click', () => {
+      sketchup.startRender(state.timePreset, state.lightSwitch);
+    });
+
+    el.btnSave.addEventListener('click', () => sketchup.saveImage());
+    el.btnEdit.addEventListener('click', () => sketchup.openEditor());
+    el.btnSettings.addEventListener('click', () => sketchup.openSettings());
+
+    document.querySelectorAll('#time-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#time-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.timePreset = btn.dataset.time;
+      });
+    });
+
+    document.querySelectorAll('#light-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#light-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.lightSwitch = btn.dataset.light;
+      });
+    });
+
+    // Size buttons
+    document.querySelectorAll('#size-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#size-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.imageSize = btn.dataset.size;
+      });
+    });
+
+    // Mirror button
+    const btnMirror = document.getElementById('btn-mirror');
+    btnMirror.addEventListener('click', () => {
+      mirrorActive = !mirrorActive;
+      btnMirror.classList.toggle('active', mirrorActive);
+      btnMirror.textContent = mirrorActive ? 'Mirror ON' : 'Mirror';
+      if (mirrorActive) {
+        sketchup.startMirror();
+      } else {
+        sketchup.stopMirror();
+      }
+    });
+
+    // Mirror update callback (Ruby에서 호출) - 최적화
+    let mirrorImageReady = true;
+    function onMirrorUpdate(base64) {
+      if (!mirrorActive || !mirrorImageReady) return;
+
+      mirrorImageReady = false;
+
+      // 직접 src 교체 (새 Image 객체 없이)
+      el.originalImage.src = 'data:image/jpeg;base64,' + base64;
+      el.originalImage.style.display = 'block';
+      el.originalEmpty.style.display = 'none';
+
+      // 다음 프레임 즉시 허용
+      mirrorImageReady = true;
+    }
+
+    // 미러링 상태 설정 (Ruby에서 호출)
+    function setMirrorActive(active) {
+      mirrorActive = active;
+      btnMirror.classList.toggle('active', active);
+      btnMirror.textContent = active ? 'Mirror ON' : 'Mirror';
+    }
+
+    // 2점 투시 버튼
+    document.getElementById('btn-2point').addEventListener('click', () => sketchup.apply2Point());
+
+    // Camera movement buttons
+    document.getElementById('cam-forward').addEventListener('click', () => sketchup.camMove('forward'));
+    document.getElementById('cam-back').addEventListener('click', () => sketchup.camMove('back'));
+    document.getElementById('cam-left').addEventListener('click', () => sketchup.camMove('left'));
+    document.getElementById('cam-right').addEventListener('click', () => sketchup.camMove('right'));
+    document.getElementById('cam-up').addEventListener('click', () => sketchup.camMove('up'));
+    document.getElementById('cam-down').addEventListener('click', () => sketchup.camMove('down'));
+    document.getElementById('cam-rot-left').addEventListener('click', () => sketchup.camRotate('left'));
+    document.getElementById('cam-rot-right').addEventListener('click', () => sketchup.camRotate('right'));
+
+    // Camera height presets
+    document.querySelectorAll('#height-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#height-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sketchup.camHeight(btn.dataset.height);
+      });
+    });
+
+    // Camera FOV presets
+    document.querySelectorAll('#fov-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#fov-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sketchup.camFov(btn.dataset.fov);
+      });
+    });
+
+    // WASD 키보드 컨트롤
+    const keyMap = {
+      'w': { action: 'move', dir: 'forward', btn: 'cam-forward' },
+      'W': { action: 'move', dir: 'forward', btn: 'cam-forward' },
+      's': { action: 'move', dir: 'back', btn: 'cam-back' },
+      'S': { action: 'move', dir: 'back', btn: 'cam-back' },
+      'a': { action: 'move', dir: 'left', btn: 'cam-left' },
+      'A': { action: 'move', dir: 'left', btn: 'cam-left' },
+      'd': { action: 'move', dir: 'right', btn: 'cam-right' },
+      'D': { action: 'move', dir: 'right', btn: 'cam-right' },
+      'q': { action: 'move', dir: 'up', btn: 'cam-up' },
+      'Q': { action: 'move', dir: 'up', btn: 'cam-up' },
+      'e': { action: 'move', dir: 'down', btn: 'cam-down' },
+      'E': { action: 'move', dir: 'down', btn: 'cam-down' },
+      'z': { action: 'rotate', dir: 'left', btn: 'cam-rot-left' },
+      'Z': { action: 'rotate', dir: 'left', btn: 'cam-rot-left' },
+      'x': { action: 'rotate', dir: 'right', btn: 'cam-rot-right' },
+      'X': { action: 'rotate', dir: 'right', btn: 'cam-rot-right' }
+    };
+
+    const activeKeys = new Set();
+    const keyIntervals = {};
+
+    document.addEventListener('keydown', (e) => {
+      // 텍스트 입력 필드에서만 무시 (슬라이더는 허용)
+      if (e.target.tagName === 'TEXTAREA') return;
+      if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+
+      const mapping = keyMap[e.key];
+      if (mapping) {
+        const key = e.key.toLowerCase();
+
+        // 버튼 활성화 표시
+        const btn = document.getElementById(mapping.btn);
+        if (btn) btn.classList.add('active-key');
+
+        // 처음 누를 때만 interval 시작
+        if (!activeKeys.has(key)) {
+          activeKeys.add(key);
+
+          // 즉시 실행
+          if (mapping.action === 'move') {
+            sketchup.camMove(mapping.dir);
+          } else if (mapping.action === 'rotate') {
+            sketchup.camRotate(mapping.dir);
+          }
+
+          // 반복 실행 (100ms 간격)
+          keyIntervals[key] = setInterval(() => {
+            if (mapping.action === 'move') {
+              sketchup.camMove(mapping.dir);
+            } else if (mapping.action === 'rotate') {
+              sketchup.camRotate(mapping.dir);
+            }
+          }, 100);
+        }
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      const mapping = keyMap[e.key];
+      if (mapping) {
+        const key = e.key.toLowerCase();
+        activeKeys.delete(key);
+
+        // interval 정리
+        if (keyIntervals[key]) {
+          clearInterval(keyIntervals[key]);
+          delete keyIntervals[key];
+        }
+
+        // 버튼 활성화 해제
+        const btn = document.getElementById(mapping.btn);
+        if (btn) btn.classList.remove('active-key');
+      }
+    });
+
+    // 씬 탭 업데이트 (Ruby에서 호출)
+    function onScenesUpdate(scenesJson) {
+      const scenes = JSON.parse(scenesJson);
+      const tabsContainer = document.getElementById('scene-tabs');
+
+      // 탭 초기화
+      tabsContainer.innerHTML = '';
+
+      // 씬 탭 추가
+      scenes.forEach((scene, index) => {
+        const tab = document.createElement('div');
+        tab.className = 'scene-tab';
+        if (index === 0) tab.classList.add('active'); // 첫 번째 씬 활성화
+        tab.dataset.scene = scene.name;
+
+        // 렌더링 중인 씬이면 스피너 추가
+        if (renderingScenes.has(scene.name)) {
+          tab.classList.add('rendering');
+          const spinner = document.createElement('div');
+          spinner.className = 'scene-tab-spinner';
+          tab.appendChild(spinner);
+        }
+
+        // 씬 이름 텍스트
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = scene.name;
+        tab.appendChild(nameSpan);
+
+        tab.addEventListener('click', () => {
+          // 활성 탭 변경
+          document.querySelectorAll('.scene-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          // Ruby에 씬 전환 요청
+          sketchup.selectScene(scene.name);
+        });
+        tabsContainer.appendChild(tab);
+      });
+
+      // + 버튼 다시 추가
+      const addBtn = document.createElement('button');
+      addBtn.className = 'scene-add-btn';
+      addBtn.id = 'btn-add-scene';
+      addBtn.title = '현재 뷰를 씬으로 저장';
+      addBtn.textContent = '+';
+      addBtn.addEventListener('click', () => sketchup.addScene());
+      tabsContainer.appendChild(addBtn);
+    }
+
+    // ========================================
+    // 그리드 가이드 시스템
+    // ========================================
+
+    // 그리드 그리기 함수
+    function drawGrid(canvas, gridSize) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 중앙 좌표
+      const centerX = w / 2;
+      const centerY = h / 2;
+
+      // 일반 그리드 라인 (연한 색)
+      ctx.strokeStyle = 'rgba(255, 100, 100, 0.25)';
+      ctx.lineWidth = 1;
+
+      // 수직선 (중앙에서 양쪽으로)
+      for (let x = centerX % gridSize; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+
+      // 수평선 (중앙에서 양쪽으로)
+      for (let y = centerY % gridSize; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // 중앙 십자 라인 (진한 색)
+      ctx.strokeStyle = 'rgba(255, 100, 100, 0.8)';
+      ctx.lineWidth = 2;
+
+      // 중앙 수평선
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(w, centerY);
+      ctx.stroke();
+
+      // 중앙 수직선
+      ctx.beginPath();
+      ctx.moveTo(centerX, 0);
+      ctx.lineTo(centerX, h);
+      ctx.stroke();
+
+      // 중앙 십자 표시
+      ctx.fillStyle = 'rgba(255, 100, 100, 0.9)';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('+', centerX, centerY);
+    }
+
+    // 그리드 캔버스 업데이트 (이미지 크기에 맞춤)
+    function updateGridCanvas(canvas, img, slider, valueEl) {
+      if (!img || img.style.display === 'none') return;
+      canvas.width = img.offsetWidth;
+      canvas.height = img.offsetHeight;
+      canvas.style.display = 'block';
+      const gridSize = parseInt(slider.value);
+      valueEl.textContent = gridSize + 'px';
+      drawGrid(canvas, gridSize);
+    }
+
+    // Source 패널
+    const guideControlsSource = document.getElementById('guide-controls-source');
+    const canvasSource = document.getElementById('guide-canvas-source');
+    const sliderSource = document.getElementById('guide-slider-source');
+    const valueSource = document.getElementById('guide-value-source');
+    const lockSource = document.getElementById('guide-lock-source');
+    const zoomSource = document.getElementById('guide-zoom-source');
+    const zoomWrapperSource = document.getElementById('zoom-wrapper-source');
+    const btnGuide = document.getElementById('btn-guide');
+    let guideActiveSource = false;
+    let guideLockedSource = false;
+
+    btnGuide.addEventListener('click', () => {
+      guideActiveSource = !guideActiveSource;
+      btnGuide.classList.toggle('active', guideActiveSource);
+      guideControlsSource.classList.toggle('hidden', !guideActiveSource);
+      if (guideActiveSource) {
+        updateGridCanvas(canvasSource, el.originalImage, sliderSource, valueSource);
+      } else {
+        canvasSource.style.display = 'none';
+      }
+    });
+
+    sliderSource.addEventListener('input', () => {
+      updateGridCanvas(canvasSource, el.originalImage, sliderSource, valueSource);
+    });
+
+    lockSource.addEventListener('click', () => {
+      guideLockedSource = !guideLockedSource;
+      lockSource.classList.toggle('locked', guideLockedSource);
+      guideControlsSource.classList.toggle('locked', guideLockedSource);
+    });
+
+    // Zoom 슬라이더 (Source) - 이미지+그리드 함께 줌
+    zoomSource.addEventListener('input', () => {
+      const scale = parseInt(zoomSource.value) / 100;
+      zoomWrapperSource.style.transform = `scale(${scale})`;
+    });
+
+    // Result 패널
+    const guideControlsResult = document.getElementById('guide-controls-result');
+    const canvasResult = document.getElementById('guide-canvas-result');
+    const sliderResult = document.getElementById('guide-slider-result');
+    const valueResult = document.getElementById('guide-value-result');
+    const lockResult = document.getElementById('guide-lock-result');
+    const zoomResult = document.getElementById('guide-zoom-result');
+    const zoomWrapperResult = document.getElementById('zoom-wrapper-result');
+    const btnGuideResult = document.getElementById('btn-guide-result');
+    let guideActiveResult = false;
+    let guideLockedResult = false;
+
+    btnGuideResult.addEventListener('click', () => {
+      guideActiveResult = !guideActiveResult;
+      btnGuideResult.classList.toggle('active', guideActiveResult);
+      guideControlsResult.classList.toggle('hidden', !guideActiveResult);
+      if (guideActiveResult) {
+        updateGridCanvas(canvasResult, el.renderImage, sliderResult, valueResult);
+      } else {
+        canvasResult.style.display = 'none';
+      }
+    });
+
+    sliderResult.addEventListener('input', () => {
+      updateGridCanvas(canvasResult, el.renderImage, sliderResult, valueResult);
+    });
+
+    lockResult.addEventListener('click', () => {
+      guideLockedResult = !guideLockedResult;
+      lockResult.classList.toggle('locked', guideLockedResult);
+      guideControlsResult.classList.toggle('locked', guideLockedResult);
+    });
+
+    // Zoom 슬라이더 (Result)
+    zoomResult.addEventListener('input', () => {
+      const scale = parseInt(zoomResult.value) / 100;
+      zoomWrapperResult.style.transform = `scale(${scale})`;
+    });
+
+    // 창 리사이즈 시 그리드 업데이트
+    window.addEventListener('resize', () => {
+      if (guideActiveSource) {
+        updateGridCanvas(canvasSource, el.originalImage, sliderSource, valueSource);
+      }
+      if (guideActiveResult) {
+        updateGridCanvas(canvasResult, el.renderImage, sliderResult, valueResult);
+      }
+    });
+
+    // 패널 확장/축소 기능
+    const sourcePanel = document.getElementById('source-panel');
+    const resultPanel = document.getElementById('result-panel');
+    const btnExpandSource = document.getElementById('btn-expand-source');
+    const btnExpandResult = document.getElementById('btn-expand-result');
+
+    // 확장 아이콘 SVG
+    const expandIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="15 3 21 3 21 9"></polyline>
+      <polyline points="9 21 3 21 3 15"></polyline>
+      <line x1="21" y1="3" x2="14" y2="10"></line>
+      <line x1="3" y1="21" x2="10" y2="14"></line>
+    </svg>`;
+
+    // 축소 아이콘 SVG (분할 아이콘)
+    const collapseIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="4 14 10 14 10 20"></polyline>
+      <polyline points="20 10 14 10 14 4"></polyline>
+      <line x1="14" y1="10" x2="21" y2="3"></line>
+      <line x1="3" y1="21" x2="10" y2="14"></line>
+    </svg>`;
+
+    let expandedPanel = null;
+
+    function togglePanelExpand(panel, otherPanel, btn) {
+      if (expandedPanel === panel) {
+        // 이미 확장된 상태면 축소
+        panel.classList.remove('fullscreen');
+        otherPanel.classList.remove('hidden');
+        btn.innerHTML = expandIcon;
+        btn.title = 'Expand';
+        // 다른 패널 버튼도 확장 아이콘으로 복구
+        const otherBtn = otherPanel.querySelector('.panel-expand-btn');
+        otherBtn.innerHTML = expandIcon;
+        otherBtn.title = 'Expand';
+        expandedPanel = null;
+      } else {
+        // 확장
+        panel.classList.add('fullscreen');
+        otherPanel.classList.add('hidden');
+        btn.innerHTML = collapseIcon;
+        btn.title = 'Split';
+        expandedPanel = panel;
       }
     }
 
-    // 프롬프트 클리어
-    function clearPrompt() {
-      const promptText = document.getElementById('prompt-text');
-      if (promptText) {
-        promptText.value = '';
-        promptText.classList.remove('converted');
-      }
-    }
+    btnExpandSource.addEventListener('click', () => {
+      togglePanelExpand(sourcePanel, resultPanel, btnExpandSource);
+    });
 
-    function showToast(message, type = '') {
-      el.toast.textContent = message;
-      el.toast.className = 'toast show ' + type;
-      setTimeout(() => el.toast.classList.remove('show'), 3000);
-    }
+    btnExpandResult.addEventListener('click', () => {
+      togglePanelExpand(resultPanel, sourcePanel, btnExpandResult);
+    });
 
-    init();
+    // 아이콘 메뉴 클릭 이벤트
+    document.querySelectorAll('.icon-menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        // 활성 상태 변경
+        document.querySelectorAll('.icon-menu-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
+        // 메뉴별 동작
+        const menuId = item.id;
+        switch(menuId) {
+          case 'menu-render':
+            // 기본 렌더 패널 표시
+            break;
+          case 'menu-camera':
+            // 카메라 컨트롤 포커스
+            break;
+          case 'menu-scenes':
+            // 씬 관리
+            break;
+          case 'menu-mix':
+            // Mix 다이얼로그 열기
+            sketchup.openMix();
+            break;
+          case 'menu-history':
+            // 히스토리 패널
+            break;
+          case 'menu-layers':
+            // 레이어 관리
+            break;
+          case 'menu-help':
+            // 도움말
+            break;
+          case 'menu-settings':
+            sketchup.openSettings();
+            break;
+        }
+      });
+    });
+
+    // 프롬프트 패널 토글
+    const promptPanel = document.getElementById('prompt-panel');
+    const promptHeader = document.getElementById('prompt-header');
+    const promptClose = document.getElementById('prompt-close');
+
+    promptHeader.addEventListener('click', (e) => {
+      if (e.target.closest('#prompt-close')) return;
+      promptPanel.classList.toggle('collapsed');
+      promptPanel.classList.toggle('expanded');
+    });
+
+    promptClose.addEventListener('click', () => {
+      promptPanel.classList.add('collapsed');
+      promptPanel.classList.remove('expanded');
+    });
+
+    // 즉시 초기화 (지연 없이)
+    sketchup.checkApiStatus();
+    sketchup.getScenes();
   </script>
 </body>
 </html>
