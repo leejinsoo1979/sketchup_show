@@ -8,8 +8,8 @@ require 'base64'
 module NanoBanana
   # Gemini API 통신 클라이언트
   class ApiClient
-    ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent'
-    MODEL_INFO_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview'
+    ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent'
+    MODEL_INFO_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation'
     TIMEOUT = 180 # Pro 모델은 시간이 더 오래 걸릴 수 있음
     MAX_RETRIES = 3
 
