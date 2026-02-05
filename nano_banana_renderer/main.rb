@@ -2891,7 +2891,7 @@ CRITICAL RULES:
 
     HISTORY_DIR = File.join(ENV['HOME'], '.sketchupshow')
     HISTORY_FILE = File.join(HISTORY_DIR, 'history.json')
-    MAX_HISTORY_ITEMS = 50
+    MAX_HISTORY_ITEMS = 500
 
     # 렌더링 완료 폴링 (JS가 주기적으로 호출)
     def poll_render_complete

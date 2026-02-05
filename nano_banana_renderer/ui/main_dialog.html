@@ -3831,8 +3831,8 @@
     // 히스토리 저장 (Ruby 파일 + localStorage)
     function saveHistoryToStorage() {
       try {
-        // 최근 50개만 저장
-        const toSave = state.history.slice(0, 50);
+        // 최근 500개만 저장
+        const toSave = state.history.slice(0, 500);
 
         // Ruby 파일에 저장 (영구 저장)
         callRuby('save_history', JSON.stringify(toSave));
