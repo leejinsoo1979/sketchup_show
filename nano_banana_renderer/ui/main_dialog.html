@@ -3828,29 +3828,27 @@
       setStatus('Image loaded from history');
     }
 
-    // 로컬 스토리지에 저장
+    // 히스토리 저장 (Ruby 파일 + localStorage)
     function saveHistoryToStorage() {
       try {
-        // 이미지는 너무 크므로 최근 20개만 저장
-        const toSave = state.history.slice(0, 20);
-        localStorage.setItem('sketchupshow_history', JSON.stringify(toSave));
+        // 최근 50개만 저장
+        const toSave = state.history.slice(0, 50);
+
+        // Ruby 파일에 저장 (영구 저장)
+        callRuby('save_history', JSON.stringify(toSave));
+
+        // localStorage에도 백업
+        localStorage.setItem('sketchupshow_history', JSON.stringify(toSave.slice(0, 20)));
       } catch (e) {
         console.warn('[SketchupShow] 히스토리 저장 실패:', e.message);
       }
     }
 
-    // 로컬 스토리지에서 로드
+    // 히스토리 로드 (Ruby 파일에서)
     function loadHistoryFromStorage() {
-      try {
-        const saved = localStorage.getItem('sketchupshow_history');
-        if (saved) {
-          state.history = JSON.parse(saved);
-          state.nextHistoryId = Math.max(...state.history.map(h => h.id), 0) + 1;
-          renderHistoryGallery();
-        }
-      } catch (e) {
-        console.warn('[SketchupShow] 히스토리 로드 실패:', e.message);
-      }
+      // Ruby에서 파일로 저장된 히스토리 로드
+      callRuby('load_history');
+      // 결과는 onHistoryLoaded 콜백으로 받음
     }
 
     // 히스토리 패널로 전환
@@ -4329,17 +4327,68 @@
     // 렌더링 중인 씬 목록 관리
     const renderingScenes = new Map(); // sceneName -> { startTime }
 
+    // ========================================
+    // 폴링 시스템 (execute_script 크래시 방지)
+    // ========================================
+    let pollInterval = null;
+
+    function startRenderPolling() {
+      if (pollInterval) return;
+      console.log('[NanoBanana] 폴링 시작');
+      pollInterval = setInterval(() => {
+        callRuby('poll_render_complete');
+      }, 500);
+    }
+
+    function stopRenderPolling() {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        console.log('[NanoBanana] 폴링 중지');
+      }
+    }
+
+    // Ruby 폴링 응답 처리
+    function onPollResult(sceneName) {
+      if (!sceneName) {
+        if (renderingScenes.size === 0 && !state.isRegenerating) {
+          stopRenderPolling();
+        }
+        return;
+      }
+
+      console.log('[NanoBanana] 폴링 결과:', sceneName);
+
+      if (window._pollImage) {
+        if (sceneName.startsWith('regenerate_')) {
+          const panelId = parseInt(sceneName.replace('regenerate_', ''));
+          onRegenerateComplete(window._pollImage, panelId);
+        } else {
+          onRenderComplete(window._pollImage, sceneName);
+        }
+        window._pollImage = null;
+      }
+    }
+
+    // 히스토리 로드 콜백
+    function onHistoryLoaded(historyArray) {
+      console.log('[NanoBanana] 히스토리 로드:', historyArray.length, '개');
+      state.history = historyArray || [];
+      state.nextHistoryId = state.history.length > 0 ? Math.max(...state.history.map(h => h.id || 0)) + 1 : 1;
+      renderHistoryGallery();
+    }
+
     function onRenderStart(sceneName) {
       state.isRendering = true;
       el.loading.classList.remove('hidden');
-      // Render 버튼은 활성화 상태 유지 (연속 렌더링 가능)
-      // el.btnRender.disabled = true;
 
-      // 해당 씬 탭에 로딩 표시
       if (sceneName) {
         renderingScenes.set(sceneName, { startTime: Date.now() });
         updateSceneTabStatus(sceneName, 'rendering');
       }
+
+      // 폴링 시작
+      startRenderPolling();
 
       setStatus('Rendering: ' + (sceneName || 'Unknown'));
     }
@@ -4719,6 +4768,10 @@
 
       // ★ 타이머 시작
       startPanelTimer(newPanelId);
+
+      // ★ 폴링 시작
+      state.isRegenerating = true;
+      startRenderPolling();
 
       setStatus(`Result ${newPanelId} 생성중...`);
 
@@ -5488,6 +5541,10 @@
       const loadingEl = document.getElementById(`loading-${newPanelId}`);
       if (loadingEl) loadingEl.classList.remove('hidden');
 
+      // ★ 폴링 시작
+      state.isRegenerating = true;
+      startRenderPolling();
+
       // Ruby에 2차 생성 요청 (이전 결과 이미지를 소스로)
       setStatus(`Result ${newPanelId} 생성중...`);
       sketchup.regenerate(panelData.image, prompt, newPanelId);
@@ -5497,6 +5554,9 @@
     function onRegenerateComplete(base64, panelId) {
       // ★ 타이머 중지
       stopPanelTimer(panelId);
+
+      // ★ 상태 해제
+      state.isRegenerating = false;
 
       const panelData = state.resultPanels.find(p => p.id === panelId);
       if (panelData) panelData.image = base64;

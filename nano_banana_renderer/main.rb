@@ -591,6 +591,21 @@ module NanoBanana
         regenerate_image(source_base64, prompt, negative_prompt.to_s, panel_id.to_i)
       end
 
+      # 렌더링 완료 폴링 (JS가 주기적으로 호출)
+      dialog.add_action_callback('poll_render_complete') do |_ctx|
+        poll_render_complete
+      end
+
+      # 히스토리 저장
+      dialog.add_action_callback('save_history') do |_ctx, history_json|
+        save_history_to_file(history_json)
+      end
+
+      # 히스토리 로드
+      dialog.add_action_callback('load_history') do |_ctx|
+        load_history_from_file
+      end
+
       # 웹 동기화 시작
       dialog.add_action_callback('start_web_sync') do |_ctx|
         session_id = start_web_sync
@@ -1493,8 +1508,17 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
         if result && result[:image]
           # 렌더링 결과를 저장 (Export 기능에서 사용)
           @current_image = result[:image]
-          # 렌더링 완료 (씬 이름과 함께 전달)
-          @main_dialog&.execute_script("onRenderComplete('#{result[:image]}', '#{current_scene}')")
+          puts "[SketchupShow] ★ 1차 결과 저장됨: 씬=#{current_scene}, #{result[:image].length} bytes"
+
+          # 폴링 큐에 추가 (execute_script 크래시 방지)
+          @render_complete_queue ||= []
+          @render_complete_queue << {
+            scene: current_scene,
+            image: result[:image],
+            timestamp: Time.now.to_i
+          }
+          puts "[SketchupShow] 렌더링 완료 큐에 추가: #{current_scene}"
+
           # 웹 동기화 전송
           sync_rendered_to_web if @web_sync_active
         else
@@ -2840,8 +2864,17 @@ CRITICAL RULES:
           result = @api_client.generate(source_base64, render_prompt)
 
           if result && result[:image]
-            @main_dialog&.execute_script("onRegenerateComplete('#{result[:image]}', #{panel_id})")
-            puts "[SketchupShow] 2차 생성 완료 (패널 #{panel_id})"
+            puts "[SketchupShow] 2차 생성 완료 (패널 #{panel_id}), #{result[:image].length} bytes"
+
+            # 폴링 큐에 추가 (execute_script 크래시 방지)
+            @render_complete_queue ||= []
+            @render_complete_queue << {
+              scene: "regenerate_#{panel_id}",
+              image: result[:image],
+              panel_id: panel_id,
+              timestamp: Time.now.to_i
+            }
+            puts "[SketchupShow] 2차 결과 큐에 추가: panel=#{panel_id}"
           else
             @main_dialog&.execute_script("onRegenerateError('결과를 받지 못했습니다.', #{panel_id})")
           end
@@ -2849,6 +2882,82 @@ CRITICAL RULES:
           puts "[SketchupShow] 2차 생성 에러: #{e.message}"
           @main_dialog&.execute_script("onRegenerateError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}', #{panel_id})")
         end
+      end
+    end
+
+    # ========================================
+    # 폴링 시스템 (execute_script 크래시 방지)
+    # ========================================
+
+    HISTORY_DIR = File.join(ENV['HOME'], '.sketchupshow')
+    HISTORY_FILE = File.join(HISTORY_DIR, 'history.json')
+    MAX_HISTORY_ITEMS = 50
+
+    # 렌더링 완료 폴링 (JS가 주기적으로 호출)
+    def poll_render_complete
+      begin
+        @render_complete_queue ||= []
+
+        if @render_complete_queue.empty?
+          # 완료된 렌더링 없음
+          @main_dialog&.execute_script("onPollResult(null)")
+          return
+        end
+
+        # 큐에서 하나 꺼내서 전달
+        item = @render_complete_queue.shift
+        scene_name = item[:scene]
+        image_data = item[:image]
+
+        puts "[SketchupShow] 폴링 응답: #{scene_name}, #{image_data.to_s.length} bytes"
+
+        # 이미지를 청크로 나눠서 JS 전역 변수에 저장
+        chunk_size = 20000
+        chunks = image_data.scan(/.{1,#{chunk_size}}/m)
+
+        @main_dialog&.execute_script("window._pollImage = '';")
+        chunks.each do |chunk|
+          safe_chunk = chunk.gsub("\\", "\\\\\\\\").gsub("'", "\\\\'")
+          @main_dialog&.execute_script("window._pollImage += '#{safe_chunk}';")
+        end
+
+        safe_scene = scene_name.to_s.gsub("'", "\\\\'")
+        @main_dialog&.execute_script("onPollResult('#{safe_scene}')")
+        puts "[SketchupShow] 폴링 전달 완료"
+      rescue StandardError => e
+        puts "[SketchupShow] 폴링 오류: #{e.message}"
+        @main_dialog&.execute_script("onPollResult(null)")
+      end
+    end
+
+    # 히스토리 파일에 저장
+    def save_history_to_file(history_json)
+      begin
+        FileUtils.mkdir_p(HISTORY_DIR) unless File.directory?(HISTORY_DIR)
+        history = JSON.parse(history_json)
+        history = history.slice(0, MAX_HISTORY_ITEMS) if history.length > MAX_HISTORY_ITEMS
+        File.write(HISTORY_FILE, JSON.pretty_generate(history))
+        puts "[SketchupShow] 히스토리 저장 완료: #{history.length}개"
+      rescue StandardError => e
+        puts "[SketchupShow] 히스토리 저장 실패: #{e.message}"
+      end
+    end
+
+    # 히스토리 파일에서 로드
+    def load_history_from_file
+      begin
+        if File.exist?(HISTORY_FILE)
+          history_json = File.read(HISTORY_FILE)
+          history = JSON.parse(history_json)
+          puts "[SketchupShow] 히스토리 로드: #{history.length}개"
+          @main_dialog&.execute_script("onHistoryLoaded(#{history.to_json})")
+        else
+          puts "[SketchupShow] 히스토리 파일 없음"
+          @main_dialog&.execute_script("onHistoryLoaded([])")
+        end
+      rescue StandardError => e
+        puts "[SketchupShow] 히스토리 로드 실패: #{e.message}"
+        @main_dialog&.execute_script("onHistoryLoaded([])")
       end
     end
 
