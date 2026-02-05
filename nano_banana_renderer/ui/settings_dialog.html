@@ -4,75 +4,294 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>설정 - NanoBanana</title>
-  <link rel="stylesheet" href="styles/common.css">
   <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      background: var(--bg-secondary);
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: #111;
+      border-bottom: 1px solid #333;
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .btn-close {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-close:hover {
+      background: #222;
+      color: #fff;
+    }
+
+    /* Main Content */
     .main-content {
       flex: 1;
-      padding: var(--spacing-lg);
+      padding: 20px;
       overflow-y: auto;
     }
 
     .settings-section {
-      background: var(--bg-primary);
-      border-radius: var(--border-radius-lg);
-      padding: var(--spacing-lg);
-      margin-bottom: var(--spacing-md);
-      box-shadow: var(--shadow-sm);
+      background: #151515;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid #252525;
     }
 
     .settings-section-title {
       font-size: 14px;
       font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: var(--spacing-md);
+      color: #ffe033;
+      margin-bottom: 16px;
       display: flex;
       align-items: center;
-      gap: var(--spacing-sm);
+      gap: 8px;
     }
 
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 13px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #ffe033;
+      box-shadow: 0 0 0 2px rgba(255, 224, 51, 0.15);
+    }
+
+    .form-input::placeholder {
+      color: #666;
+    }
+
+    /* API Key Input Group */
     .api-key-input-group {
       display: flex;
-      gap: var(--spacing-sm);
+      gap: 8px;
     }
 
     .api-key-input-group input {
       flex: 1;
     }
 
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #888;
+      cursor: pointer;
+      border-radius: 8px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: #252525;
+      color: #fff;
+    }
+
+    /* Custom Dropdown */
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+    }
+
+    .dropdown-selected {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 13px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+
+    .dropdown-selected:hover {
+      border-color: #444;
+    }
+
+    .dropdown-selected.open {
+      border-color: #ffe033;
+      box-shadow: 0 0 0 2px rgba(255, 224, 51, 0.15);
+      border-radius: 8px 8px 0 0;
+    }
+
+    .dropdown-arrow {
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid #888;
+      transition: transform 0.2s;
+    }
+
+    .dropdown-selected.open .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #1a1a1a;
+      border: 1px solid #ffe033;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .dropdown-menu.open {
+      display: block;
+    }
+
+    .dropdown-group-label {
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #ffe033;
+      background: #111;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .dropdown-item {
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #e0e0e0;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .dropdown-item:hover {
+      background: #252525;
+    }
+
+    .dropdown-item.selected {
+      background: #252525;
+      color: #ffe033;
+    }
+
+    .dropdown-item-name {
+      font-weight: 500;
+    }
+
+    .dropdown-item-desc {
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* Help Text */
+    .help-text {
+      font-size: 11px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .help-link {
+      color: #ffe033;
+      text-decoration: none;
+    }
+
+    .help-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Connection Status */
     .connection-status {
       display: flex;
       align-items: center;
-      gap: var(--spacing-sm);
-      margin-top: var(--spacing-md);
-      padding: var(--spacing-sm) var(--spacing-md);
-      background: var(--bg-secondary);
-      border-radius: var(--border-radius);
+      gap: 8px;
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: #111;
+      border-radius: 8px;
+      border: 1px solid #252525;
     }
 
     .status-indicator {
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: var(--text-muted);
+      background: #666;
     }
 
     .status-indicator.success {
-      background: var(--success-color);
+      background: #22c55e;
     }
 
     .status-indicator.error {
-      background: var(--danger-color);
+      background: #ef4444;
     }
 
     .status-indicator.testing {
-      background: var(--warning-color);
+      background: #f59e0b;
       animation: pulse 1s infinite;
     }
 
@@ -81,19 +300,58 @@
       50% { opacity: 0.5; }
     }
 
-    .help-text {
+    .status-text {
       font-size: 12px;
-      color: var(--text-muted);
-      margin-top: var(--spacing-sm);
+      color: #888;
     }
 
-    .help-link {
-      color: var(--primary-color);
-      text-decoration: none;
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    .help-link:hover {
-      text-decoration: underline;
+    .btn-secondary {
+      background: #252525;
+      color: #e0e0e0;
+      border: 1px solid #333;
+    }
+
+    .btn-secondary:hover {
+      background: #333;
+    }
+
+    .btn-primary {
+      background: #ffe033;
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: #ffd700;
+    }
+
+    .mt-2 {
+      margin-top: 16px;
+    }
+
+    /* Footer */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 20px;
+      background: #111;
+      border-top: 1px solid #333;
     }
   </style>
 </head>
@@ -101,7 +359,7 @@
   <!-- Header -->
   <header class="header">
     <h1 class="header-title">⚙️ 설정</h1>
-    <button class="btn btn-ghost btn-icon" id="btn-close" title="닫기">✕</button>
+    <button class="btn-close" id="btn-close" title="닫기">✕</button>
   </header>
 
   <!-- Main Content -->
@@ -121,7 +379,7 @@
             class="form-input"
             placeholder="API Key를 입력하세요"
           >
-          <button class="btn btn-ghost btn-icon" id="btn-toggle-visibility" title="보기/숨기기">
+          <button class="btn-icon" id="btn-toggle-visibility" title="보기/숨기기">
             👁️
           </button>
         </div>
@@ -131,20 +389,45 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Gemini 모델</label>
-        <select id="model-select" class="form-select">
-          <option value="gemini-2.5-pro">Gemini 2.5 Pro (최고 성능)</option>
-          <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (빠름)</option>
-          <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
-          <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-          <option value="gemini-1.5-flash">Gemini 1.5 Flash (경량)</option>
-        </select>
-        <p class="help-text">이미지 생성에 사용할 Gemini 모델을 선택하세요.</p>
+        <label class="form-label">이미지 생성 모델</label>
+        <div class="custom-dropdown" id="model-dropdown">
+          <div class="dropdown-selected" id="dropdown-selected">
+            <span id="selected-text">Nano Banana (표준)</span>
+            <span class="dropdown-arrow"></span>
+          </div>
+          <div class="dropdown-menu" id="dropdown-menu">
+            <div class="dropdown-group-label">🏆 프리미엄 (최고 품질)</div>
+            <div class="dropdown-item" data-value="gemini-3-pro-image">
+              <span class="dropdown-item-name">Nano Banana Pro</span>
+              <span class="dropdown-item-desc">4K 해상도, Thinking 추론</span>
+            </div>
+            <div class="dropdown-item" data-value="imagen-4.0-generate-001">
+              <span class="dropdown-item-name">Imagen 4</span>
+              <span class="dropdown-item-desc">포토리얼리스틱 품질</span>
+            </div>
+            <div class="dropdown-group-label">⚡ 밸런스 (추천)</div>
+            <div class="dropdown-item selected" data-value="gemini-2.5-flash-image">
+              <span class="dropdown-item-name">Nano Banana (표준)</span>
+              <span class="dropdown-item-desc">빠른 속도, 편집 능력 겸비</span>
+            </div>
+            <div class="dropdown-group-label">🎨 고속/특수</div>
+            <div class="dropdown-item" data-value="imagen-4.0-fast-generate-001">
+              <span class="dropdown-item-name">Imagen 4 Fast</span>
+              <span class="dropdown-item-desc">1초 미만 초고속 생성</span>
+            </div>
+            <div class="dropdown-item" data-value="virtual-try-on-001">
+              <span class="dropdown-item-name">Virtual Try-On</span>
+              <span class="dropdown-item-desc">의류 가상 피팅 전용</span>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="model-select" value="gemini-2.5-flash-image">
+        <p class="help-text">이미지 생성에 사용할 모델을 선택하세요.</p>
       </div>
 
       <div class="connection-status">
         <span class="status-indicator" id="status-indicator"></span>
-        <span id="connection-status-text">연결 상태 확인 필요</span>
+        <span class="status-text" id="connection-status-text">연결 상태 확인 필요</span>
       </div>
 
       <div class="mt-2">
@@ -165,6 +448,7 @@
     // State
     let apiKeyVisible = false;
     let originalApiKey = '';
+    let dropdownOpen = false;
 
     // Elements
     const elements = {
@@ -176,20 +460,63 @@
       modelSelect: document.getElementById('model-select'),
       btnSave: document.getElementById('btn-save'),
       btnCancel: document.getElementById('btn-cancel'),
-      btnClose: document.getElementById('btn-close')
+      btnClose: document.getElementById('btn-close'),
+      dropdownSelected: document.getElementById('dropdown-selected'),
+      dropdownMenu: document.getElementById('dropdown-menu'),
+      selectedText: document.getElementById('selected-text')
     };
 
-    // SketchUp Communication - sketchup 객체 사용 (2017+)
+    // Custom Dropdown
+    elements.dropdownSelected.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dropdownOpen = !dropdownOpen;
+      this.classList.toggle('open', dropdownOpen);
+      elements.dropdownMenu.classList.toggle('open', dropdownOpen);
+    });
+
+    document.querySelectorAll('.dropdown-item').forEach(function(item) {
+      item.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const value = this.dataset.value;
+        const name = this.querySelector('.dropdown-item-name').textContent;
+
+        // Update hidden input
+        elements.modelSelect.value = value;
+
+        // Update selected text
+        elements.selectedText.textContent = name;
+
+        // Update selected state
+        document.querySelectorAll('.dropdown-item').forEach(function(i) {
+          i.classList.remove('selected');
+        });
+        this.classList.add('selected');
+
+        // Close dropdown
+        dropdownOpen = false;
+        elements.dropdownSelected.classList.remove('open');
+        elements.dropdownMenu.classList.remove('open');
+      });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function() {
+      if (dropdownOpen) {
+        dropdownOpen = false;
+        elements.dropdownSelected.classList.remove('open');
+        elements.dropdownMenu.classList.remove('open');
+      }
+    });
+
+    // SketchUp Communication
     function callRuby(action, param) {
       if (window.sketchup && typeof window.sketchup[action] === 'function') {
-        // SketchUp 2017+ 방식
         if (param !== undefined) {
           window.sketchup[action](param);
         } else {
           window.sketchup[action]();
         }
       } else {
-        // 폴백: location 방식
         if (param !== undefined) {
           window.location = 'skp:' + action + '@' + encodeURIComponent(param);
         } else {
@@ -228,8 +555,20 @@
     }
 
     function onModelLoaded(model) {
-      if (model && elements.modelSelect) {
+      if (model) {
         elements.modelSelect.value = model;
+
+        // Update dropdown UI
+        const item = document.querySelector('.dropdown-item[data-value="' + model + '"]');
+        if (item) {
+          const name = item.querySelector('.dropdown-item-name').textContent;
+          elements.selectedText.textContent = name;
+
+          document.querySelectorAll('.dropdown-item').forEach(function(i) {
+            i.classList.remove('selected');
+          });
+          item.classList.add('selected');
+        }
       }
     }
 
@@ -269,11 +608,8 @@
       }
 
       updateStatus('testing', '연결 테스트 중...');
-
-      // 먼저 저장
       sketchup.saveApiKey(apiKey);
 
-      // 테스트 실행
       setTimeout(function() {
         sketchup.testConnection();
       }, 500);

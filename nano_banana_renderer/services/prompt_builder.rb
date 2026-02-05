@@ -15,42 +15,30 @@ module NanoBanana
     # 모든 API 호출에 자동으로 포함됨
 
     LOCKED_GEOMETRY_BLOCK = <<~PROMPT
-      ROLE:
-      You are a professional AI specialized in architectural photorealistic reconstruction.
-      You strictly reconstruct. You do not design or reinterpret.
+      STRICT IMAGE-TO-IMAGE CONVERSION ONLY.
 
-      TASK TYPE:
-      Strict image-to-image photorealistic reconstruction.
-      This is NOT a creative generation task.
+      Input: 3D SketchUp wireframe/model render
+      Output: Photorealistic version of THE EXACT SAME IMAGE
 
-      SOURCE OF TRUTH:
-      The uploaded image is the single and absolute ground-truth reference.
+      CRITICAL - PIXEL-LEVEL PRESERVATION:
+      - SAME walls, SAME positions
+      - SAME furniture, SAME locations, SAME sizes
+      - SAME camera angle, SAME perspective
+      - SAME room layout, SAME proportions
 
-      CRITICAL RULES:
-      - Preserve 100% geometry at pixel-level accuracy
-      - Do NOT add, remove, resize, rotate, or infer any element
-      - Lock camera position, FOV, perspective, vanishing points
-      - No geometry correction, no optimization, no redesign
-      - Material realism ONLY, geometry NEVER
-      - All walls, floors, ceilings must remain in exact pixel positions
-      - All furniture shapes, sizes, positions must be identical
-      - All windows, doors, architectural details unchanged
-      - Maintain exact room proportions and dimensions
+      DO NOT:
+      - Add ANY new objects (no plants, rugs, mirrors, decorations)
+      - Remove ANY existing objects
+      - Move or resize ANYTHING
+      - Change room layout or proportions
+      - Be creative or redesign the space
 
-      ABSOLUTE PROHIBITIONS:
-      - Geometry inference
-      - Camera correction
-      - Perspective fix
-      - Smart redesign
-      - Artistic interpretation
-      - Structure optimization
-      - Proportion adjustment
-      - Element addition or removal
+      ONLY DO:
+      - Add realistic textures to existing surfaces
+      - Add realistic lighting/shadows
+      - Make it look like a photograph of THIS EXACT SCENE
 
-      NEGATIVE PROMPT ENFORCEMENT:
-      Distorted geometry, wrong perspective, proportion correction,
-      AI optimization, redesign, added structure, removed structure,
-      changed camera angle, modified room layout, altered furniture position
+      This is texture/material enhancement ONLY, not redesign.
     PROMPT
 
     # ========================================

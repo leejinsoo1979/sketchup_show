@@ -13,12 +13,64 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a1a;
+      background: #0a0a0a;
       color: #e0e0e0;
       height: 100vh;
       display: flex;
       overflow: hidden;
       font-size: 12px;
+    }
+
+    /* 초기 로딩 화면 */
+    .app-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+
+    .app-loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .app-loader-logo {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 24px;
+      letter-spacing: -1px;
+    }
+
+    .app-loader-logo span {
+      color: #ffe033;
+    }
+
+    .app-loader-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid #222;
+      border-top-color: #ffe033;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .app-loader-text {
+      color: #666;
+      font-size: 13px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     /* 좌측 아이콘 메뉴바 */
@@ -125,7 +177,13 @@
       border: 1px solid #333;
     }
 
-    .model-select {
+    /* 커스텀 드롭다운 */
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+    }
+
+    .dropdown-selected {
       width: 100%;
       padding: 8px 10px;
       background: #0a0a0a;
@@ -134,15 +192,79 @@
       color: #ccc;
       font-size: 11px;
       cursor: pointer;
-      outline: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
     }
 
-    .model-select:hover {
+    .dropdown-selected:hover {
       border-color: #555;
     }
 
-    .model-select:focus {
-      border-color: #0066ff;
+    .dropdown-arrow {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid #888;
+      transition: transform 0.2s;
+    }
+
+    .custom-dropdown.open .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      margin-top: 4px;
+      max-height: 250px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .custom-dropdown.open .dropdown-menu {
+      display: block;
+    }
+
+    .dropdown-group-label {
+      padding: 8px 10px 4px;
+      font-size: 10px;
+      color: #666;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .dropdown-item {
+      padding: 8px 10px;
+      font-size: 11px;
+      color: #ccc;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .dropdown-item:hover {
+      background: #2a2a2a;
+    }
+
+    .dropdown-item.selected {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .dropdown-item-desc {
+      font-size: 9px;
+      color: #666;
+      margin-top: 2px;
     }
 
     .seg-btn {
@@ -223,8 +345,55 @@
       padding: 12px 16px;
       border-top: 1px solid #333;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .api-key-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .api-key-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .api-key-input-row {
+      display: flex;
+      gap: 4px;
+    }
+
+    .api-key-input {
+      flex: 1;
+      padding: 6px 8px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #ccc;
+      font-size: 11px;
+      outline: none;
+    }
+
+    .api-key-input:focus {
+      border-color: #0066ff;
+    }
+
+    .api-key-btn {
+      padding: 0 10px;
+      background: #0066ff;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .api-key-btn:hover {
+      background: #0055dd;
     }
 
     .status-indicator {
@@ -277,6 +446,175 @@
       flex-direction: column;
       background: #0a0a0a;
       min-width: 0;
+    }
+
+    /* 설정 화면 */
+    .settings-main-area {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .settings-container {
+      width: 400px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      border: 1px solid #333;
+      overflow: hidden;
+    }
+
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #333;
+    }
+
+    .settings-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin: 0;
+    }
+
+    .settings-close-btn {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      color: #888;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .settings-close-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .settings-content {
+      padding: 20px;
+    }
+
+    .settings-section {
+      margin-bottom: 20px;
+    }
+
+    .settings-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #ccc;
+      margin-bottom: 8px;
+    }
+
+    .settings-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .settings-input {
+      flex: 1;
+      padding: 10px 12px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .settings-input:focus {
+      border-color: #0066ff;
+    }
+
+    .settings-toggle-btn {
+      padding: 0 12px;
+      background: #2a2a2a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #ccc;
+      cursor: pointer;
+    }
+
+    .settings-toggle-btn:hover {
+      background: #333;
+    }
+
+    .settings-help {
+      font-size: 11px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    .settings-help a {
+      color: #0066ff;
+      text-decoration: none;
+    }
+
+    .settings-help a:hover {
+      text-decoration: underline;
+    }
+
+    .settings-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #0a0a0a;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .settings-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #666;
+    }
+
+    .settings-status-dot.success {
+      background: #34c759;
+    }
+
+    .settings-status-dot.error {
+      background: #ff3b30;
+    }
+
+    .settings-status-dot.testing {
+      background: #ff9500;
+      animation: pulse 1s infinite;
+    }
+
+    .settings-btn {
+      padding: 10px 16px;
+      background: #2a2a2a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .settings-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .settings-btn-primary {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .settings-btn-primary:hover {
+      background: #0055dd;
+    }
+
+    .settings-actions {
+      margin-top: 20px;
+      text-align: right;
     }
 
     .image-container {
@@ -887,6 +1225,63 @@
     .empty-state {
       color: #333;
       font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .auto-prompt-loading,
+    .auto-prompt-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .auto-prompt-loading .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid #333;
+      border-top-color: #0066ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .auto-prompt-loading .loading-status {
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .auto-prompt-loading .loading-detail {
+      color: #888;
+      font-size: 12px;
+    }
+
+    /* 프롬프트 생성 프로그레스 바 */
+    .prompt-progress-container {
+      width: 200px;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .prompt-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0066ff, #00aaff);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .prompt-progress-text {
+      font-size: 11px;
+      color: #888;
+      margin-top: 6px;
     }
 
     /* Status Bar */
@@ -2037,6 +2432,13 @@
   </style>
 </head>
 <body>
+  <!-- 초기 로딩 화면 -->
+  <div class="app-loader" id="app-loader">
+    <div class="app-loader-logo">Nano<span>Banana</span></div>
+    <div class="app-loader-spinner"></div>
+    <div class="app-loader-text">Loading renderer...</div>
+  </div>
+
   <!-- 좌측 아이콘 메뉴바 -->
   <nav class="icon-menu">
     <button class="icon-menu-item active" id="menu-render" title="Render">
@@ -2176,22 +2578,66 @@
       </div>
 
       <div class="control-section">
+        <span class="section-label">Engine</span>
+        <div class="segmented" id="engine-group">
+          <button class="seg-btn active" data-engine="gemini">Gemini</button>
+          <button class="seg-btn" data-engine="replicate">Replicate</button>
+        </div>
+      </div>
+
+      <div class="control-section">
         <span class="section-label">Model</span>
-        <select class="model-select" id="model-select">
-          <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-          <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
-          <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
-          <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-          <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-        </select>
+        <div class="custom-dropdown" id="model-dropdown">
+          <div class="dropdown-selected" id="model-dropdown-selected">
+            <span id="model-selected-text">Flash 2.0 (추천)</span>
+            <span class="dropdown-arrow"></span>
+          </div>
+          <div class="dropdown-menu" id="model-dropdown-menu">
+            <div class="dropdown-group-label">Gemini</div>
+            <div class="dropdown-item selected" data-value="gemini-2.0-flash-exp" data-engine="gemini">
+              Flash 2.0 (추천)
+              <div class="dropdown-item-desc">20~40초, 고속</div>
+            </div>
+            <div class="dropdown-item" data-value="gemini-2.5-flash-image" data-engine="gemini">
+              Flash 2.5
+              <div class="dropdown-item-desc">30~60초</div>
+            </div>
+            <div class="dropdown-item" data-value="gemini-3-pro-image" data-engine="gemini">
+              Gemini 3 Pro
+              <div class="dropdown-item-desc">1~2분, 최고품질</div>
+            </div>
+            <div class="dropdown-group-label">Imagen</div>
+            <div class="dropdown-item" data-value="imagen-4.0-fast-generate-001" data-engine="gemini">
+              Imagen 4 Fast
+              <div class="dropdown-item-desc">20~40초, 고속</div>
+            </div>
+            <div class="dropdown-item" data-value="imagen-4.0-generate-001" data-engine="gemini">
+              Imagen 4
+              <div class="dropdown-item-desc">1~2분, 고품질</div>
+            </div>
+            <div class="dropdown-group-label">Replicate (ControlNet)</div>
+            <div class="dropdown-item" data-value="photorealistic-fx" data-engine="replicate">
+              PhotoFX
+              <div class="dropdown-item-desc">10초, 구도 유지</div>
+            </div>
+            <div class="dropdown-item" data-value="sdxl-controlnet" data-engine="replicate">
+              SDXL ControlNet
+              <div class="dropdown-item-desc">20초, 고품질</div>
+            </div>
+            <div class="dropdown-item" data-value="flux-canny" data-engine="replicate">
+              Flux Canny
+              <div class="dropdown-item-desc">15초, 윤곽선 기반</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="control-section">
         <span class="section-label">Size</span>
         <div class="segmented" id="size-group">
-          <button class="seg-btn" data-size="1920">FHD</button>
-          <button class="seg-btn" data-size="2560">QHD</button>
-          <button class="seg-btn active" data-size="3840">4K</button>
+          <button class="seg-btn active" data-size="1024">속도</button>
+          <button class="seg-btn" data-size="1536">밸런스</button>
+          <button class="seg-btn" data-size="1920">고품질</button>
         </div>
       </div>
 
@@ -2251,7 +2697,6 @@
 
     <div class="sidebar-actions">
       <button class="btn btn-secondary" id="btn-capture">Convert</button>
-      <button class="btn btn-primary" id="btn-render" disabled>AI 이미지 생성</button>
       <button class="btn btn-secondary" id="btn-edit" disabled>Edit</button>
       <button class="btn btn-secondary" id="btn-save" disabled>Export</button>
     </div>
@@ -2549,6 +2994,37 @@
     </div>
   </main>
 
+  <!-- 설정 메인 영역 -->
+  <main class="main-area settings-main-area" id="settings-main-area" style="display:none;">
+    <div class="settings-container">
+      <div class="settings-header">
+        <h2>Settings</h2>
+        <button class="settings-close-btn" id="btn-close-settings">✕</button>
+      </div>
+      <div class="settings-content">
+        <div class="settings-section">
+          <label class="settings-label">Google Gemini API Key</label>
+          <div class="settings-input-row">
+            <input type="password" id="settings-api-key" class="settings-input" placeholder="API Key를 입력하세요">
+            <button class="settings-toggle-btn" id="btn-toggle-api-key">👁️</button>
+          </div>
+          <p class="settings-help">API Key는 <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>에서 발급받을 수 있습니다.</p>
+        </div>
+        <div class="settings-section">
+          <label class="settings-label">연결 상태</label>
+          <div class="settings-status">
+            <span class="settings-status-dot" id="settings-status-dot"></span>
+            <span id="settings-status-text">확인 필요</span>
+          </div>
+          <button class="settings-btn" id="btn-test-api">🔗 연결 테스트</button>
+        </div>
+        <div class="settings-actions">
+          <button class="settings-btn settings-btn-primary" id="btn-save-settings">저장</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
   <!-- 우측 메인 영역 -->
   <main class="main-area" id="render-main-area">
     <!-- 씬 탭 바 -->
@@ -2740,35 +3216,6 @@
       <span id="status-text">Ready</span>
     </div>
 
-    <!-- Style Input Modal -->
-    <div class="modal-overlay hidden" id="style-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>스타일 기반 프롬프트 생성</h3>
-          <button class="modal-close" id="style-modal-close">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="style-presets">
-            <span class="preset-label">프리셋:</span>
-            <button class="style-preset-btn" data-style="modern minimal">모던 미니멀</button>
-            <button class="style-preset-btn" data-style="warm scandinavian">북유럽 따뜻한</button>
-            <button class="style-preset-btn" data-style="luxury hotel">럭셔리 호텔</button>
-            <button class="style-preset-btn" data-style="industrial loft">인더스트리얼</button>
-            <button class="style-preset-btn" data-style="japanese zen">일본 젠</button>
-            <button class="style-preset-btn" data-style="mediterranean">지중해풍</button>
-          </div>
-          <div class="style-input-group">
-            <label>원하는 스타일 입력:</label>
-            <textarea id="style-input" placeholder="예: 따뜻한 조명의 모던 스칸디나비안 스타일, 자연광이 들어오는 밝은 분위기"></textarea>
-          </div>
-          <p class="style-help-text">씬 분석 데이터 + 입력한 스타일로 최적화된 프롬프트를 AI가 생성합니다.</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" id="style-modal-cancel">취소</button>
-          <button class="btn btn-primary" id="style-modal-generate">프롬프트 생성</button>
-        </div>
-      </div>
-    </div>
   </main>
 
   <script>
@@ -2777,11 +3224,143 @@
       renderImage: null,
       isRendering: false,
       apiConnected: false,
+      converted: false,  // Convert 완료 여부
       timePreset: 'day',
       lightSwitch: 'on',
-      imageSize: '3840',
+      imageSize: '1024',  // ★ 속도 우선 (1024px)
+      engine: 'replicate',  // ★ Replicate 기본 (구도 유지)
       resultPanels: [{ id: 1, image: null }],  // 결과 패널 목록
-      nextResultId: 2
+      nextResultId: 2,
+      currentScene: null  // 현재 활성 씬 이름
+    };
+
+    // 씬별 상태 저장소
+    const sceneStates = new Map();
+
+    // 현재 씬 상태 저장
+    function saveCurrentSceneState() {
+      if (!state.currentScene) return;
+
+      const promptSource = document.getElementById('prompt-source');
+      const promptSourceNegative = document.getElementById('prompt-source-negative');
+      const promptResult = document.getElementById('prompt-result');
+      const promptResultNegative = document.getElementById('prompt-result-negative');
+
+      sceneStates.set(state.currentScene, {
+        originalImage: state.originalImage,
+        renderImage: state.renderImage,
+        converted: state.converted,
+        promptSource: promptSource?.value || '',
+        promptSourceNegative: promptSourceNegative?.value || '',
+        promptResult: promptResult?.value || '',
+        promptResultNegative: promptResultNegative?.value || '',
+        resultPanels: JSON.parse(JSON.stringify(state.resultPanels)),
+        nextResultId: state.nextResultId
+      });
+
+      console.log('[NanoBanana] 씬 상태 저장:', state.currentScene, 'Result 이미지:', state.resultPanels[0]?.image ? '있음' : '없음');
+    }
+
+    // 씬 상태 복원 (el 객체 초기화 후 호출됨)
+    function restoreSceneState(sceneName) {
+      const savedState = sceneStates.get(sceneName);
+
+      const originalImage = document.getElementById('original-image');
+      const originalEmpty = document.getElementById('original-empty');
+      const renderImage = document.getElementById('render-image');
+      const renderEmpty = document.getElementById('render-empty');
+      const btnRender = document.getElementById('btn-generate-source');
+      const btnEdit = document.getElementById('btn-edit');
+      const btnSave = document.getElementById('btn-save');
+      const promptSource = document.getElementById('prompt-source');
+      const promptSourceNegative = document.getElementById('prompt-source-negative');
+      const promptResult = document.getElementById('prompt-result');
+      const promptResultNegative = document.getElementById('prompt-result-negative');
+
+      if (savedState) {
+        // 저장된 상태 복원
+        state.originalImage = savedState.originalImage;
+        state.renderImage = savedState.renderImage;
+        state.converted = savedState.converted;
+        state.resultPanels = savedState.resultPanels;
+        state.nextResultId = savedState.nextResultId;
+
+        // UI 복원 - SOURCE 이미지
+        if (savedState.originalImage && originalImage) {
+          originalImage.src = 'data:image/png;base64,' + savedState.originalImage;
+          originalImage.style.display = 'block';
+          if (originalEmpty) originalEmpty.style.display = 'none';
+        } else {
+          if (originalImage) originalImage.style.display = 'none';
+          if (originalEmpty) originalEmpty.style.display = 'flex';
+        }
+
+        // UI 복원 - RESULT 이미지 (첫번째 resultPanel 사용)
+        const firstResult = savedState.resultPanels && savedState.resultPanels[0];
+        if (firstResult && firstResult.image && renderImage) {
+          renderImage.src = 'data:image/png;base64,' + firstResult.image;
+          renderImage.style.display = 'block';
+          if (renderEmpty) renderEmpty.style.display = 'none';
+          if (btnEdit) btnEdit.disabled = false;
+          if (btnSave) btnSave.disabled = false;
+        } else if (savedState.renderImage && renderImage) {
+          renderImage.src = 'data:image/png;base64,' + savedState.renderImage;
+          renderImage.style.display = 'block';
+          if (renderEmpty) renderEmpty.style.display = 'none';
+          if (btnEdit) btnEdit.disabled = false;
+          if (btnSave) btnSave.disabled = false;
+        } else {
+          if (renderImage) renderImage.style.display = 'none';
+          if (renderEmpty) renderEmpty.style.display = 'flex';
+          if (btnEdit) btnEdit.disabled = true;
+          if (btnSave) btnSave.disabled = true;
+        }
+
+        // UI 복원 - 프롬프트
+        if (promptSource) promptSource.value = savedState.promptSource || '';
+        if (promptSourceNegative) promptSourceNegative.value = savedState.promptSourceNegative || '';
+        if (promptResult) promptResult.value = savedState.promptResult || '';
+        if (promptResultNegative) promptResultNegative.value = savedState.promptResultNegative || '';
+
+        // Render 버튼 상태
+        if (btnRender) btnRender.disabled = !savedState.originalImage || !savedState.promptSource;
+
+        console.log('[NanoBanana] 씬 상태 복원:', sceneName, 'Result 이미지:', firstResult?.image ? '있음' : '없음');
+      } else {
+        // 새 씬 - 초기 상태로
+        state.originalImage = null;
+        state.renderImage = null;
+        state.converted = false;
+        state.resultPanels = [{ id: 1, image: null }];
+        state.nextResultId = 2;
+
+        if (originalImage) originalImage.style.display = 'none';
+        if (originalEmpty) originalEmpty.style.display = 'flex';
+        if (renderImage) renderImage.style.display = 'none';
+        if (renderEmpty) renderEmpty.style.display = 'flex';
+
+        if (promptSource) promptSource.value = '';
+        if (promptSourceNegative) promptSourceNegative.value = '';
+        if (promptResult) promptResult.value = '';
+        if (promptResultNegative) promptResultNegative.value = '';
+
+        if (btnRender) btnRender.disabled = true;
+        if (btnEdit) btnEdit.disabled = true;
+        if (btnSave) btnSave.disabled = true;
+
+        console.log('[NanoBanana] 새 씬 초기화:', sceneName);
+      }
+
+      state.currentScene = sceneName;
+    }
+
+    // 씬 전환 처리 (Ruby에서 호출)
+    window.onSceneChanged = function(sceneName) {
+      // 현재 씬 상태 저장
+      saveCurrentSceneState();
+      // 새 씬 상태 복원
+      restoreSceneState(sceneName);
+      console.log('[NanoBanana] Scene changed to:', sceneName);
     };
 
     const el = {
@@ -2792,7 +3371,7 @@
       loading: document.getElementById('loading'),
       loadingSource: document.getElementById('loading-source'),
       btnCapture: document.getElementById('btn-capture'),
-      btnRender: document.getElementById('btn-render'),
+      btnRender: document.getElementById('btn-generate-source'),
       btnEdit: document.getElementById('btn-edit'),
       btnSave: document.getElementById('btn-save'),
       btnSettings: document.getElementById('btn-settings'),
@@ -2827,22 +3406,28 @@
 
     // SketchUp Ruby 콜백 호출
     function callRuby(action, ...args) {
-      if (window.sketchup && window.sketchup[action]) {
-        window.sketchup[action](...args);
-      } else {
-        // Fallback for older SketchUp versions
-        window.location = 'skp:' + action + (args.length ? '@' + args.join('@') : '');
-      }
+      // skp: 프로토콜만 사용 (가장 안정적)
+      const param = args.length > 0 ? JSON.stringify(args) : '';
+      window.location = 'skp:' + action + '@' + encodeURIComponent(param);
     }
 
     const sketchup = {
       captureScene: (size) => callRuby('capture_scene', size),
       startRender: (time, light, prompt, negativePrompt) => callRuby('start_render', time, light, prompt, negativePrompt),
-      generateAutoPrompt: (style) => callRuby('generate_auto_prompt', style || ''),
+      generateAutoPrompt: (style, time, light) => callRuby('generate_auto_prompt', style || '', time || 'day', light || 'on'),
       saveImage: () => callRuby('save_image', ''),
       openEditor: () => callRuby('open_editor'),
-      openSettings: () => callRuby('open_settings'),
       checkApiStatus: () => callRuby('check_api_status'),
+      // Gemini API Key
+      saveApiKey: (key) => callRuby('save_api_key', key),
+      loadApiKey: () => callRuby('load_api_key'),
+      testConnection: () => callRuby('test_connection'),
+      // Replicate API
+      saveReplicateToken: (token) => callRuby('save_replicate_token', token),
+      loadReplicateToken: () => callRuby('load_replicate_token'),
+      // Engine selection
+      setEngine: (engine) => callRuby('set_engine', engine),
+      getEngine: () => callRuby('get_engine'),
       // Model selection
       saveModel: (model) => callRuby('save_model', model),
       loadModel: () => callRuby('load_model'),
@@ -2859,8 +3444,8 @@
       addScene: () => callRuby('add_scene'),
       // 2점 투시
       apply2Point: () => callRuby('apply_2point'),
-      // Mix
-      openMix: () => callRuby('open_mix'),
+      // Mix - 선택된 패널의 이미지 전달
+      openMix: (imageBase64) => callRuby('open_mix', imageBase64),
       // 2차 생성 (소스 이미지 base64, 프롬프트, 대상 패널 ID)
       regenerate: (sourceBase64, prompt, panelId) => callRuby('regenerate', sourceBase64, prompt, panelId)
     };
@@ -2888,7 +3473,7 @@
       if (selectedPanel === 'source') {
         return state.originalImage;
       } else {
-        return state.renderedImage;
+        return state.renderImage;
       }
     }
 
@@ -2960,11 +3545,66 @@
         </svg>
         생성중...
       `;
+
+      // SOURCE 영역에 로딩 오버레이 + 프로그레스 바 표시
+      el.loadingSource.innerHTML = `
+        <div class="auto-prompt-loading">
+          <div class="loading-spinner"></div>
+          <div class="loading-status">프롬프트 생성 중...</div>
+          <div class="loading-detail">씬 분석 및 재질 정보 추출</div>
+          <div class="prompt-progress-container">
+            <div class="prompt-progress-bar" id="prompt-progress-bar"></div>
+          </div>
+          <div class="prompt-progress-text" id="prompt-progress-text">0%</div>
+        </div>
+      `;
+      el.loadingSource.classList.remove('hidden');
+
+      // 프로그레스 애니메이션 시작
+      startPromptProgress();
+
       setStatus('Auto 프롬프트 생성 중...');
+    }
+
+    // 프롬프트 생성 프로그레스 변수
+    let promptProgressInterval = null;
+    let promptProgressValue = 0;
+
+    // 프롬프트 생성 프로그레스 시작
+    function startPromptProgress() {
+      promptProgressValue = 0;
+      promptProgressInterval = setInterval(() => {
+        // 90%까지만 자동 증가 (완료 시 100%로 점프)
+        if (promptProgressValue < 90) {
+          promptProgressValue += Math.random() * 8 + 2;
+          if (promptProgressValue > 90) promptProgressValue = 90;
+          updatePromptProgress(promptProgressValue);
+        }
+      }, 500);
+    }
+
+    // 프롬프트 생성 프로그레스 업데이트
+    function updatePromptProgress(value) {
+      const bar = document.getElementById('prompt-progress-bar');
+      const text = document.getElementById('prompt-progress-text');
+      if (bar) bar.style.width = value + '%';
+      if (text) text.textContent = Math.round(value) + '%';
+    }
+
+    // 프롬프트 생성 프로그레스 정지
+    function stopPromptProgress() {
+      if (promptProgressInterval) {
+        clearInterval(promptProgressInterval);
+        promptProgressInterval = null;
+      }
+      updatePromptProgress(100);
     }
 
     // Auto 프롬프트 생성 완료
     function onAutoPromptComplete(mainPrompt, negativePrompt) {
+      // 프로그레스 100%로 완료
+      stopPromptProgress();
+
       el.btnAutoPrompt.disabled = false;
       el.btnAutoPrompt.classList.remove('loading');
       el.btnAutoPrompt.innerHTML = `
@@ -2975,6 +3615,12 @@
         </svg>
         Auto
       `;
+
+      // 잠시 후 SOURCE 영역 로딩 해제 (100% 보여주고)
+      setTimeout(() => {
+        el.loadingSource.innerHTML = '';
+        el.loadingSource.classList.add('hidden');
+      }, 300);
 
       // 프롬프트창에 표시
       el.promptSource.value = mainPrompt || '';
@@ -2988,6 +3634,12 @@
 
     // Auto 프롬프트 생성 에러
     function onAutoPromptError(errorMsg) {
+      // 프로그레스 정지
+      if (promptProgressInterval) {
+        clearInterval(promptProgressInterval);
+        promptProgressInterval = null;
+      }
+
       el.btnAutoPrompt.disabled = false;
       el.btnAutoPrompt.classList.remove('loading');
       el.btnAutoPrompt.innerHTML = `
@@ -2998,6 +3650,21 @@
         </svg>
         Auto
       `;
+
+      // SOURCE 영역에 에러 표시
+      el.loadingSource.innerHTML = `
+        <div class="auto-prompt-error">
+          <span style="color: #ff6b6b;">프롬프트 생성 실패</span>
+          <span style="font-size: 11px; color: #888;">${errorMsg}</span>
+        </div>
+      `;
+      el.loadingSource.classList.remove('hidden');
+      // 3초 후 에러 메시지 숨김
+      setTimeout(() => {
+        el.loadingSource.innerHTML = '';
+        el.loadingSource.classList.add('hidden');
+      }, 3000);
+
       setStatus('Auto 프롬프트 실패: ' + errorMsg);
     }
 
@@ -3210,71 +3877,15 @@
     });
 
     el.btnRender.addEventListener('click', () => {
-      // 타이머 시작
       startRenderTimer();
-      // SOURCE 프롬프트 사용 (메인 + 네거티브)
       const prompt = el.promptSource.value || '';
       const negativePrompt = el.promptSourceNegative.value || '';
       sketchup.startRender(state.timePreset, state.lightSwitch, prompt, negativePrompt);
     });
 
-    // Auto 프롬프트 버튼 - 스타일 모달 열기
+    // Auto 프롬프트 버튼 - 바로 생성 (현재 라이팅 설정 전달)
     el.btnAutoPrompt.addEventListener('click', () => {
-      openStyleModal();
-    });
-
-    // 스타일 모달 관련 요소
-    const styleModal = document.getElementById('style-modal');
-    const styleInput = document.getElementById('style-input');
-    const styleModalClose = document.getElementById('style-modal-close');
-    const styleModalCancel = document.getElementById('style-modal-cancel');
-    const styleModalGenerate = document.getElementById('style-modal-generate');
-    const stylePresetBtns = document.querySelectorAll('.style-preset-btn');
-
-    function openStyleModal() {
-      styleModal.classList.remove('hidden');
-      styleInput.value = '';
-      stylePresetBtns.forEach(btn => btn.classList.remove('active'));
-      styleInput.focus();
-    }
-
-    function closeStyleModal() {
-      styleModal.classList.add('hidden');
-    }
-
-    // 프리셋 버튼 클릭
-    stylePresetBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        stylePresetBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        styleInput.value = btn.dataset.style;
-      });
-    });
-
-    // 모달 닫기
-    styleModalClose.addEventListener('click', closeStyleModal);
-    styleModalCancel.addEventListener('click', closeStyleModal);
-
-    // 모달 배경 클릭 시 닫기
-    styleModal.addEventListener('click', (e) => {
-      if (e.target === styleModal) closeStyleModal();
-    });
-
-    // 프롬프트 생성 버튼
-    styleModalGenerate.addEventListener('click', () => {
-      const style = styleInput.value.trim();
-      closeStyleModal();
-      sketchup.generateAutoPrompt(style);
-    });
-
-    // Enter 키로 생성
-    styleInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        const style = styleInput.value.trim();
-        closeStyleModal();
-        sketchup.generateAutoPrompt(style);
-      }
+      sketchup.generateAutoPrompt('', state.timePreset, state.lightSwitch);
     });
 
     // 프롬프트 입력 시 Render 버튼 활성화
@@ -3288,7 +3899,95 @@
 
     el.btnSave.addEventListener('click', () => sketchup.saveImage());
     el.btnEdit.addEventListener('click', () => sketchup.openEditor());
-    el.btnSettings.addEventListener('click', () => sketchup.openSettings());
+    el.btnSettings.addEventListener('click', () => openSettingsPanel());
+
+    // 설정 화면 열기/닫기
+    function openSettingsPanel() {
+      document.getElementById('render-main-area').style.display = 'none';
+      document.getElementById('settings-main-area').style.display = 'flex';
+      sketchup.loadApiKey();
+    }
+
+    function closeSettingsPanel() {
+      document.getElementById('settings-main-area').style.display = 'none';
+      document.getElementById('render-main-area').style.display = 'flex';
+    }
+
+    // 설정 화면 이벤트
+    document.getElementById('btn-close-settings').addEventListener('click', closeSettingsPanel);
+
+    document.getElementById('btn-toggle-api-key').addEventListener('click', function() {
+      const input = document.getElementById('settings-api-key');
+      if (input.type === 'password') {
+        input.type = 'text';
+        this.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        this.textContent = '👁️';
+      }
+    });
+
+    document.getElementById('btn-test-api').addEventListener('click', function() {
+      const input = document.getElementById('settings-api-key');
+      const apiKey = input.value.trim();
+      const hasStoredKey = input.placeholder && input.placeholder.includes('저장됨');
+
+      // 새로 입력한 키가 없고, 저장된 키도 없으면 에러
+      if (!apiKey && !hasStoredKey) {
+        document.getElementById('settings-status-dot').className = 'settings-status-dot error';
+        document.getElementById('settings-status-text').textContent = 'API Key를 입력하세요';
+        return;
+      }
+
+      document.getElementById('settings-status-dot').className = 'settings-status-dot testing';
+      document.getElementById('settings-status-text').textContent = '테스트 중...';
+
+      // 새 키 입력했으면 저장 후 테스트, 아니면 바로 테스트
+      if (apiKey) {
+        sketchup.saveApiKey(apiKey);
+        setTimeout(() => sketchup.testConnection(), 500);
+      } else {
+        sketchup.testConnection();
+      }
+    });
+
+    document.getElementById('btn-save-settings').addEventListener('click', function() {
+      const apiKey = document.getElementById('settings-api-key').value.trim();
+      if (apiKey) {
+        sketchup.saveApiKey(apiKey);
+      }
+      closeSettingsPanel();
+    });
+
+    // Ruby 콜백: API Key 로드 완료
+    window.onApiKeyLoaded = function(maskedKey) {
+      const input = document.getElementById('settings-api-key');
+      const statusDot = document.getElementById('settings-status-dot');
+      const statusText = document.getElementById('settings-status-text');
+
+      if (maskedKey && maskedKey.length > 0) {
+        input.placeholder = maskedKey + ' (저장됨)';
+        input.value = '';
+        // API 키가 있으면 연결 상태도 표시
+        statusDot.className = 'settings-status-dot success';
+        statusText.textContent = '연결됨 (저장된 키 사용중)';
+      } else {
+        input.placeholder = 'API Key를 입력하세요';
+        statusDot.className = 'settings-status-dot error';
+        statusText.textContent = 'API Key를 입력하세요';
+      }
+    };
+
+    // Ruby 콜백: 연결 테스트 결과
+    window.onConnectionTestResult = function(success, message) {
+      if (success) {
+        document.getElementById('settings-status-dot').className = 'settings-status-dot success';
+        document.getElementById('settings-status-text').textContent = '연결 성공';
+      } else {
+        document.getElementById('settings-status-dot').className = 'settings-status-dot error';
+        document.getElementById('settings-status-text').textContent = '연결 실패: ' + message;
+      }
+    };
 
     // 패널 선택 이벤트
     document.getElementById('source-panel').addEventListener('click', (e) => {
@@ -3314,9 +4013,9 @@
       sketchup.startRender(state.timePreset, state.lightSwitch, prompt, negativePrompt);
     });
 
-    // RESULT Auto 버튼 - 스타일 모달 열기
+    // RESULT Auto 버튼 - 바로 생성 (현재 라이팅 설정 전달)
     el.btnAutoPromptResult.addEventListener('click', () => {
-      openStyleModal();
+      sketchup.generateAutoPrompt('', state.timePreset, state.lightSwitch);
     });
 
     document.querySelectorAll('#time-group .seg-btn').forEach(btn => {
@@ -3334,6 +4033,49 @@
         state.lightSwitch = btn.dataset.light;
       });
     });
+
+    // ★ Engine buttons (Gemini / Replicate)
+    document.querySelectorAll('#engine-group .seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#engine-group .seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.engine = btn.dataset.engine;
+        sketchup.setEngine(btn.dataset.engine);
+        // 모델 드롭다운 필터링 (해당 엔진 모델만 표시)
+        updateModelDropdownForEngine(btn.dataset.engine);
+      });
+    });
+
+    // 엔진에 따라 모델 드롭다운 필터링
+    function updateModelDropdownForEngine(engine) {
+      const items = document.querySelectorAll('#model-dropdown-menu .dropdown-item');
+      items.forEach(item => {
+        if (item.dataset.engine === engine) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      // 첫 번째 보이는 모델 선택
+      const firstVisible = document.querySelector(`#model-dropdown-menu .dropdown-item[data-engine="${engine}"]`);
+      if (firstVisible) {
+        firstVisible.click();
+      }
+    }
+
+    // Replicate 토큰 로드 콜백
+    function onReplicateTokenLoaded(maskedToken) {
+      console.log('Replicate token loaded:', maskedToken ? 'exists' : 'none');
+    }
+
+    // 엔진 로드 콜백
+    function onEngineLoaded(engine) {
+      state.engine = engine;
+      document.querySelectorAll('#engine-group .seg-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.engine === engine);
+      });
+      updateModelDropdownForEngine(engine);
+    }
 
     // Size buttons
     document.querySelectorAll('#size-group .seg-btn').forEach(btn => {
@@ -3435,11 +4177,14 @@
     const keyIntervals = {};
 
     document.addEventListener('keydown', (e) => {
+      console.log('[키보드] keydown:', e.key, 'target:', e.target.tagName);
+
       // 텍스트 입력 필드에서만 무시 (슬라이더는 허용)
       if (e.target.tagName === 'TEXTAREA') return;
       if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
 
       const mapping = keyMap[e.key];
+      console.log('[키보드] mapping:', mapping);
       if (mapping) {
         const key = e.key.toLowerCase();
 
@@ -3450,6 +4195,7 @@
         // 처음 누를 때만 interval 시작
         if (!activeKeys.has(key)) {
           activeKeys.add(key);
+          console.log('[키보드] 실행:', mapping.action, mapping.dir);
 
           // 즉시 실행
           if (mapping.action === 'move') {
@@ -3500,7 +4246,13 @@
       scenes.forEach((scene, index) => {
         const tab = document.createElement('div');
         tab.className = 'scene-tab';
-        if (index === 0) tab.classList.add('active'); // 첫 번째 씬 활성화
+        if (index === 0) {
+          tab.classList.add('active'); // 첫 번째 씬 활성화
+          // 첫 씬을 현재 씬으로 설정 (초기화 시)
+          if (!state.currentScene) {
+            state.currentScene = scene.name;
+          }
+        }
         tab.dataset.scene = scene.name;
 
         // 렌더링 중인 씬이면 스피너 추가
@@ -3517,9 +4269,16 @@
         tab.appendChild(nameSpan);
 
         tab.addEventListener('click', () => {
+          // 이미 활성 탭이면 무시
+          if (tab.classList.contains('active')) return;
+
+          // 현재 씬 상태 저장 & 새 씬 상태 복원
+          window.onSceneChanged(scene.name);
+
           // 활성 탭 변경
           document.querySelectorAll('.scene-tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
+
           // Ruby에 씬 전환 요청
           sketchup.selectScene(scene.name);
         });
@@ -3787,7 +4546,7 @@
             // 도움말
             break;
           case 'menu-settings':
-            sketchup.openSettings();
+            openSettingsPanel();
             break;
         }
       });
@@ -4598,16 +5357,68 @@
     document.getElementById('mix-inpaint-instruction').addEventListener('input', updateMixApplyButton);
     document.getElementById('mix-material-description').addEventListener('input', updateMixApplyButton);
 
-    // 모델 선택 이벤트
-    const modelSelect = document.getElementById('model-select');
-    modelSelect.addEventListener('change', function() {
-      sketchup.saveModel(this.value);
+    // 커스텀 드롭다운 - 모델 선택
+    let currentModelValue = 'gemini-2.0-flash-exp';
+    const modelDropdown = document.getElementById('model-dropdown');
+    const modelDropdownSelected = document.getElementById('model-dropdown-selected');
+    const modelDropdownMenu = document.getElementById('model-dropdown-menu');
+    const modelSelectedText = document.getElementById('model-selected-text');
+
+    // 드롭다운 토글
+    modelDropdownSelected.addEventListener('click', function(e) {
+      e.stopPropagation();
+      modelDropdown.classList.toggle('open');
     });
+
+    // 아이템 선택
+    modelDropdownMenu.querySelectorAll('.dropdown-item').forEach(function(item) {
+      item.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const value = this.dataset.value;
+        const text = this.childNodes[0].textContent.trim();
+
+        // 이전 선택 해제
+        modelDropdownMenu.querySelectorAll('.dropdown-item').forEach(function(i) {
+          i.classList.remove('selected');
+        });
+
+        // 새 선택
+        this.classList.add('selected');
+        modelSelectedText.textContent = text;
+        currentModelValue = value;
+
+        // 드롭다운 닫기
+        modelDropdown.classList.remove('open');
+
+        // Ruby에 저장
+        sketchup.saveModel(value);
+      });
+    });
+
+    // 외부 클릭시 드롭다운 닫기
+    document.addEventListener('click', function(e) {
+      if (!modelDropdown.contains(e.target)) {
+        modelDropdown.classList.remove('open');
+      }
+    });
+
+    // 현재 모델 값 가져오기 함수
+    function getSelectedModel() {
+      return currentModelValue;
+    }
 
     // Ruby에서 호출되는 콜백 - 모델 로드
     function onModelLoaded(model) {
-      if (model && modelSelect) {
-        modelSelect.value = model;
+      if (model) {
+        currentModelValue = model;
+        const item = modelDropdownMenu.querySelector('[data-value="' + model + '"]');
+        if (item) {
+          modelDropdownMenu.querySelectorAll('.dropdown-item').forEach(function(i) {
+            i.classList.remove('selected');
+          });
+          item.classList.add('selected');
+          modelSelectedText.textContent = item.childNodes[0].textContent.trim();
+        }
       }
     }
 
@@ -4615,6 +5426,17 @@
     sketchup.checkApiStatus();
     sketchup.getScenes();
     sketchup.loadModel();
+
+    // 로딩 화면 숨기기
+    setTimeout(function() {
+      const loader = document.getElementById('app-loader');
+      if (loader) {
+        loader.classList.add('hidden');
+        setTimeout(function() {
+          loader.style.display = 'none';
+        }, 500);
+      }
+    }, 800);
   </script>
 </body>
 </html>

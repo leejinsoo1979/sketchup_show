@@ -219,6 +219,49 @@ p {
 
 .form-select {
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* Dark theme select for settings */
+.form-select-dark {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #333;
+  border-radius: var(--border-radius);
+  background: #1a1a1a;
+  color: #e0e0e0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.form-select-dark:focus {
+  outline: none;
+  border-color: #ffe033;
+  box-shadow: 0 0 0 2px rgba(255, 224, 51, 0.2);
+}
+
+.form-select-dark option {
+  background: #1a1a1a;
+  color: #e0e0e0;
+  padding: 8px;
+}
+
+.form-select-dark optgroup {
+  background: #1a1a1a;
+  color: #888;
+  font-weight: 600;
+  font-style: normal;
 }
 
 /* Input Group */

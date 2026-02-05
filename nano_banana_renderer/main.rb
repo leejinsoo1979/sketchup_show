@@ -26,6 +26,7 @@ module NanoBanana
   require_relative 'services/scene_exporter'
   require_relative 'services/prompt_builder'
   require_relative 'services/api_client'
+  require_relative 'services/replicate_client'
   require_relative 'services/hotspot_manager'
   require_relative 'services/camera_tool'
 
@@ -40,6 +41,8 @@ module NanoBanana
   @current_hotspots = []
   @config_store = nil
   @api_client = nil
+  @replicate_client = nil
+  @current_api = 'gemini'  # 'gemini' 또는 'replicate'
   @camera_tool = nil
   @mirror_active = false
   @mirror_timer = nil
@@ -61,12 +64,44 @@ module NanoBanana
   class << self
     attr_accessor :current_image, :current_hotspots
 
+    # JSON 인자 파싱 헬퍼
+    def parse_json_args(json_str)
+      return [] if json_str.nil? || json_str.empty?
+      begin
+        JSON.parse(json_str)
+      rescue JSON::ParserError
+        # JSON이 아니면 단일 값으로 처리
+        [json_str]
+      end
+    end
+
     # 플러그인 초기화
     def initialize_plugin
       @config_store = ConfigStore.new
+
+      # Gemini API
       api_key = @config_store.load_api_key
-      @gemini_model = @config_store.load_setting('gemini_model') || 'gemini-2.5-flash'
-      @api_client = ApiClient.new(api_key, @gemini_model) if api_key && !api_key.empty?
+      puts "[NanoBanana] Gemini API Key: #{api_key ? '있음' : '없음'}"
+      @gemini_model = @config_store.load_setting('gemini_model') || 'gemini-2.0-flash-exp'
+      if api_key && !api_key.empty?
+        @api_client = ApiClient.new(api_key, @gemini_model)
+      end
+
+      # Replicate API
+      replicate_token = @config_store.load_setting('replicate_token')
+      # 토큰이 없으면 nil 유지 (설정에서 입력 필요)
+      if replicate_token.nil? || replicate_token.empty?
+        replicate_token = nil
+      end
+      puts "[NanoBanana] Replicate Token: #{replicate_token ? '있음' : '없음'}"
+      @replicate_model = @config_store.load_setting('replicate_model') || 'photorealistic-fx'
+      if replicate_token && !replicate_token.empty?
+        @replicate_client = ReplicateClient.new(replicate_token, @replicate_model)
+      end
+
+      # 기본 엔진 설정 (Gemini 우선 - 포토리얼리스틱 결과)
+      @current_api = @config_store.load_setting('current_api') || 'gemini'
+      puts "[NanoBanana] 현재 엔진: #{@current_api}"
 
       register_menu
       register_toolbar
@@ -82,7 +117,7 @@ module NanoBanana
       menu = UI.menu('Extensions')
       submenu = menu.add_submenu(PLUGIN_NAME)
 
-      submenu.add_item('렌더링 시작') { show_main_dialog }
+      submenu.add_item('루비실행') { show_main_dialog }
       submenu.add_separator
       submenu.add_item('설정') { show_settings_dialog }
       submenu.add_separator
@@ -309,13 +344,13 @@ module NanoBanana
         temp_path = "/tmp/nanobanana_mirror.jpg"
         view = Sketchup.active_model.active_view
 
-        # HD 해상도 (1280x720)
+        # 프리뷰 해상도 (960x540) - 빠른 미러링
         view.write_image({
           filename: temp_path,
-          width: 1280,
-          height: 720,
+          width: 960,
+          height: 540,
           antialias: false,
-          compression: 0.7
+          compression: 0.6
         })
 
         image_data = Base64.strict_encode64(File.binread(temp_path))
@@ -360,31 +395,66 @@ module NanoBanana
 
     def register_main_callbacks(dialog)
       # 씬 캡처
-      dialog.add_action_callback('capture_scene') do |_ctx, size|
-        capture_scene(size || '3840')
+      dialog.add_action_callback('capture_scene') do |_ctx, json_args|
+        args = parse_json_args(json_args)
+        size = args[0] || '1024'  # ★ 기본값 1024로 변경 (속도 우선)
+        capture_scene(size)
       end
 
       # 렌더링 시작 (새 UI: time + light + prompt + negative 파라미터)
-      dialog.add_action_callback('start_render') do |_ctx, time_preset, light_switch, prompt, negative_prompt|
+      dialog.add_action_callback('start_render') do |_ctx, json_args|
+        args = parse_json_args(json_args)
+        time_preset = args[0] || 'day'
+        light_switch = args[1] || 'on'
+        prompt = args[2] || ''
+        negative_prompt = args[3] || ''
+
+        puts "[NanoBanana] ========== START_RENDER 콜백 =========="
+        puts "[NanoBanana] time_preset: #{time_preset}"
+        puts "[NanoBanana] light_switch: #{light_switch}"
+        puts "[NanoBanana] prompt 길이: #{prompt ? prompt.length : 0}"
+        puts "[NanoBanana] negative_prompt 길이: #{negative_prompt ? negative_prompt.length : 0}"
+
         # UI에서 직접 입력한 프롬프트가 있으면 사용
-        @converted_prompt = prompt if prompt && !prompt.empty?
+        if prompt && !prompt.empty?
+          @converted_prompt = prompt
+          puts "[NanoBanana] 프롬프트 저장됨: #{prompt[0..100]}..."
+        else
+          puts "[NanoBanana] 프롬프트 비어있음!"
+        end
         @negative_prompt = negative_prompt if negative_prompt && !negative_prompt.empty?
         start_render_with_preset(time_preset, light_switch)
       end
 
-      # Auto 프롬프트 생성 요청 (스타일 파라미터 추가)
-      dialog.add_action_callback('generate_auto_prompt') do |_ctx, style|
-        generate_auto_prompt(style || '')
+      # Auto 프롬프트 생성 요청 (스타일 + 라이팅 파라미터)
+      dialog.add_action_callback('generate_auto_prompt') do |_ctx, json_args|
+        args = parse_json_args(json_args)
+        style = args[0] || ''
+        time_preset = args[1] || 'day'
+        light_switch = args[2] || 'on'
+        generate_auto_prompt(style, time_preset, light_switch)
       end
 
       # 이미지 저장
-      dialog.add_action_callback('save_image') do |_ctx, filename|
-        save_image(filename || '')
+      dialog.add_action_callback('save_image') do |_ctx, json_args|
+        args = parse_json_args(json_args)
+        filename = args[0] || ''
+        save_image(filename)
       end
 
-      # 설정 다이얼로그 열기
-      dialog.add_action_callback('open_settings') do |_ctx|
-        show_settings_dialog
+      # API Key 저장 (메인 다이얼로그 내 설정용)
+      dialog.add_action_callback('save_api_key') do |_ctx, key|
+        save_api_key_from_main(key)
+      end
+
+      # API Key 로드 (메인 다이얼로그 내 설정용)
+      dialog.add_action_callback('load_api_key') do |_ctx|
+        load_api_key_to_main
+      end
+
+      # 연결 테스트 (메인 다이얼로그 내 설정용)
+      dialog.add_action_callback('test_connection') do |_ctx|
+        test_connection_from_main
       end
 
       # 이미지 보정 다이얼로그 열기
@@ -407,24 +477,56 @@ module NanoBanana
         load_model_to_main_dialog
       end
 
+      # ★ Replicate API 토큰 저장
+      dialog.add_action_callback('save_replicate_token') do |_ctx, token|
+        save_replicate_token(token)
+      end
+
+      # ★ Replicate API 토큰 로드
+      dialog.add_action_callback('load_replicate_token') do |_ctx|
+        load_replicate_token
+      end
+
+      # ★ 엔진 선택 (gemini / replicate)
+      dialog.add_action_callback('set_engine') do |_ctx, engine|
+        set_current_engine(engine)
+      end
+
+      # ★ 현재 엔진 로드
+      dialog.add_action_callback('get_engine') do |_ctx|
+        @main_dialog&.execute_script("onEngineLoaded('#{@current_api}')")
+      end
+
       # 카메라 이동
-      dialog.add_action_callback('cam_move') do |_ctx, direction|
-        camera_move(direction)
+      dialog.add_action_callback('cam_move') do |_ctx, direction_json|
+        puts "[NanoBanana] cam_move 호출됨: #{direction_json.inspect}"
+        args = parse_json_args(direction_json)
+        dir = args.is_a?(Array) ? args[0] : args
+        puts "[NanoBanana] 카메라 이동: #{dir}"
+        camera_move(dir.to_s)
       end
 
       # 카메라 회전
-      dialog.add_action_callback('cam_rotate') do |_ctx, direction|
-        camera_rotate(direction)
+      dialog.add_action_callback('cam_rotate') do |_ctx, direction_json|
+        puts "[NanoBanana] cam_rotate 호출됨: #{direction_json.inspect}"
+        args = parse_json_args(direction_json)
+        dir = args.is_a?(Array) ? args[0] : args
+        puts "[NanoBanana] 카메라 회전: #{dir}"
+        camera_rotate(dir.to_s)
       end
 
       # 카메라 높이 프리셋
-      dialog.add_action_callback('cam_height') do |_ctx, preset|
-        camera_set_height(preset)
+      dialog.add_action_callback('cam_height') do |_ctx, preset_json|
+        args = parse_json_args(preset_json)
+        preset = args.is_a?(Array) ? args[0] : args
+        camera_set_height(preset.to_s)
       end
 
       # 카메라 FOV 프리셋
-      dialog.add_action_callback('cam_fov') do |_ctx, preset|
-        camera_set_fov(preset)
+      dialog.add_action_callback('cam_fov') do |_ctx, preset_json|
+        args = parse_json_args(preset_json)
+        preset = args.is_a?(Array) ? args[0] : args
+        camera_set_fov(preset.to_s)
       end
 
       # 미러링 시작
@@ -651,7 +753,7 @@ module NanoBanana
 
       # 설정 로드
       dialog.add_action_callback('load_settings') do |_ctx|
-        settings = @config_store.load_settings
+        settings = @config_store.load_all_settings
         if settings
           dialog.execute_script("onSettingsLoaded(#{settings.to_json})")
         end
@@ -861,49 +963,76 @@ CRITICAL RULES:
     # ========================================
 
     # 씬 캡처 + AI 프롬프트 생성 (Convert)
-    def capture_scene(size = '3840')
+    def capture_scene(size = '1024')
       begin
-        temp_path = "/tmp/nanobanana_capture.png"
+        temp_path = "/tmp/nanobanana_capture.jpg"
         model = Sketchup.active_model
         view = model.active_view
+        rendering_options = model.rendering_options
 
-        # 사이즈별 해상도 설정 (16:9 비율)
+        # ★★★ 핵심: 캡처 전 Edge(윤곽선) 끄기 ★★★
+        # SketchUp 기본 설정은 검은 윤곽선이 보임 - AI가 이걸 그대로 반영함
+        original_edges = rendering_options["DrawEdges"]
+        original_profiles = rendering_options["DrawProfileEdges"] rescue nil
+        original_depth_cue = rendering_options["DrawDepthQue"] rescue nil
+        original_extension = rendering_options["ExtendLines"] rescue nil
+
+        # Edge 관련 모든 설정 OFF
+        rendering_options["DrawEdges"] = false
+        rendering_options["DrawProfileEdges"] = false rescue nil
+        rendering_options["DrawDepthQue"] = false rescue nil
+        rendering_options["ExtendLines"] = false rescue nil
+
+        puts "[NanoBanana] Edge OFF 설정 완료 (원본: #{original_edges})"
+
+        # 해상도 설정 (선명할수록 AI가 더 잘 인식)
         sizes = {
-          '1920' => { width: 1920, height: 1080 },  # FHD
-          '2560' => { width: 2560, height: 1440 },  # QHD
-          '3840' => { width: 3840, height: 2160 }   # 4K
+          '1024' => { width: 1920, height: 1080 },   # 속도 (FHD)
+          '1536' => { width: 2560, height: 1440 },   # 밸런스 (2K)
+          '1920' => { width: 3840, height: 2160 }    # 고품질 (4K)
         }
-        resolution = sizes[size] || sizes['3840']
+        resolution = sizes[size] || sizes['1024']
 
+        # JPEG으로 압축 (PNG 대비 70% 용량 감소)
         keys = {
           :filename => temp_path,
           :width => resolution[:width],
           :height => resolution[:height],
           :antialias => true,
-          :transparent => false
+          :transparent => false,
+          :compression => 0.85  # JPEG 품질 85%
         }
 
         success = view.write_image(keys)
+
+        # ★★★ 캡처 후 원래 Edge 설정 복원 ★★★
+        rendering_options["DrawEdges"] = original_edges
+        rendering_options["DrawProfileEdges"] = original_profiles rescue nil
+        rendering_options["DrawDepthQue"] = original_depth_cue rescue nil
+        rendering_options["ExtendLines"] = original_extension rescue nil
+
+        puts "[NanoBanana] Edge 설정 복원 완료"
 
         unless success
           raise "이미지 내보내기 실패"
         end
 
         @current_image = Base64.strict_encode64(File.binread(temp_path))
+        file_size_kb = File.size(temp_path) / 1024
         File.delete(temp_path) rescue nil
 
-        puts "[NanoBanana] 캡처 완료 (#{resolution[:width]}x#{resolution[:height]})"
+        puts "[NanoBanana] 캡처 완료 (#{resolution[:width]}x#{resolution[:height]}, #{file_size_kb}KB, Edge OFF)"
 
-        # UI에 캡처 완료 알림 (프롬프트 생성 시작)
+        # UI에 캡처 완료 알림
         if @main_dialog
           @main_dialog.execute_script("onCaptureComplete('#{@current_image}', 0)")
-          @main_dialog.execute_script("setStatus('Analyzing scene...')")
+          @main_dialog.execute_script("onConvertComplete('')")
+          @main_dialog.execute_script("setStatus('Convert 완료 - Auto로 프롬프트 생성하세요')")
         end
 
-        # ★ Convert 핵심: 씬 분석하여 재질/구조 데이터만 추출 (프롬프트는 별도)
-        analyze_scene_only
-
       rescue StandardError => e
+        # 에러 발생해도 Edge 복원 시도
+        rendering_options["DrawEdges"] = original_edges rescue nil
         puts "[NanoBanana] 캡처 에러: #{e.message}"
         puts e.backtrace.first(5).join("\n")
         if @main_dialog
@@ -983,17 +1112,113 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
       end
     end
 
-    # Auto 프롬프트 생성 (분석 데이터 + 스타일 기반 + SketchUp 재질 정보)
-    def generate_auto_prompt(user_style = '')
+    # AI 프롬프트 생성용 시스템 인스트럭션 템플릿
+    def get_ai_instruction_template(materials_info, user_style = '', time_preset = 'day', light_switch = 'on')
+      style_hint = user_style.to_s.empty? ? "modern luxury interior" : user_style
+
+      # 라이팅 설명 생성 (사용자 설정 기반)
+      lighting_desc = build_lighting_description(time_preset, light_switch)
+
+      <<~TEXT
+    [CRITICAL TASK]
+    You must generate a detailed photorealistic rendering prompt for this interior space.
+    This is an IMAGE-TO-IMAGE transformation task. The goal is to convert a 3D SketchUp model into a professional interior photograph.
+
+    [ABSOLUTE CONSTRAINTS - MUST BE INCLUDED IN PROMPT]
+    1. PRESERVE EXACT COMPOSITION: Every wall, floor, ceiling, window, door must stay in the EXACT same position
+    2. NO ADDITIONS: Do NOT add any objects, furniture, mirrors, handles, plants, decorations, or accessories
+    3. NO REMOVALS: Do NOT remove anything that exists in the source image
+    4. SAME ROOM ONLY: The output must look like the SAME room photographed professionally
+
+    [SOURCE MATERIALS FROM SKETCHUP MODEL]
+    #{materials_info}
+
+    [REQUIRED PROMPT STRUCTURE]
+    Generate a prompt following this EXACT format:
+
+    ---START OF PROMPT---
+
+    [INPUT IMAGE PRESERVATION - CRITICAL]
+    Preserve the EXACT composition, camera angle, and object placement from the input image.
+    Do NOT add any new objects, furniture, mirrors, door handles, light switches, plants, rugs, or decorative items.
+    Do NOT remove any existing objects from the scene.
+    This is a strict image-to-image transformation, not a creative redesign.
+
+    [PHOTOREALISTIC TRANSFORMATION]
+    Transform this 3D SketchUp interior render into a professional architectural photograph.
+    Style: #{style_hint}
+    Camera: Canon EOS R5 with 24mm f/2.8 lens, professional architectural photography
+    Quality: 8K resolution, sharp focus, professional color grading
+
+    [MATERIAL RENDERING - BASED ON SOURCE]
+    Convert all surfaces to photorealistic materials with natural imperfections:
+    - Wood surfaces: visible grain texture, subtle scratches, natural wood imperfections
+    - Wall surfaces: realistic paint texture, subtle shadows, minor surface variations
+    - Floor surfaces: realistic material texture with wear patterns and reflections
+    - Glass surfaces: realistic reflections, subtle smudges, proper transparency
+    - Metal surfaces: realistic reflections, subtle fingerprints, appropriate finish
+
+    [LIGHTING SETUP]
+    #{lighting_desc}
+    - Soft natural shadows with realistic falloff
+    - Global illumination and realistic light bounce
+    - Subtle ambient occlusion in corners and edges
+
+    [PHOTO REALISM DETAILS]
+    - Natural lens characteristics: subtle vignette, minimal chromatic aberration
+    - Realistic depth of field with natural bokeh
+    - Film-like quality with subtle grain (ISO 200-400)
+    - Professional white balance and color temperature
+
+    [NEGATIVE PROMPT - MUST AVOID]
+    black outlines, visible edges, sketch lines, wireframe appearance, line art style, hard black lines, 3D render look, CGI appearance, computer graphics, architectural visualization, clean perfect surfaces, uniform flat lighting, artificial plastic look, cartoon style, anime style, painting style, illustration, hand-drawn, digital art, concept art, unrealistic colors, oversaturated, HDR artifacts, bloom effects, lens flare, motion blur
+
+    ---END OF PROMPT---
+
+    [YOUR OUTPUT]
+    Generate ONLY the prompt content between ---START OF PROMPT--- and ---END OF PROMPT--- markers.
+    Do NOT include any explanations, comments, or additional text.
+    The prompt must be detailed and specific to achieve photorealistic results.
+      TEXT
+    end
+
+    # 라이팅 설명 생성 헬퍼
+    def build_lighting_description(time_preset, light_switch)
+      time_desc = case time_preset.to_s.downcase
+        when 'evening'
+          "warm evening sunset tones through windows"
+        when 'night'
+          "dark exterior through windows, nighttime atmosphere"
+        else # day
+          "bright natural daylight through windows"
+      end
+
+      light_desc = if light_switch.to_s.downcase == 'off'
+        "artificial lights OFF, ambient light only"
+      else
+        "interior lights ON, warm artificial illumination"
+      end
+
+      "#{time_desc}, #{light_desc}, soft shadows, global illumination, realistic light bounce"
+    end
+
+    # Auto 프롬프트 생성 (분석 데이터 + 스타일 기반 + SketchUp 재질 정보 + 라이팅)
+    def generate_auto_prompt(user_style = '', time_preset = 'day', light_switch = 'on')
+      puts "[NanoBanana] ========== AUTO 프롬프트 생성 시작 =========="
+      puts "[NanoBanana] user_style: #{user_style.inspect}"
+      puts "[NanoBanana] time_preset: #{time_preset}, light_switch: #{light_switch}"
+
       unless @api_client
         puts "[NanoBanana] API 클라이언트 없음"
         return
       end
 
       unless @current_image
-        puts "[NanoBanana] 이미지 없음"
+        puts "[NanoBanana] 이미지 없음 - Convert 먼저 실행하세요"
         return
       end
+
+      puts "[NanoBanana] 이미지 있음: #{@current_image.length} bytes"
 
       Thread.new do
         begin
@@ -1004,68 +1229,8 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
           puts "[NanoBanana] 추출된 재질 정보:"
           puts materials_info[0..500] + "..."
 
-          # 스타일이 있으면 스타일 기반 프롬프트 생성
-          style_instruction = if user_style && !user_style.empty?
-            <<~STYLE
-**[사용자 요청 스타일]**
-#{user_style}
-
-위 스타일을 반영하여 공간의 분위기, 조명, 마감재 표현을 최적화하세요.
-단, 레이아웃과 가구 배치는 절대 변경하지 마세요.
-            STYLE
-          else
-            ""
-          end
-
-          prompt_request = <<~PROMPT
-이 스케치업 씬을 분석하여, 형태/구도/재질을 100% 동일하게 유지하는 실사 렌더링 프롬프트를 생성해줘.
-
-★★★ 중요: 아래 SketchUp 모델의 재질 정보를 반드시 참고하세요 ★★★
-이 정보는 스케치업 모델에서 직접 추출한 정확한 재질 데이터입니다.
-각 재질의 이름, RGB 색상, 명도 톤을 정확히 유지해야 합니다.
-
-[SketchUp 모델 재질 데이터]
-#{materials_info}
-
-★★★ 중요: 스케치업에 보이는 재질 색상과 텍스처를 절대 변경하지 마세요 ★★★
-- 나무 패널이면 나무 패널 그대로
-- 회색 벽이면 회색 벽 그대로
-- 흰색 천장이면 흰색 천장 그대로
-- 가구 색상도 원본 그대로
-#{style_instruction}
-다음 형식으로 프롬프트를 작성해줘:
-
-[STRICT REFERENCE MODE]
-이 스케치업 이미지를 실사 렌더링으로 변환. 카메라 앵글, 구도, 원근감 100% 유지.
-
-[절대 변경 금지 - 레이아웃]
-(보이는 모든 요소의 정확한 위치와 형태를 나열)
-
-[절대 변경 금지 - 재질 색상]
-위 [SketchUp 모델 재질 데이터]를 참고하여 정확한 재질명과 색상을 명시:
-- 바닥: (재질명, RGB값, 톤 포함)
-- 천장: (재질명, RGB값, 톤 포함)
-- 벽면: (각 벽면의 재질명, RGB값, 톤 포함)
-- 가구: (각 가구의 재질명, RGB값, 톤 포함)
-
-[조명 기구 위치]
-(보이는 조명 기구의 위치와 형태만 설명, 켜짐/꺼짐은 사용자가 별도 지정)
-
-[출력 품질]
-8K 포토리얼, PBR 재질, 글로벌 일루미네이션.
-
-★★★ CRITICAL - OBJECT COUNT RULE ★★★
-- DO NOT ADD any objects, plants, decorations, accessories, or items that do not exist in the source image
-- DO NOT REMOVE any objects that exist in the source image
-- EXACT SAME number of items: if source has 2 chairs, output must have exactly 2 chairs
-- EXACT SAME positions: every object must remain in its original location
-- NO creative additions: no vases, no plants, no books, no decorations unless they exist in source
-- If it's not visible in the SketchUp source, it MUST NOT appear in the render
-
----
-[NEGATIVE]
-adding objects, removing objects, extra furniture, additional plants, extra decorations, new accessories, creative additions, object count change, 레이아웃 변경, 가구 추가, 가구 삭제, 소품 추가, 식물 추가, 장식 추가, 재질 색상 변경, 만화/일러스트 스타일, 사람, 동물, 텍스트, 워터마크
-          PROMPT
+          # 재질 중심 시스템 인스트럭션 생성 (라이팅 설정 포함)
+          prompt_request = get_ai_instruction_template(materials_info, user_style, time_preset, light_switch)
 
           result = @api_client.analyze_scene(@current_image, prompt_request)
 
@@ -1086,12 +1251,27 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
             if clean_prompt =~ /\[NEGATIVE\](.+)/mi
               negative_prompt = $1.strip
               main_prompt = clean_prompt.sub(/\[NEGATIVE\].+/mi, '').strip
+            elsif clean_prompt =~ /Negative[:\s]*(.+)/mi
+              negative_prompt = $1.strip.sub(/\n.*$/m, '')  # 첫 줄만
+              main_prompt = clean_prompt.sub(/Negative[:\s]*.+/mi, '').strip
             elsif clean_prompt =~ /---\s*\n(.+)/m
               negative_prompt = $1.strip
               main_prompt = clean_prompt.sub(/---\s*\n.+/m, '').strip
             end
 
+            # 네거티브가 없으면 강화된 기본값 설정
+            if negative_prompt.empty?
+              negative_prompt = "adding new objects, extra furniture, plants, vases, decor, clutter, sketchup, wireframe, 3d model, cartoon, lines, edges, cgi, render artifacts, simplified textures, low quality, blurry, architectural changes, remodeling"
+            end
+
+            # 필수 네거티브 키워드 강제 추가
+            required_negatives = "adding new objects, extra furniture, plants, vases, decor, sketchup, wireframe, "
+            unless negative_prompt.downcase.include?('adding new objects')
+              negative_prompt = required_negatives + negative_prompt
+            end
+
             puts "[NanoBanana] Auto 프롬프트 생성 완료"
+            puts "[NanoBanana] 네거티브: #{negative_prompt[0..50]}..."
 
             escaped_main = main_prompt.to_json
             escaped_negative = negative_prompt.to_json
@@ -1110,9 +1290,20 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
 
     # 렌더링 시작 (새 UI용 - time preset + light switch)
     def start_render_with_preset(time_preset, light_switch)
-      unless @api_client
-        UI.messagebox('API Key가 설정되지 않았습니다. 설정에서 API Key를 입력하세요.', MB_OK)
-        return
+      puts "[NanoBanana] ========== 렌더링 시작 =========="
+      puts "[NanoBanana] 엔진: #{@current_api}, time=#{time_preset}, light=#{light_switch}"
+
+      # 엔진에 따라 클라이언트 확인
+      if @current_api == 'replicate'
+        unless @replicate_client
+          UI.messagebox('Replicate API Token이 설정되지 않았습니다.', MB_OK)
+          return
+        end
+      else
+        unless @api_client
+          UI.messagebox('Gemini API Key가 설정되지 않았습니다.', MB_OK)
+          return
+        end
       end
 
       unless @current_image
@@ -1125,158 +1316,419 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
       current_scene = model.pages.selected_page&.name || 'Unknown'
 
       # 렌더링 시작 시 현재 이미지를 별도로 복사 (다른 씬 작업해도 영향 없음)
+      puts "[NanoBanana] 이미지 복사 시작..."
       render_source_image = @current_image.dup
+      puts "[NanoBanana] 이미지 복사 완료: #{render_source_image.length} bytes"
 
       # UI에 렌더링 시작 알림 (씬 이름 포함)
+      puts "[NanoBanana] UI 알림 전송 중..."
       @main_dialog&.execute_script("onRenderStart('#{current_scene}')")
+      puts "[NanoBanana] UI 알림 완료"
+      puts "[NanoBanana] 렌더링 시작 (동기 모드)..."
 
-      Thread.new do
-        begin
-          # 시간대와 조명 설정으로 프롬프트 생성
-          prompt = build_render_prompt(time_preset, light_switch)
-          puts "[NanoBanana] Prompt: #{prompt[0..200]}..."
-          puts "[NanoBanana] 렌더링 씬: #{current_scene}"
+      # Thread 없이 직접 실행 (SketchUp Ruby Thread 문제 회피)
+      begin
+        render_start = Time.now
+        # 시간대와 조명 설정으로 프롬프트 생성
+        prompt = build_render_prompt(time_preset, light_switch)
+        negative = @negative_prompt || 'cartoon, anime, sketch, drawing, wireframe, outline, black lines, CGI, 3D render'
 
-          # API 호출 (레퍼런스 이미지 있으면 사용)
-          result = if @reference_image
-            puts "[NanoBanana] 레퍼런스 이미지 사용"
-            @api_client.generate_with_references(render_source_image, [@reference_image], prompt)
-          else
-            @api_client.generate(render_source_image, prompt)
-          end
+        puts "[NanoBanana] Prompt: #{prompt[0..200]}..."
+        puts "[NanoBanana] 렌더링 씬: #{current_scene}"
+        puts "[NanoBanana] 이미지 크기: #{render_source_image.length} bytes"
 
-          if result && result[:image]
-            # 렌더링 결과를 저장 (Export 기능에서 사용)
-            @current_image = result[:image]
-            # 렌더링 완료 (씬 이름과 함께 전달)
-            @main_dialog&.execute_script("onRenderComplete('#{result[:image]}', '#{current_scene}')")
-            # 웹 동기화 전송
-            sync_rendered_to_web if @web_sync_active
-          else
-            @main_dialog&.execute_script("onRenderError('렌더링 결과를 받지 못했습니다.', '#{current_scene}')")
-          end
-        rescue StandardError => e
-          puts "[NanoBanana] Render Error: #{e.message}"
-          @main_dialog&.execute_script("onRenderError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}', '#{current_scene}')")
+        # ★★★ 엔진에 따라 API 호출 분기 ★★★
+        result = if @current_api == 'replicate'
+          puts "[NanoBanana] Replicate API 사용 (ControlNet)"
+          @replicate_client.generate(render_source_image, prompt, negative)
+        elsif @reference_image
+          puts "[NanoBanana] Gemini API + 레퍼런스 이미지"
+          @api_client.generate_with_references(render_source_image, [@reference_image], prompt)
+        else
+          puts "[NanoBanana] Gemini API 사용"
+          @api_client.generate(render_source_image, prompt)
         end
+
+        render_elapsed = (Time.now - render_start).round(1)
+        puts "[NanoBanana] 렌더링 총 소요시간: #{render_elapsed}초"
+
+        if result && result[:image]
+          # 렌더링 결과를 저장 (Export 기능에서 사용)
+          @current_image = result[:image]
+          # 렌더링 완료 (씬 이름과 함께 전달)
+          @main_dialog&.execute_script("onRenderComplete('#{result[:image]}', '#{current_scene}')")
+          # 웹 동기화 전송
+          sync_rendered_to_web if @web_sync_active
+        else
+          @main_dialog&.execute_script("onRenderError('렌더링 결과를 받지 못했습니다.', '#{current_scene}')")
+        end
+      rescue StandardError => e
+        puts "[NanoBanana] Render Error: #{e.message}"
+        puts e.backtrace.first(5).join("\n")
+        @main_dialog&.execute_script("onRenderError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}', '#{current_scene}')")
       end
     end
 
-    # 모델에서 재질 정보 추출 (상세)
+    # 모델에서 재질 정보 추출 (의미 있는 질감만, 영문으로)
     def extract_materials_info
       model = Sketchup.active_model
       materials = model.materials
 
-      return "재질 정보 없음" if materials.count == 0
+      return "High-end architectural finishes" if materials.count == 0
 
-      material_list = []
+      # Face 면적 기준으로 재질 수집
+      material_area = {}  # { material_name => total_area }
 
-      materials.each do |mat|
-        # 재질 이름 (가장 중요!)
-        name = mat.name
+      collect_material_areas(model.active_entities, material_area)
 
-        # 색상 정보 (RGB + 명도 분석)
-        color_desc = ""
-        if mat.color
-          c = mat.color
-          r, g, b = c.red, c.green, c.blue
+      # 면적 기준 상위 재질 선택
+      sorted_materials = material_area.sort_by { |_, area| -area }
 
-          # 명도 계산 (0-255)
-          luminance = (0.299 * r + 0.587 * g + 0.114 * b).to_i
+      # 의미 있는 재질만 필터링 (쓰레기 이름 제외)
+      meaningful_textures = []
 
-          # 색상 톤 분류
-          tone = if luminance < 60
-            "매우 어두움(Very Dark)"
-          elsif luminance < 100
-            "어두움(Dark)"
-          elsif luminance < 150
-            "중간(Medium)"
-          elsif luminance < 200
-            "밝음(Light)"
-          else
-            "매우 밝음(Very Light)"
-          end
+      sorted_materials.each do |mat_name, _area|
+        texture_desc = extract_texture_description(mat_name, materials[mat_name])
+        next if texture_desc.nil?  # 쓰레기 이름은 스킵
 
-          color_desc = "RGB(#{r},#{g},#{b}), 명도:#{luminance}, 톤:#{tone}"
-        end
-
-        # 텍스처 정보
-        texture_desc = ""
-        if mat.texture
-          tex = mat.texture
-          filename = File.basename(tex.filename) rescue "unknown"
-          texture_desc = "텍스처파일: #{filename}"
-        end
-
-        # 재질 설명 생성 (이름 강조)
-        desc = "★ 재질명: \"#{name}\""
-        desc += " | #{color_desc}" if color_desc != ""
-        desc += " | #{texture_desc}" if texture_desc != ""
-        desc += " | 투명도: #{(mat.alpha * 100).to_i}%" if mat.alpha < 1.0
-
-        material_list << desc
+        meaningful_textures << texture_desc
+        break if meaningful_textures.length >= 6  # 최대 6개
       end
 
-      # 우드 재질 특별 경고 추가
-      wood_materials = materials.select { |m| m.name.downcase.include?('wood') || m.name.downcase.include?('walnut') || m.name.downcase.include?('oak') || m.name.downcase.include?('원목') || m.name.downcase.include?('월넛') || m.name.downcase.include?('오크') }
-
-      warning = ""
-      if wood_materials.any?
-        warning = "\n\n⚠️ 우드 재질 경고:\n"
-        wood_materials.each do |wm|
-          c = wm.color
-          if c
-            lum = (0.299 * c.red + 0.587 * c.green + 0.114 * c.blue).to_i
-            warning += "- \"#{wm.name}\"은 명도 #{lum}입니다. "
-            if lum < 100
-              warning += "이것은 어두운 우드(월넛/다크브라운)입니다. 밝은 오크로 변경 금지!\n"
-            else
-              warning += "이것은 밝은 우드(오크/라이트브라운)입니다. 어두운 월넛으로 변경 금지!\n"
-            end
-          end
-        end
+      # 의미 있는 재질이 없으면 기본값
+      if meaningful_textures.empty?
+        return "High-end architectural finishes with natural materials"
       end
 
-      material_list.join("\n") + warning
+      meaningful_textures.join(", ")
     rescue StandardError => e
       puts "[NanoBanana] 재질 추출 에러: #{e.message}"
-      "재질 정보 추출 실패"
+      "Premium interior finishes"
+    end
+
+    # 재질 이름에서 질감 설명 추출 (쓰레기면 nil 반환)
+    def extract_texture_description(name, material)
+      name_lower = name.downcase
+
+      # === 쓰레기 이름 패턴 (nil 반환) ===
+      # 숫자로만 된 이름, 기본 색상 이름, 의미 없는 ID
+      garbage_patterns = [
+        /^재질\d*$/,           # 재질1, 재질30
+        /^\[?color[_\s]?\d*\]?$/i,  # [Color_001], Color 1
+        /^material\d*$/i,      # Material1
+        /^\d+$/,               # 순수 숫자
+        /^[a-f0-9]{6}$/i,      # 헥스 컬러코드
+        /^default/i,           # Default
+        /^untitled/i,          # Untitled
+      ]
+
+      garbage_patterns.each do |pattern|
+        return nil if name_lower =~ pattern
+      end
+
+      # === 의미 있는 질감 키워드 매핑 ===
+      texture_map = {
+        # 우드
+        /walnut/i => "Dark walnut wood with natural grain",
+        /oak/i => "Light oak wood, subtle grain",
+        /maple/i => "Maple wood, smooth finish",
+        /cherry/i => "Cherry wood, warm tone",
+        /teak/i => "Teak wood, rich grain",
+        /birch/i => "Birch wood, light tone",
+        /pine/i => "Pine wood, natural knots",
+        /wood/i => "Natural wood finish",
+        /timber/i => "Timber finish",
+        /veneer/i => "Wood veneer, satin finish",
+        /마루|인쇄마루|온돌마루/i => "Wood flooring, natural finish",
+
+        # 스톤/타일
+        /marble|대리석/i => "Polished marble with subtle veins",
+        /granite/i => "Granite surface, polished",
+        /slate/i => "Slate stone, matte",
+        /stone/i => "Natural stone finish",
+        /tile|타일/i => "Ceramic tile, clean grout",
+        /porcelain/i => "Porcelain tile, glossy",
+        /terrazzo/i => "Terrazzo, polished aggregate",
+
+        # 금속
+        /chrome/i => "Chrome, mirror finish",
+        /brass/i => "Brushed brass",
+        /copper/i => "Copper, natural patina",
+        /steel|stainless/i => "Brushed stainless steel",
+        /iron/i => "Black iron finish",
+        /aluminum/i => "Anodized aluminum",
+        /metal/i => "Metal finish",
+        /corrug/i => "Corrugated metal",
+
+        # 패브릭
+        /leather/i => "Premium leather texture",
+        /velvet/i => "Soft velvet fabric",
+        /linen/i => "Natural linen texture",
+        /fabric|cloth/i => "Woven fabric",
+        /cotton/i => "Cotton fabric",
+
+        # 기타
+        /concrete|콘크리트/i => "Raw concrete, industrial",
+        /glass|유리/i => "Clear glass, subtle reflections",
+        /brick|벽돌/i => "Exposed brick",
+        /plaster/i => "Smooth plaster wall",
+        /paint/i => "Matte painted surface",
+        /plastic|pvc/i => "Matte plastic",
+        /acrylic/i => "Clear acrylic",
+        /lacquer/i => "High-gloss lacquer",
+        /matte/i => "Matte finish",
+        /gloss/i => "Glossy finish",
+      }
+
+      texture_map.each do |pattern, description|
+        return description if name =~ pattern
+      end
+
+      # 텍스처 파일이 있으면 그걸로 추정
+      if material&.texture
+        filename = File.basename(material.texture.filename).downcase rescue ""
+        texture_map.each do |pattern, description|
+          return description if filename =~ pattern
+        end
+      end
+
+      # 색상 기반 추정 (마지막 수단)
+      if material&.color
+        c = material.color
+        brightness = (c.red + c.green + c.blue) / 3
+
+        if brightness > 200
+          return "Off-white surface"
+        elsif brightness < 50
+          return "Dark matte surface"
+        elsif c.red > c.blue && c.red > c.green
+          return "Warm-toned surface"
+        elsif c.blue > c.red
+          return "Cool-toned surface"
+        end
+      end
+
+      # 이름에서 영문 키워드 추출 시도
+      english_words = name.scan(/[a-zA-Z]{4,}/).map(&:downcase).uniq
+      return nil if english_words.empty?
+
+      # 의미 있는 영문 단어가 있으면 사용
+      meaningful = english_words.reject { |w| %w[material color default texture].include?(w) }
+      return nil if meaningful.empty?
+
+      "#{meaningful.first.capitalize} finish"
+    end
+
+    # Face 면적 수집
+    def collect_material_areas(entities, material_area, depth = 0)
+      return if depth > 5
+
+      entities.each do |entity|
+        case entity
+        when Sketchup::Face
+          area = entity.area rescue 0
+
+          if entity.material
+            mat_name = entity.material.name
+            material_area[mat_name] = (material_area[mat_name] || 0) + area
+          end
+
+        when Sketchup::Group
+          collect_material_areas(entity.entities, material_area, depth + 1)
+
+        when Sketchup::ComponentInstance
+          collect_material_areas(entity.definition.entities, material_area, depth + 1)
+        end
+      end
+    end
+
+    # Face 순회하여 재질-부위 매핑 수집
+    def collect_material_locations(entities, material_locations, depth = 0)
+      return if depth > 5  # 무한 재귀 방지
+
+      entities.each do |entity|
+        case entity
+        when Sketchup::Face
+          # Face의 방향으로 부위 추정
+          location = classify_face_location(entity)
+
+          # 앞면 재질
+          if entity.material
+            mat_name = entity.material.name
+            material_locations[mat_name] ||= []
+            material_locations[mat_name] << location
+          end
+
+          # 뒷면 재질
+          if entity.back_material
+            mat_name = entity.back_material.name
+            material_locations[mat_name] ||= []
+            material_locations[mat_name] << location
+          end
+
+        when Sketchup::Group
+          # 그룹 이름으로 부위 힌트 얻기
+          group_hint = guess_location_from_name(entity.name)
+          collect_material_locations_with_hint(entity.entities, material_locations, group_hint, depth + 1)
+
+        when Sketchup::ComponentInstance
+          # 컴포넌트 이름으로 부위 힌트 얻기
+          comp_hint = guess_location_from_name(entity.definition.name)
+          collect_material_locations_with_hint(entity.definition.entities, material_locations, comp_hint, depth + 1)
+        end
+      end
+    end
+
+    # 힌트가 있는 재질 수집
+    def collect_material_locations_with_hint(entities, material_locations, hint, depth)
+      return if depth > 5
+
+      entities.each do |entity|
+        case entity
+        when Sketchup::Face
+          location = hint || classify_face_location(entity)
+
+          if entity.material
+            mat_name = entity.material.name
+            material_locations[mat_name] ||= []
+            material_locations[mat_name] << location
+          end
+
+          if entity.back_material
+            mat_name = entity.back_material.name
+            material_locations[mat_name] ||= []
+            material_locations[mat_name] << location
+          end
+
+        when Sketchup::Group
+          new_hint = guess_location_from_name(entity.name) || hint
+          collect_material_locations_with_hint(entity.entities, material_locations, new_hint, depth + 1)
+
+        when Sketchup::ComponentInstance
+          new_hint = guess_location_from_name(entity.definition.name) || hint
+          collect_material_locations_with_hint(entity.definition.entities, material_locations, new_hint, depth + 1)
+        end
+      end
+    end
+
+    # Face 방향으로 부위 분류 (바닥/천장/벽)
+    def classify_face_location(face)
+      normal = face.normal
+
+      # Z축 방향 체크
+      if normal.z > 0.7
+        "Floor(바닥)"
+      elsif normal.z < -0.7
+        "Ceiling(천장)"
+      else
+        "Wall(벽면)"
+      end
+    end
+
+    # 이름에서 부위 힌트 추출
+    def guess_location_from_name(name)
+      return nil if name.nil? || name.empty?
+
+      name_lower = name.downcase
+
+      if name_lower.include?('floor') || name_lower.include?('바닥')
+        "Floor(바닥)"
+      elsif name_lower.include?('ceiling') || name_lower.include?('천장')
+        "Ceiling(천장)"
+      elsif name_lower.include?('wall') || name_lower.include?('벽')
+        "Wall(벽면)"
+      elsif name_lower.include?('door') || name_lower.include?('문')
+        "Door(문)"
+      elsif name_lower.include?('window') || name_lower.include?('창')
+        "Window(창문)"
+      elsif name_lower.include?('sofa') || name_lower.include?('소파')
+        "Furniture-Sofa(소파)"
+      elsif name_lower.include?('table') || name_lower.include?('테이블') || name_lower.include?('책상')
+        "Furniture-Table(테이블)"
+      elsif name_lower.include?('chair') || name_lower.include?('의자')
+        "Furniture-Chair(의자)"
+      elsif name_lower.include?('cabinet') || name_lower.include?('수납') || name_lower.include?('캐비닛')
+        "Furniture-Cabinet(수납장)"
+      elsif name_lower.include?('bed') || name_lower.include?('침대')
+        "Furniture-Bed(침대)"
+      elsif name_lower.include?('lamp') || name_lower.include?('light') || name_lower.include?('조명')
+        "Lighting(조명기구)"
+      elsif name_lower.include?('plant') || name_lower.include?('식물')
+        "Decor-Plant(식물)"
+      else
+        nil
+      end
+    end
+
+    # 명도 톤 분류
+    def classify_tone(luminance)
+      if luminance < 60
+        "Very Dark(매우 어두움)"
+      elsif luminance < 100
+        "Dark(어두움)"
+      elsif luminance < 150
+        "Medium(중간)"
+      elsif luminance < 200
+        "Light(밝음)"
+      else
+        "Very Light(매우 밝음)"
+      end
+    end
+
+    # 우드 재질 경고 생성
+    def generate_wood_warning(materials)
+      wood_keywords = ['wood', 'walnut', 'oak', 'teak', 'maple', 'cherry', '원목', '월넛', '오크', '티크', '메이플', '체리']
+      wood_materials = materials.select { |m| wood_keywords.any? { |kw| m.name.downcase.include?(kw) } }
+
+      return nil if wood_materials.empty?
+
+      warning_lines = ["\n⚠️ WOOD MATERIAL WARNING (우드 재질 경고):"]
+      wood_materials.each do |wm|
+        if wm.color
+          lum = (0.299 * wm.color.red + 0.587 * wm.color.green + 0.114 * wm.color.blue).to_i
+          if lum < 100
+            warning_lines << "- \"#{wm.name}\" is DARK WOOD (luminance: #{lum}). DO NOT change to light Oak!"
+          else
+            warning_lines << "- \"#{wm.name}\" is LIGHT WOOD (luminance: #{lum}). DO NOT change to dark Walnut!"
+          end
+        end
+      end
+      warning_lines.join("\n")
     end
 
     # 렌더링 프롬프트 생성
     def build_render_prompt(time_preset, light_switch)
-      # 시간대별 조명 설정
+      # 시간대별 조명 설정 (영문으로 상세하게)
       time_desc = case time_preset
       when 'day'
-        "주간 자연광 (부드러운 주간광)"
+        "Bright natural daylight, midday sun, soft diffused light through windows, blue sky visible outside"
       when 'evening'
-        "Golden hour 오후 5:00 PM, 따뜻한 석양빛"
+        "Golden hour sunset lighting at 5:00 PM, warm orange-amber light rays through windows, dramatic warm tones"
       when 'night'
-        "밤 9:00 PM, 어두운 외부, 실내 조명만"
+        "Nighttime 9:00 PM, dark exterior visible through windows, interior lit by artificial lights only"
       else
-        "주간 자연광"
+        "Bright natural daylight"
       end
 
-      # 조명 ON/OFF 설정
+      # 조명 ON/OFF 설정 (영문으로 상세하게)
       light_desc = case light_switch
       when 'on'
-        "실내 조명 점등 (따뜻한 3000K, 과장 없이 현실적으로)"
+        "Interior lights ON: All ceiling lights, pendant lamps, wall sconces, and floor lamps are illuminated with warm 3000K color temperature. Realistic soft glow from light fixtures."
       when 'off'
-        "실내 조명 OFF - 자연광만 사용"
+        "Interior lights OFF: All artificial lights are turned off. No lamp glow, no ceiling lights, no wall sconces illuminated. Only natural ambient light from windows and skylights."
       else
-        "실내 조명 점등"
+        "Interior lights ON with warm 3000K tone"
       end
 
       # 네거티브 프롬프트 처리
-      negative_section = ""
+      negative_section = <<~NEGATIVE
+
+[NEGATIVE PROMPT - ABSOLUTELY AVOID]
+black outlines, visible edges, sketch lines, wireframe appearance, line art style, hard black lines, 3D render look, CGI appearance, computer graphics, architectural visualization, clean perfect surfaces, uniform flat lighting, artificial plastic look, cartoon style, anime style, painting style, illustration, hand-drawn, digital art, concept art, unrealistic colors, oversaturated, HDR artifacts, bloom effects, lens flare, motion blur, added objects, new furniture, mirrors not in original, extra decorations
+      NEGATIVE
+
       if @negative_prompt && !@negative_prompt.empty?
-        puts "[NanoBanana] 네거티브 프롬프트 적용: #{@negative_prompt[0..50]}..."
-        negative_section = <<~NEGATIVE
-
-★★★ NEGATIVE PROMPT - DO NOT INCLUDE THESE ★★★
-#{@negative_prompt}
-
-        NEGATIVE
+        negative_section += "\nAdditional exclusions: #{@negative_prompt}\n"
       end
 
       # Convert 여부에 따라 다른 프롬프트 생성
@@ -1287,24 +1739,66 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
 
         # 조명 설정을 프롬프트 앞에 강조
         lighting_prefix = <<~LIGHTING
-★★★ CRITICAL LIGHTING INSTRUCTION - MUST FOLLOW ★★★
-- Time: #{time_desc}
-- Interior Lights: #{light_desc}
-#{light_switch == 'off' ? '- ALL INTERIOR LIGHTS MUST BE OFF. No lamp glow, no ceiling lights, no artificial lighting. Only natural daylight from windows.' : '- Interior lights should be ON with warm 3000K tone.'}
+[CRITICAL INSTRUCTION - MUST FOLLOW EXACTLY]
+
+This is an IMAGE-TO-IMAGE transformation task.
+Your ONLY job is to convert this 3D SketchUp model render into a photorealistic interior photograph.
+
+[ABSOLUTE RULES - VIOLATION = FAILURE]
+1. PRESERVE EXACT COMPOSITION: Every wall, floor, ceiling, window, door must remain in the EXACT same position
+2. PRESERVE EXACT CAMERA ANGLE: Do not change perspective, viewing angle, or focal length
+3. PRESERVE EXACT FURNITURE LAYOUT: Every piece of furniture must stay in its exact location and size
+4. NO ADDITIONS: Do NOT add any objects, furniture, decorations, mirrors, handles, plants, or accessories that are not in the source image
+5. NO REMOVALS: Do NOT remove any objects that exist in the source image
+
+[LIGHTING SETTINGS - APPLY EXACTLY]
+Time of Day: #{time_desc}
+Interior Lighting: #{light_desc}
 
         LIGHTING
 
         lighting_prefix + @converted_prompt + negative_section
       else
-        # Convert 안함 - 기본 렌더링
+        # Convert 안함 - 기본 렌더링 (상세 프롬프트)
         puts "[NanoBanana] 일반 모드 - 기본 프롬프트"
         <<~PROMPT
-첨부된 건축/인테리어 이미지를 포토리얼리스틱 사진으로 변환하세요.
-구조와 형태를 최대한 유지하고, 사실적인 재질감과 조명을 표현해주세요.
+[CRITICAL INSTRUCTION - MUST FOLLOW EXACTLY]
 
-조명 설정:
-- 시간대: #{time_desc}
-- 실내조명: #{light_desc}
+This is an IMAGE-TO-IMAGE transformation task.
+Your ONLY job is to convert this 3D SketchUp model render into a photorealistic interior photograph.
+
+[ABSOLUTE RULES - VIOLATION = FAILURE]
+1. PRESERVE EXACT COMPOSITION: Every wall, floor, ceiling, window, door must remain in the EXACT same position
+2. PRESERVE EXACT CAMERA ANGLE: Do not change perspective, viewing angle, or focal length
+3. PRESERVE EXACT FURNITURE LAYOUT: Every piece of furniture must stay in its exact location and size
+4. NO ADDITIONS: Do NOT add any objects, furniture, decorations, mirrors, handles, plants, or accessories that are not in the source image
+5. NO REMOVALS: Do NOT remove any objects that exist in the source image
+6. NO MODIFICATIONS: Do NOT resize, move, rotate, or transform any existing objects
+
+[LIGHTING SETTINGS - APPLY EXACTLY]
+Time of Day: #{time_desc}
+Interior Lighting: #{light_desc}
+
+[PHOTOREALISTIC TRANSFORMATION TASK]
+Transform this 3D SketchUp interior render into a professional architectural photograph.
+Camera: Canon EOS R5 with 24mm f/2.8 lens, professional architectural photography quality
+Quality: High resolution, sharp focus, professional color grading
+
+[MATERIAL RENDERING]
+Convert all surfaces to photorealistic materials with natural imperfections:
+- Wood surfaces: visible grain texture, subtle scratches, natural wood imperfections
+- Wall surfaces: realistic paint texture, subtle shadows, minor surface variations
+- Floor surfaces: realistic material texture with wear patterns and reflections
+- Glass surfaces: realistic reflections, subtle smudges, proper transparency
+- Metal surfaces: realistic reflections, subtle fingerprints, appropriate finish
+
+[PHOTO REALISM DETAILS]
+- Natural lens characteristics: subtle vignette, minimal chromatic aberration
+- Realistic depth of field with natural bokeh
+- Film-like quality with subtle grain (ISO 200-400)
+- Professional white balance and color temperature
+- Soft natural shadows with realistic falloff
+- Global illumination and realistic light bounce
 #{negative_section}
         PROMPT
       end
@@ -1323,7 +1817,7 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
       end
 
       # 설정에서 저장 경로 및 파일명 형식 로드
-      settings = @config_store.load_settings
+      settings = @config_store.load_all_settings
       download_path = settings['download_path']
       filename_format = settings['filename_format'] || 'timestamp'
 
@@ -1380,7 +1874,7 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
         "#{scene_name}_render.png"
       when 'sequential'
         # 저장 폴더에서 기존 파일 수 확인
-        settings = @config_store.load_settings
+        settings = @config_store.load_all_settings
         dir = settings['download_path'] || File.expand_path('~/Desktop')
         existing = Dir.glob(File.join(dir, 'render_*.png')).length
         "render_#{format('%03d', existing + 1)}.png"
@@ -1392,7 +1886,7 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
     # 편집된 이미지 저장 (에디터에서 호출)
     def save_edited_image(image_base64)
       # 설정에서 저장 경로 로드
-      settings = @config_store.load_settings
+      settings = @config_store.load_all_settings
       download_path = settings['download_path']
       filename_format = settings['filename_format'] || 'timestamp'
 
@@ -1433,6 +1927,69 @@ adding objects, removing objects, extra furniture, additional plants, extra deco
       key = @config_store.load_api_key
       masked_key = key ? ('•' * [key.length - 4, 0].max) + key[-4..-1].to_s : ''
       @settings_dialog&.execute_script("onApiKeyLoaded('#{masked_key}')")
+    end
+
+    # API Key 저장 (메인 다이얼로그용)
+    def save_api_key_from_main(key)
+      @config_store.save_api_key(key)
+      @api_client = ApiClient.new(key, @gemini_model)
+      check_api_status  # 상태 업데이트
+    end
+
+    # API Key 로드 (메인 다이얼로그용)
+    def load_api_key_to_main
+      key = @config_store.load_api_key
+      if key && key.length > 4
+        masked_key = ('•' * (key.length - 4)) + key[-4..-1]
+      elsif key && key.length > 0
+        masked_key = '•' * key.length
+      else
+        masked_key = ''
+      end
+      puts "[NanoBanana] API Key 로드: #{masked_key.length > 0 ? '저장됨' : '없음'}"
+      @main_dialog&.execute_script("onApiKeyLoaded('#{masked_key}')")
+    end
+
+    # ★ Replicate 토큰 저장
+    def save_replicate_token(token)
+      @config_store.save_setting('replicate_token', token)
+      @replicate_client = ReplicateClient.new(token, @replicate_model || 'photorealistic-fx')
+      puts "[NanoBanana] Replicate 토큰 저장됨"
+      check_api_status
+    end
+
+    # ★ Replicate 토큰 로드
+    def load_replicate_token
+      token = @config_store.load_setting('replicate_token')
+      if token && token.length > 4
+        masked = ('•' * (token.length - 4)) + token[-4..-1]
+      else
+        masked = ''
+      end
+      @main_dialog&.execute_script("onReplicateTokenLoaded('#{masked}')")
+    end
+
+    # ★ 엔진 설정
+    def set_current_engine(engine)
+      @current_api = engine
+      @config_store.save_setting('current_api', engine)
+      puts "[NanoBanana] 엔진 변경: #{engine}"
+      check_api_status
+    end
+
+    # 연결 테스트 (메인 다이얼로그용)
+    def test_connection_from_main
+      Thread.new do
+        begin
+          if @api_client&.test_connection
+            @main_dialog&.execute_script("onConnectionTestResult(true, 'API 연결 성공')")
+          else
+            @main_dialog&.execute_script("onConnectionTestResult(false, 'API 연결 실패')")
+          end
+        rescue StandardError => e
+          @main_dialog&.execute_script("onConnectionTestResult(false, '#{e.message.gsub("'", "\\'")}')")
+        end
+      end
     end
 
     # 모델 저장
@@ -2148,20 +2705,30 @@ CRITICAL RULES:
     end
   end
 
-  # 미러링용 ViewObserver (스로틀 제거 - 즉각 반응)
+  # 미러링용 ViewObserver (스로틀링 적용 - 부드러운 반응)
   class MirrorViewObserver < Sketchup::ViewObserver
     def initialize(plugin)
       @plugin = plugin
-      @capturing = false
+      @pending = false
+      @last_capture = 0
     end
 
     def onViewChanged(view)
       return unless @plugin.mirror_active?
-      return if @capturing  # 중복 캡처 방지
+      return if @pending
 
-      @capturing = true
-      @plugin.mirror_capture
-      @capturing = false
+      # 100ms 스로틀링
+      now = Time.now.to_f
+      return if (now - @last_capture) < 0.1
+
+      @pending = true
+      @last_capture = now
+
+      # 다음 프레임에서 캡처 (UI 블로킹 방지)
+      UI.start_timer(0.05, false) do
+        @plugin.mirror_capture
+        @pending = false
+      end
     end
   end
 
@@ -2185,8 +2752,5 @@ CRITICAL RULES:
   end
 end
 
-# 플러그인 로드 시 초기화
-unless file_loaded?(__FILE__)
-  NanoBanana.initialize_plugin
-  file_loaded(__FILE__)
-end
+# 플러그인 로드 시 초기화 (항상 실행 - load 명령으로 리로드 가능)
+NanoBanana.initialize_plugin

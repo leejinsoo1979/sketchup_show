@@ -469,20 +469,43 @@
       applyAdjustments();
     }
 
-    let debounceTimer = null;
-    function debouncedApply() {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(applyAdjustments, 30);
+    // CSS 필터로 실시간 프리뷰 (빠름)
+    function applyPreviewFilter() {
+      const brightness = 1 + (adjustments.brightness / 100);
+      const contrast = 1 + (adjustments.contrast / 100);
+      const saturate = 1 + (adjustments.saturation / 100);
+
+      // CSS 필터는 기본적인 것만 지원
+      canvas.style.filter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
+    }
+
+    // 실제 픽셀 처리는 슬라이더 놓을 때만 (mouseup/touchend)
+    let needsFullApply = false;
+    let applyTimeout = null;
+
+    function scheduleFullApply() {
+      needsFullApply = true;
+      // 슬라이더 조작 멈추면 500ms 후 실제 적용
+      if (applyTimeout) clearTimeout(applyTimeout);
+      applyTimeout = setTimeout(() => {
+        if (needsFullApply) {
+          canvas.style.filter = 'none'; // CSS 필터 제거
+          applyAdjustments(); // 실제 픽셀 처리
+          needsFullApply = false;
+        }
+      }, 500);
     }
 
     sliderIds.forEach(function(id) {
       const slider = document.getElementById('slider-' + id);
       const valueDisplay = document.getElementById('value-' + id);
 
+      // 드래그 중: CSS 필터로 빠른 프리뷰
       slider.addEventListener('input', function() {
         adjustments[id] = parseInt(this.value);
         valueDisplay.textContent = this.value;
-        debouncedApply();
+        applyPreviewFilter();
+        scheduleFullApply();
       });
     });
 

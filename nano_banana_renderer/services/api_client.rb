@@ -9,17 +9,28 @@ module NanoBanana
   # Gemini API 통신 클라이언트
   class ApiClient
     BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
-    DEFAULT_MODEL = 'gemini-2.5-flash'
-    TIMEOUT = 180 # Pro 모델은 시간이 더 오래 걸릴 수 있음
-    MAX_RETRIES = 3
+    DEFAULT_MODEL = 'gemini-3-pro-image-preview'  # ★ 이미지 생성 가능 모델
+    TIMEOUT = 120   # 120초
+    MAX_RETRIES = 1
 
-    # 이미지 생성 지원 모델 매핑 (성능/가격 높은 순)
+    # 프롬프트 생성용 모델 (Vision - 빠르고 저렴)
+    PROMPT_MODEL = 'gemini-2.0-flash'
+
+    # 이미지 생성 전용 모델 매핑 (UI 표시명 => 실제 API 모델명)
     IMAGE_GEN_MODELS = {
-      'gemini-2.5-pro' => 'gemini-2.5-pro',
-      'gemini-2.5-flash' => 'gemini-2.5-flash',
+      # Gemini 3 Pro (추천)
+      'gemini-3-pro-image-preview' => 'gemini-3-pro-image-preview',
+      'gemini-3-pro-image' => 'gemini-3-pro-image-preview',
+      # Gemini 2.5
+      'gemini-2.5-flash-image' => 'gemini-2.5-flash-image',
+      'gemini-2.5-flash-preview-04-17' => 'gemini-2.5-flash-preview-04-17',
+      # Gemini 2.0
+      'gemini-2.0-flash' => 'gemini-2.0-flash-exp-image-generation',
       'gemini-2.0-flash-exp' => 'gemini-2.0-flash-exp-image-generation',
-      'gemini-1.5-pro' => 'gemini-1.5-pro',
-      'gemini-1.5-flash' => 'gemini-1.5-flash'
+      # Imagen 모델
+      'imagen-3.0-generate-002' => 'imagen-3.0-generate-002',
+      'imagen-4.0-fast-generate-001' => 'imagen-3.0-generate-002',
+      'imagen-4.0-generate-001' => 'imagen-3.0-generate-002'
     }.freeze
 
     def initialize(api_key, model = nil)
@@ -43,10 +54,11 @@ module NanoBanana
       send_request(body)
     end
 
-    # 씬 분석 (텍스트만 응답) - Convert용
+    # 씬 분석 (텍스트만 응답) - Convert/프롬프트 생성용
+    # gemini-2.5-flash 모델 사용 (빠르고 저렴)
     def analyze_scene(image_base64, prompt)
       body = build_text_only_body(image_base64, prompt)
-      send_request(body)
+      send_request(body, 0, PROMPT_MODEL)
     end
 
     # 다중 이미지 + 프롬프트로 생성 (오브젝트 배치용)
@@ -165,14 +177,15 @@ module NanoBanana
       IMAGE_GEN_MODELS[@model] || IMAGE_GEN_MODELS[DEFAULT_MODEL]
     end
 
-    # 엔드포인트 URL 생성
-    def endpoint_url
-      "#{BASE_URL}/#{get_api_model}:generateContent"
+    # 엔드포인트 URL 생성 (모델 지정 가능)
+    def endpoint_url(model_override = nil)
+      model_name = model_override || get_api_model
+      "#{BASE_URL}/#{model_name}:generateContent"
     end
 
-    # HTTP 요청 전송
-    def send_request(body, retry_count = 0)
-      uri = URI(endpoint_url)
+    # HTTP 요청 전송 (모델 오버라이드 가능)
+    def send_request(body, retry_count = 0, model_override = nil)
+      uri = URI(endpoint_url(model_override))
       uri.query = URI.encode_www_form(key: @api_key)
 
       http = create_http_client(uri)
@@ -181,9 +194,12 @@ module NanoBanana
       request['Content-Type'] = 'application/json'
       request.body = body.to_json
 
-      puts "[NanoBanana] API 요청 전송 중..."
+      model_used = model_override || get_api_model
+      start_time = Time.now
+      puts "[NanoBanana] API 요청 전송 중... (모델: #{model_used})"
       response = http.request(request)
-      puts "[NanoBanana] API 응답: #{response.code}"
+      elapsed = (Time.now - start_time).round(1)
+      puts "[NanoBanana] API 응답: #{response.code} (#{elapsed}초)"
 
       handle_response(response)
     rescue Net::ReadTimeout, Net::OpenTimeout => e
@@ -191,7 +207,7 @@ module NanoBanana
         wait_time = 2 ** (retry_count + 1)
         puts "[NanoBanana] 타임아웃, #{wait_time}초 후 재시도 (#{retry_count + 1}/#{MAX_RETRIES})"
         sleep(wait_time)
-        send_request(body, retry_count + 1)
+        send_request(body, retry_count + 1, model_override)
       else
         raise TimeoutError, "API 요청 시간 초과 (#{MAX_RETRIES}회 재시도 실패)"
       end
