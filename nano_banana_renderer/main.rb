@@ -2914,18 +2914,21 @@ CRITICAL RULES:
 
         puts "[SketchupShow] 폴링 응답: #{scene_name}, #{image_data.to_s.length} bytes"
 
-        # 이미지를 임시 파일로 저장
-        temp_dir = File.join(ENV['HOME'], '.sketchupshow', 'temp')
-        FileUtils.mkdir_p(temp_dir) unless File.directory?(temp_dir)
-        temp_file = File.join(temp_dir, "render_#{Time.now.to_i}.txt")
-        File.write(temp_file, image_data)
-
         safe_scene = scene_name.to_s.gsub("'", "\\\\'")
-        safe_path = temp_file.gsub("\\", "/").gsub("'", "\\\\'")
 
-        # 파일 경로만 전달
-        @main_dialog&.execute_script("onPollResultFile('#{safe_scene}', '#{safe_path}')")
-        puts "[SketchupShow] 폴링 전달 완료 (파일: #{temp_file})"
+        # 직접 전송 (UI.start_timer로 메인 스레드에서 실행)
+        image_copy = image_data.dup
+        UI.start_timer(0.1, false) do
+          begin
+            puts "[SketchupShow] 이미지 전송 시작..."
+            escaped_image = image_copy.gsub("\\", "\\\\\\\\").gsub("'", "\\\\'")
+            @main_dialog&.execute_script("onPollResultDirect('#{safe_scene}', '#{escaped_image}')")
+            puts "[SketchupShow] 이미지 전송 완료"
+          rescue StandardError => e
+            puts "[SketchupShow] 이미지 전송 오류: #{e.message}"
+          end
+        end
+        puts "[SketchupShow] 폴링 전달 예약됨"
       rescue StandardError => e
         puts "[SketchupShow] 폴링 오류: #{e.message}"
         @main_dialog&.execute_script("onPollResult(null)")

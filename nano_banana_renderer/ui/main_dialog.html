@@ -4358,35 +4358,9 @@
       }
     }
 
-    // Ruby 폴링 응답 처리 (파일 경로로 전달)
-    function onPollResultFile(sceneName, filePath) {
-      console.log('[NanoBanana] 폴링 결과 (파일):', sceneName, filePath);
-
-      // 청크 버퍼 초기화
-      window._imageChunkBuffer = '';
-      window._imageChunkScene = sceneName;
-
-      // Ruby에서 파일 읽기 요청
-      sketchup.readImageFile(filePath, sceneName);
-    }
-
-    // 청크 데이터 수신 (Ruby에서 분할 전송)
-    function onImageChunk(chunkData, isLast, sceneName) {
-      window._imageChunkBuffer = (window._imageChunkBuffer || '') + chunkData;
-
-      if (isLast) {
-        console.log('[NanoBanana] 청크 수신 완료:', sceneName, window._imageChunkBuffer.length, 'bytes');
-        const fullImage = window._imageChunkBuffer;
-        window._imageChunkBuffer = '';
-
-        // 이미지 처리
-        onImageFileRead(fullImage, sceneName);
-      }
-    }
-
-    // 파일에서 읽은 이미지 데이터 처리
-    function onImageFileRead(base64, sceneName) {
-      console.log('[NanoBanana] 이미지 파일 읽기 완료:', sceneName, base64?.length);
+    // Ruby에서 직접 이미지 전송 (단일 호출)
+    function onPollResultDirect(sceneName, base64) {
+      console.log('[NanoBanana] 직접 전송 수신:', sceneName, base64?.length);
 
       if (base64) {
         if (sceneName.startsWith('regenerate_')) {
