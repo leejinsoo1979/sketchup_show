@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bananaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFE135"/>
+      <stop offset="40%" style="stop-color:#FFD700"/>
+      <stop offset="100%" style="stop-color:#DAA520"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 바나나 - 초승달 모양 커브 -->
+  <path d="M52 12
+           C58 18, 60 28, 56 40
+           C52 52, 40 58, 28 56
+           C20 54, 14 48, 12 40
+           C14 42, 20 44, 28 42
+           C40 38, 48 28, 48 18
+           C48 14, 50 12, 52 12 Z"
+        fill="url(#bananaGrad)"
+        stroke="#B8860B"
+        stroke-width="1.5"/>
+
+  <!-- 바나나 줄기 (위) -->
+  <path d="M52 12 C54 8, 50 6, 48 8"
+        fill="none"
+        stroke="#556B2F"
+        stroke-width="3"
+        stroke-linecap="round"/>
+
+  <!-- 바나나 끝 (아래) -->
+  <circle cx="12" cy="40" r="2.5" fill="#5D4037"/>
+
+  <!-- 하이라이트 -->
+  <path d="M48 20 C50 26, 48 34, 44 42"
+        fill="none"
+        stroke="rgba(255,255,255,0.5)"
+        stroke-width="2.5"
+        stroke-linecap="round"/>
+
+  <!-- 갈색 점 (익은 바나나) -->
+  <circle cx="36" cy="32" r="1.2" fill="#8B4513" opacity="0.6"/>
+  <circle cx="42" cy="26" r="1" fill="#8B4513" opacity="0.5"/>
+  <circle cx="32" cy="40" r="0.8" fill="#8B4513" opacity="0.4"/>
+</svg>
