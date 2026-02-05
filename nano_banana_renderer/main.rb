@@ -2945,19 +2945,17 @@ CRITICAL RULES:
 
           safe_scene = scene_name.to_s.gsub("'", "\\\\'")
 
-          # 이미지 데이터를 청크로 분할해서 전송 (20KB씩)
-          chunk_size = 20_000
-          total_chunks = (image_data.length / chunk_size.to_f).ceil
-
-          puts "[SketchupShow] 청크 전송 시작: #{total_chunks}개"
-
-          image_data.chars.each_slice(chunk_size).with_index do |chunk, idx|
-            chunk_data = chunk.join.gsub("'", "\\\\'").gsub("\\", "\\\\\\\\")
-            is_last = (idx == total_chunks - 1)
-            @main_dialog&.execute_script("onImageChunk('#{chunk_data}', #{is_last}, '#{safe_scene}')")
+          # 이미지 데이터를 청크로 분할 (50KB씩 - 더 큰 청크로)
+          chunk_size = 50_000
+          chunks = []
+          image_data.chars.each_slice(chunk_size) do |chunk|
+            chunks << chunk.join
           end
 
-          puts "[SketchupShow] 청크 전송 완료"
+          puts "[SketchupShow] 청크 전송 시작: #{chunks.length}개"
+
+          # 타이머를 사용하여 청크를 순차적으로 전송 (각 청크 사이 10ms 딜레이)
+          send_chunks_with_timer(chunks, 0, safe_scene)
         else
           puts "[SketchupShow] 파일 없음: #{file_path}"
           @main_dialog&.execute_script("onImageFileRead(null, '#{scene_name}')")
@@ -2966,6 +2964,25 @@ CRITICAL RULES:
         puts "[SketchupShow] 파일 읽기 오류: #{e.message}"
         puts e.backtrace.first(5).join("\n")
         @main_dialog&.execute_script("onImageFileRead(null, '#{scene_name}')")
+      end
+    end
+
+    # 타이머를 사용하여 청크를 순차적으로 전송
+    def send_chunks_with_timer(chunks, index, scene_name)
+      return if index >= chunks.length
+
+      chunk_data = chunks[index].gsub("'", "\\\\'").gsub("\\", "\\\\\\\\")
+      is_last = (index == chunks.length - 1)
+
+      @main_dialog&.execute_script("onImageChunk('#{chunk_data}', #{is_last}, '#{scene_name}')")
+
+      if is_last
+        puts "[SketchupShow] 청크 전송 완료"
+      else
+        # 다음 청크를 10ms 후에 전송
+        UI.start_timer(0.01, false) do
+          send_chunks_with_timer(chunks, index + 1, scene_name)
+        end
       end
     end
 
