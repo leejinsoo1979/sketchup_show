@@ -596,6 +596,11 @@ module NanoBanana
         poll_render_complete
       end
 
+      # 파일에서 이미지 읽기 (폴링 결과용)
+      dialog.add_action_callback('readImageFile') do |_ctx, file_path, scene_name|
+        read_image_file(file_path.to_s, scene_name.to_s)
+      end
+
       # 히스토리 저장
       dialog.add_action_callback('save_history') do |_ctx, history_json|
         save_history_to_file(history_json)
@@ -2899,34 +2904,68 @@ CRITICAL RULES:
         @render_complete_queue ||= []
 
         if @render_complete_queue.empty?
-          # 완료된 렌더링 없음
           @main_dialog&.execute_script("onPollResult(null)")
           return
         end
 
-        # 큐에서 하나 꺼내서 전달
         item = @render_complete_queue.shift
         scene_name = item[:scene]
         image_data = item[:image]
 
         puts "[SketchupShow] 폴링 응답: #{scene_name}, #{image_data.to_s.length} bytes"
 
-        # 이미지를 청크로 나눠서 JS 전역 변수에 저장
-        chunk_size = 20000
-        chunks = image_data.scan(/.{1,#{chunk_size}}/m)
-
-        @main_dialog&.execute_script("window._pollImage = '';")
-        chunks.each do |chunk|
-          safe_chunk = chunk.gsub("\\", "\\\\\\\\").gsub("'", "\\\\'")
-          @main_dialog&.execute_script("window._pollImage += '#{safe_chunk}';")
-        end
+        # 이미지를 임시 파일로 저장
+        temp_dir = File.join(ENV['HOME'], '.sketchupshow', 'temp')
+        FileUtils.mkdir_p(temp_dir) unless File.directory?(temp_dir)
+        temp_file = File.join(temp_dir, "render_#{Time.now.to_i}.txt")
+        File.write(temp_file, image_data)
 
         safe_scene = scene_name.to_s.gsub("'", "\\\\'")
-        @main_dialog&.execute_script("onPollResult('#{safe_scene}')")
-        puts "[SketchupShow] 폴링 전달 완료"
+        safe_path = temp_file.gsub("\\", "/").gsub("'", "\\\\'")
+
+        # 파일 경로만 전달
+        @main_dialog&.execute_script("onPollResultFile('#{safe_scene}', '#{safe_path}')")
+        puts "[SketchupShow] 폴링 전달 완료 (파일: #{temp_file})"
       rescue StandardError => e
         puts "[SketchupShow] 폴링 오류: #{e.message}"
         @main_dialog&.execute_script("onPollResult(null)")
+      end
+    end
+
+    # 파일에서 이미지 읽기 (폴링 결과용)
+    def read_image_file(file_path, scene_name)
+      begin
+        puts "[SketchupShow] 이미지 파일 읽기: #{file_path}"
+        if File.exist?(file_path)
+          image_data = File.read(file_path)
+          puts "[SketchupShow] 파일 크기: #{image_data.length} bytes"
+
+          # 파일 삭제 (정리)
+          File.delete(file_path) rescue nil
+
+          safe_scene = scene_name.to_s.gsub("'", "\\\\'")
+
+          # 이미지 데이터를 청크로 분할해서 전송 (20KB씩)
+          chunk_size = 20_000
+          total_chunks = (image_data.length / chunk_size.to_f).ceil
+
+          puts "[SketchupShow] 청크 전송 시작: #{total_chunks}개"
+
+          image_data.chars.each_slice(chunk_size).with_index do |chunk, idx|
+            chunk_data = chunk.join.gsub("'", "\\\\'").gsub("\\", "\\\\\\\\")
+            is_last = (idx == total_chunks - 1)
+            @main_dialog&.execute_script("onImageChunk('#{chunk_data}', #{is_last}, '#{safe_scene}')")
+          end
+
+          puts "[SketchupShow] 청크 전송 완료"
+        else
+          puts "[SketchupShow] 파일 없음: #{file_path}"
+          @main_dialog&.execute_script("onImageFileRead(null, '#{scene_name}')")
+        end
+      rescue StandardError => e
+        puts "[SketchupShow] 파일 읽기 오류: #{e.message}"
+        puts e.backtrace.first(5).join("\n")
+        @main_dialog&.execute_script("onImageFileRead(null, '#{scene_name}')")
       end
     end
 
