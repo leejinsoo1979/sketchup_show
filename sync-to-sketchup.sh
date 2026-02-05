@@ -5,6 +5,7 @@
 DEV_DIR="/Users/jinsoolee/Downloads/_개발프로젝트/활성/sketchup_Nanobanana/nano_banana_renderer"
 PLUGIN_2022="/Users/jinsoolee/Library/Application Support/SketchUp 2022/SketchUp/Plugins/nano_banana_renderer"
 PLUGIN_2024="/Users/jinsoolee/Library/Application Support/SketchUp 2024/SketchUp/Plugins/nano_banana_renderer"
+PLUGIN_2025="/Users/jinsoolee/Library/Application Support/SketchUp 2025/SketchUp/Plugins/nano_banana_renderer"
 
 echo "🍌 NanoBanana 동기화 시작..."
 echo ""
@@ -25,6 +26,12 @@ echo ""
 echo "📁 SketchUp 2024 동기화 중..."
 rsync -av --delete "$DEV_DIR/" "$PLUGIN_2024/"
 echo "✅ SketchUp 2024 완료"
+echo ""
+
+# SketchUp 2025 동기화
+echo "📁 SketchUp 2025 동기화 중..."
+rsync -av --delete "$DEV_DIR/" "$PLUGIN_2025/"
+echo "✅ SketchUp 2025 완료"
 echo ""
 
 echo "🎉 동기화 완료!"

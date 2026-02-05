@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# NanoBanana Renderer - SketchUp AI 렌더링 플러그인
+# SketchupShow - SketchUp AI 렌더링 플러그인
 # 메인 진입점
 
 require 'sketchup'
@@ -13,9 +13,9 @@ require 'socket'
 require 'webrick'
 
 module NanoBanana
-  PLUGIN_NAME = 'NanoBanana Renderer'
+  PLUGIN_NAME = 'Sketchup Show'
   PLUGIN_VERSION = '1.0.0'
-  PLUGIN_AUTHOR = 'NanoBanana Team'
+  PLUGIN_AUTHOR = 'SketchupShow Team'
   PLUGIN_DESCRIPTION = 'SketchUp AI 실사 렌더링 플러그인 (Google Gemini 기반)'
 
   # 플러그인 루트 경로
@@ -81,7 +81,7 @@ module NanoBanana
 
       # Gemini API
       api_key = @config_store.load_api_key
-      puts "[NanoBanana] Gemini API Key: #{api_key ? '있음' : '없음'}"
+      puts "[SketchupShow] Gemini API Key: #{api_key ? '있음' : '없음'}"
       @gemini_model = @config_store.load_setting('gemini_model') || 'gemini-2.0-flash-exp'
       if api_key && !api_key.empty?
         @api_client = ApiClient.new(api_key, @gemini_model)
@@ -93,7 +93,7 @@ module NanoBanana
       if replicate_token.nil? || replicate_token.empty?
         replicate_token = nil
       end
-      puts "[NanoBanana] Replicate Token: #{replicate_token ? '있음' : '없음'}"
+      puts "[SketchupShow] Replicate Token: #{replicate_token ? '있음' : '없음'}"
       @replicate_model = @config_store.load_setting('replicate_model') || 'photorealistic-fx'
       if replicate_token && !replicate_token.empty?
         @replicate_client = ReplicateClient.new(replicate_token, @replicate_model)
@@ -101,7 +101,7 @@ module NanoBanana
 
       # 기본 엔진 설정 (Gemini 우선 - 포토리얼리스틱 결과)
       @current_api = @config_store.load_setting('current_api') || 'gemini'
-      puts "[NanoBanana] 현재 엔진: #{@current_api}"
+      puts "[SketchupShow] 현재 엔진: #{@current_api}"
 
       register_menu
       register_toolbar
@@ -109,7 +109,7 @@ module NanoBanana
       # 로컬 웹 서버 자동 시작
       start_local_server
 
-      puts "[NanoBanana] 플러그인 초기화 완료 (v#{PLUGIN_VERSION})"
+      puts "[SketchupShow] 플러그인 초기화 완료 (v#{PLUGIN_VERSION})"
     end
 
     # 메뉴 등록
@@ -117,7 +117,7 @@ module NanoBanana
       menu = UI.menu('Extensions')
       submenu = menu.add_submenu(PLUGIN_NAME)
 
-      submenu.add_item('루비실행') { show_main_dialog }
+      submenu.add_item('Run') { show_main_dialog }
       submenu.add_separator
       submenu.add_item('설정') { show_settings_dialog }
       submenu.add_separator
@@ -130,17 +130,19 @@ module NanoBanana
       toolbar = UI::Toolbar.new(PLUGIN_NAME)
 
       # 렌더링 버튼
-      cmd_render = UI::Command.new('렌더링') { show_main_dialog }
-      cmd_render.tooltip = 'NanoBanana 렌더링 시작'
+      cmd_render = UI::Command.new('Run') { show_main_dialog }
+      cmd_render.tooltip = 'Sketchup Show 실행'
       cmd_render.status_bar_text = 'AI 실사 렌더링을 시작합니다'
-      # cmd_render.small_icon = File.join(PLUGIN_ROOT, 'assets/icons/render_small.png')
-      # cmd_render.large_icon = File.join(PLUGIN_ROOT, 'assets/icons/render_large.png')
+      cmd_render.small_icon = File.join(PLUGIN_ROOT, 'assets/icons/render_small.png')
+      cmd_render.large_icon = File.join(PLUGIN_ROOT, 'assets/icons/render_large.png')
       toolbar.add_item(cmd_render)
 
       # 설정 버튼
-      cmd_settings = UI::Command.new('설정') { show_settings_dialog }
-      cmd_settings.tooltip = 'NanoBanana 설정'
+      cmd_settings = UI::Command.new('Settings') { show_settings_dialog }
+      cmd_settings.tooltip = 'SketchupShow 설정'
       cmd_settings.status_bar_text = 'API Key 및 설정을 관리합니다'
+      cmd_settings.small_icon = File.join(PLUGIN_ROOT, 'assets/icons/settings_small.png')
+      cmd_settings.large_icon = File.join(PLUGIN_ROOT, 'assets/icons/settings_large.png')
       toolbar.add_item(cmd_settings)
 
       toolbar.show
@@ -255,10 +257,10 @@ module NanoBanana
         # Z_AXIS를 up으로 설정하면 수직선 고정
         camera.set(eye, new_target, Z_AXIS)
         view.invalidate
-        puts "[NanoBanana] 2점 투시 적용됨"
+        puts "[SketchupShow] 2점 투시 적용됨"
       end
     rescue StandardError => e
-      puts "[NanoBanana] 2점 투시 에러: #{e.message}"
+      puts "[SketchupShow] 2점 투시 에러: #{e.message}"
     end
 
     # 카메라 높이 설정 (UI 버튼용)
@@ -317,7 +319,7 @@ module NanoBanana
       # 초기 캡처
       mirror_capture
 
-      puts "[NanoBanana] 미러링 시작"
+      puts "[SketchupShow] 미러링 시작"
     end
 
     # 미러링 중지
@@ -332,7 +334,7 @@ module NanoBanana
         end
       end
 
-      puts "[NanoBanana] 미러링 중지"
+      puts "[SketchupShow] 미러링 중지"
     end
 
     # 미러링 캡처 (적정 해상도)
@@ -376,12 +378,13 @@ module NanoBanana
 
       options = {
         dialog_title: PLUGIN_NAME,
-        preferences_key: 'NanoBanana_MainDialog_v2',
+        preferences_key: 'SketchupShow_MainDialog_v2',
         width: 1400,
         height: 800,
         min_width: 1000,
         min_height: 600,
-        resizable: true
+        resizable: true,
+        style: UI::HtmlDialog::STYLE_DIALOG
       }
 
       @main_dialog = UI::HtmlDialog.new(options)
@@ -409,18 +412,18 @@ module NanoBanana
         prompt = args[2] || ''
         negative_prompt = args[3] || ''
 
-        puts "[NanoBanana] ========== START_RENDER 콜백 =========="
-        puts "[NanoBanana] time_preset: #{time_preset}"
-        puts "[NanoBanana] light_switch: #{light_switch}"
-        puts "[NanoBanana] prompt 길이: #{prompt ? prompt.length : 0}"
-        puts "[NanoBanana] negative_prompt 길이: #{negative_prompt ? negative_prompt.length : 0}"
+        puts "[SketchupShow] ========== START_RENDER 콜백 =========="
+        puts "[SketchupShow] time_preset: #{time_preset}"
+        puts "[SketchupShow] light_switch: #{light_switch}"
+        puts "[SketchupShow] prompt 길이: #{prompt ? prompt.length : 0}"
+        puts "[SketchupShow] negative_prompt 길이: #{negative_prompt ? negative_prompt.length : 0}"
 
         # UI에서 직접 입력한 프롬프트가 있으면 사용
         if prompt && !prompt.empty?
           @converted_prompt = prompt
-          puts "[NanoBanana] 프롬프트 저장됨: #{prompt[0..100]}..."
+          puts "[SketchupShow] 프롬프트 저장됨: #{prompt[0..100]}..."
         else
-          puts "[NanoBanana] 프롬프트 비어있음!"
+          puts "[SketchupShow] 프롬프트 비어있음!"
         end
         @negative_prompt = negative_prompt if negative_prompt && !negative_prompt.empty?
         start_render_with_preset(time_preset, light_switch)
@@ -497,21 +500,33 @@ module NanoBanana
         @main_dialog&.execute_script("onEngineLoaded('#{@current_api}')")
       end
 
+      # ★ 레퍼런스 이미지 설정 (파일 첨부)
+      dialog.add_action_callback('set_reference_image') do |_ctx, base64|
+        @reference_image = base64
+        puts "[SketchupShow] 레퍼런스 이미지 설정됨: #{base64 ? base64.length : 0} bytes"
+      end
+
+      # ★ 레퍼런스 이미지 해제
+      dialog.add_action_callback('clear_reference_image') do |_ctx|
+        @reference_image = nil
+        puts "[SketchupShow] 레퍼런스 이미지 해제됨"
+      end
+
       # 카메라 이동
       dialog.add_action_callback('cam_move') do |_ctx, direction_json|
-        puts "[NanoBanana] cam_move 호출됨: #{direction_json.inspect}"
+        puts "[SketchupShow] cam_move 호출됨: #{direction_json.inspect}"
         args = parse_json_args(direction_json)
         dir = args.is_a?(Array) ? args[0] : args
-        puts "[NanoBanana] 카메라 이동: #{dir}"
+        puts "[SketchupShow] 카메라 이동: #{dir}"
         camera_move(dir.to_s)
       end
 
       # 카메라 회전
       dialog.add_action_callback('cam_rotate') do |_ctx, direction_json|
-        puts "[NanoBanana] cam_rotate 호출됨: #{direction_json.inspect}"
+        puts "[SketchupShow] cam_rotate 호출됨: #{direction_json.inspect}"
         args = parse_json_args(direction_json)
         dir = args.is_a?(Array) ? args[0] : args
-        puts "[NanoBanana] 카메라 회전: #{dir}"
+        puts "[SketchupShow] 카메라 회전: #{dir}"
         camera_rotate(dir.to_s)
       end
 
@@ -545,7 +560,9 @@ module NanoBanana
       end
 
       # 씬 선택/전환
-      dialog.add_action_callback('select_scene') do |_ctx, scene_name|
+      dialog.add_action_callback('select_scene') do |_ctx, scene_name_json|
+        args = parse_json_args(scene_name_json)
+        scene_name = args.is_a?(Array) && args[0] ? args[0] : scene_name_json
         select_scene(scene_name)
       end
 
@@ -569,9 +586,9 @@ module NanoBanana
         show_prompt_dialog
       end
 
-      # 2차 생성 (이전 결과를 소스로 사용)
-      dialog.add_action_callback('regenerate') do |_ctx, source_base64, prompt, panel_id|
-        regenerate_image(source_base64, prompt, panel_id.to_i)
+      # 2차 생성 (이전 결과를 소스로 사용, 새 패널에 표시)
+      dialog.add_action_callback('regenerate') do |_ctx, source_base64, prompt, negative_prompt, panel_id|
+        regenerate_image(source_base64, prompt, negative_prompt.to_s, panel_id.to_i)
       end
 
       # 웹 동기화 시작
@@ -588,6 +605,121 @@ module NanoBanana
 
       # PagesObserver 등록 (씬 변경 감지)
       register_pages_observer
+
+      # ★ Mix 모드 콜백도 메인 다이얼로그에 등록
+      register_mix_callbacks_for_main(dialog)
+    end
+
+    # 메인 다이얼로그용 Mix 콜백 등록
+    def register_mix_callbacks_for_main(dialog)
+      # 현재 이미지 가져오기 (Mix 모드용)
+      dialog.add_action_callback('mix_get_current_image') do |_ctx|
+        if @current_image
+          dialog.execute_script("onMixBaseImageLoaded('#{@current_image}')")
+        end
+      end
+
+      # 3D 좌표 가져오기 (스크린 좌표 → 월드 좌표)
+      dialog.add_action_callback('mix_get_3d_coord') do |_ctx, screen_x, screen_y|
+        get_3d_coordinate_for_main(screen_x.to_i, screen_y.to_i)
+      end
+
+      # 씬 컨텍스트 가져오기 (카메라, 조명, 바운드)
+      dialog.add_action_callback('mix_get_scene_context') do |_ctx|
+        get_scene_context_for_main
+      end
+
+      # Mix 적용
+      dialog.add_action_callback('mix_apply') do |_ctx, data_json|
+        apply_mix_from_main(data_json)
+      end
+    end
+
+    # 메인 다이얼로그용 3D 좌표 추출
+    def get_3d_coordinate_for_main(screen_x, screen_y)
+      begin
+        view = Sketchup.active_model.active_view
+        result = CoordinateExtractor.screen_to_world(view, screen_x, screen_y)
+
+        if result
+          coord_data = {
+            position: result[:position],
+            normal: result[:normal],
+            floor_reference: result[:floor_reference],
+            screen_pos: { x: screen_x, y: screen_y }
+          }
+          @main_dialog&.execute_script("onMixCoordReceived('#{coord_data.to_json}')")
+        else
+          @main_dialog&.execute_script("onMixCoordReceived(null)")
+        end
+      rescue StandardError => e
+        puts "[SketchupShow] 3D 좌표 추출 에러: #{e.message}"
+        @main_dialog&.execute_script("onMixCoordReceived(null)")
+      end
+    end
+
+    # 메인 다이얼로그용 씬 컨텍스트 추출
+    def get_scene_context_for_main
+      begin
+        view = Sketchup.active_model.active_view
+        context = CoordinateExtractor.get_scene_context(view)
+
+        @main_dialog&.execute_script("onMixSceneContextLoaded('#{context.to_json}')")
+      rescue StandardError => e
+        puts "[SketchupShow] 씬 컨텍스트 추출 에러: #{e.message}"
+        @main_dialog&.execute_script("onMixSceneContextLoaded(null)")
+      end
+    end
+
+    # 메인 다이얼로그에서 Mix 적용
+    def apply_mix_from_main(data_json)
+      puts "[SketchupShow] ===== APPLY_MIX_FROM_MAIN 호출됨 ====="
+
+      unless @api_client
+        puts "[SketchupShow] 에러: API 클라이언트 없음"
+        @main_dialog&.execute_script("onMixError('API Key가 설정되지 않았습니다.')")
+        return
+      end
+
+      begin
+        data = JSON.parse(data_json)
+        mode = data['mode']
+
+        puts "[SketchupShow] 모드: #{mode}"
+        puts "[SketchupShow] 핫스팟 수: #{data['hotspots']&.length || 0}"
+
+        Thread.new do
+          begin
+            puts "[SketchupShow] Thread 시작..."
+            result = case mode
+            when 'add-remove'
+              puts "[SketchupShow] mix_add_remove 호출..."
+              mix_add_remove(data)
+            when 'inpaint'
+              mix_inpaint(data)
+            when 'material'
+              mix_material(data)
+            when 'floorplan'
+              mix_floorplan(data)
+            else
+              raise "Unknown mix mode: #{mode}"
+            end
+
+            if result && result[:image]
+              @current_image = result[:image]
+              @main_dialog&.execute_script("onMixComplete('#{result[:image]}')")
+            else
+              @main_dialog&.execute_script("onMixError('이미지 생성에 실패했습니다.')")
+            end
+          rescue StandardError => e
+            puts "[SketchupShow] Mix 에러: #{e.message}"
+            @main_dialog&.execute_script("onMixError('#{e.message.gsub("'", "\\'")}')")
+          end
+        end
+      rescue StandardError => e
+        puts "[SketchupShow] Mix 파싱 에러: #{e.message}"
+        @main_dialog&.execute_script("onMixError('데이터 파싱 에러')")
+      end
     end
 
     # ========================================
@@ -609,13 +741,13 @@ module NanoBanana
         first_page = pages[0]
         pages.selected_page = first_page
         model.active_view.invalidate
-        puts "[NanoBanana] 첫 번째 씬으로 전환: #{first_page.name}"
+        puts "[SketchupShow] 첫 번째 씬으로 전환: #{first_page.name}"
         # 자동 미러링 즉시 시작
         start_mirror
         @main_dialog.execute_script("setMirrorActive(true)") if @main_dialog
       end
     rescue StandardError => e
-      puts "[NanoBanana] 씬 목록 에러: #{e.message}"
+      puts "[SketchupShow] 씬 목록 에러: #{e.message}"
     end
 
     def select_scene(scene_name)
@@ -626,18 +758,22 @@ module NanoBanana
       if page
         pages.selected_page = page
         model.active_view.invalidate
-        puts "[NanoBanana] 씬 전환: #{scene_name}"
+        puts "[SketchupShow] 씬 전환: #{scene_name}"
 
-        # 씬 전환 후 즉시 미러 캡처 (미러링 활성화 상태면)
-        if @mirror_active
-          # 약간의 딜레이 후 캡처 (SketchUp 렌더링 완료 대기)
-          UI.start_timer(0.1, false) { mirror_capture }
+        # ★★★ 씬 전환 시 항상 새로 캡처 (프롬프트가 새 씬에 맞게 생성되도록) ★★★
+        # 약간의 딜레이 후 캡처 (SketchUp 렌더링 완료 대기)
+        UI.start_timer(0.15, false) do
+          puts "[SketchupShow] 씬 전환 후 자동 캡처 시작..."
+          capture_current_view
+          # Convert된 프롬프트 초기화 (새 씬이므로 새로 생성해야 함)
+          @converted_prompt = nil
+          puts "[SketchupShow] 이전 프롬프트 초기화됨 - 새 씬에 맞게 Convert 필요"
         end
       else
-        puts "[NanoBanana] 씬을 찾을 수 없음: #{scene_name}"
+        puts "[SketchupShow] 씬을 찾을 수 없음: #{scene_name}"
       end
     rescue StandardError => e
-      puts "[NanoBanana] 씬 전환 에러: #{e.message}"
+      puts "[SketchupShow] 씬 전환 에러: #{e.message}"
     end
 
     # 현재 뷰를 새 씬으로 추가
@@ -655,12 +791,12 @@ module NanoBanana
 
       # 현재 뷰를 씬으로 저장
       page = pages.add(name)
-      puts "[NanoBanana] 씬 추가: #{name}"
+      puts "[SketchupShow] 씬 추가: #{name}"
 
       # 목록 갱신
       get_scenes
     rescue StandardError => e
-      puts "[NanoBanana] 씬 추가 에러: #{e.message}"
+      puts "[SketchupShow] 씬 추가 에러: #{e.message}"
     end
 
     # PagesObserver 등록
@@ -669,7 +805,7 @@ module NanoBanana
 
       @pages_observer = PagesObserver.new(self)
       Sketchup.active_model.pages.add_observer(@pages_observer)
-      puts "[NanoBanana] PagesObserver 등록됨"
+      puts "[SketchupShow] PagesObserver 등록됨"
     end
 
     # PagesObserver 해제
@@ -690,8 +826,8 @@ module NanoBanana
       end
 
       options = {
-        dialog_title: '설정 - NanoBanana',
-        preferences_key: 'NanoBanana_SettingsDialog',
+        dialog_title: '설정 - SketchupShow',
+        preferences_key: 'SketchupShow_SettingsDialog',
         width: 450,
         height: 400,
         min_width: 400,
@@ -747,7 +883,7 @@ module NanoBanana
           settings = JSON.parse(settings_json)
           @config_store.save_settings(settings)
         rescue StandardError => e
-          puts "[NanoBanana] 설정 저장 오류: #{e.message}"
+          puts "[SketchupShow] 설정 저장 오류: #{e.message}"
         end
       end
 
@@ -777,8 +913,8 @@ module NanoBanana
       end
 
       options = {
-        dialog_title: '이미지 보정 - NanoBanana',
-        preferences_key: 'NanoBanana_EditorDialog',
+        dialog_title: '이미지 보정 - SketchupShow',
+        preferences_key: 'SketchupShow_EditorDialog',
         width: 900,
         height: 650,
         min_width: 800,
@@ -868,8 +1004,8 @@ CRITICAL RULES:
 
             PROMPT
 
-            puts "[NanoBanana] Editor AI Generate - Texture: #{texture_intensity}"
-            puts "[NanoBanana] Prompt: #{prompt[0..200]}..."
+            puts "[SketchupShow] Editor AI Generate - Texture: #{texture_intensity}"
+            puts "[SketchupShow] Prompt: #{prompt[0..200]}..."
 
             result = if reference_image
               @api_client.generate_with_references(base_image, [reference_image], prompt)
@@ -888,7 +1024,7 @@ CRITICAL RULES:
             end
 
           rescue StandardError => e
-            puts "[NanoBanana] Editor AI Error: #{e.message}"
+            puts "[SketchupShow] Editor AI Error: #{e.message}"
             @editor_dialog&.execute_script("onAIGenerateError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}')")
           end
         end
@@ -910,8 +1046,8 @@ CRITICAL RULES:
       end
 
       options = {
-        dialog_title: '오브젝트 배치 - NanoBanana',
-        preferences_key: 'NanoBanana_HotspotDialog',
+        dialog_title: '오브젝트 배치 - SketchupShow',
+        preferences_key: 'SketchupShow_HotspotDialog',
         width: 950,
         height: 700,
         min_width: 850,
@@ -983,7 +1119,7 @@ CRITICAL RULES:
         rendering_options["DrawDepthQue"] = false rescue nil
         rendering_options["ExtendLines"] = false rescue nil
 
-        puts "[NanoBanana] Edge OFF 설정 완료 (원본: #{original_edges})"
+        puts "[SketchupShow] Edge OFF 설정 완료 (원본: #{original_edges})"
 
         # 해상도 설정 (선명할수록 AI가 더 잘 인식)
         sizes = {
@@ -1011,7 +1147,7 @@ CRITICAL RULES:
         rendering_options["DrawDepthQue"] = original_depth_cue rescue nil
         rendering_options["ExtendLines"] = original_extension rescue nil
 
-        puts "[NanoBanana] Edge 설정 복원 완료"
+        puts "[SketchupShow] Edge 설정 복원 완료"
 
         unless success
           raise "이미지 내보내기 실패"
@@ -1021,7 +1157,7 @@ CRITICAL RULES:
         file_size_kb = File.size(temp_path) / 1024
         File.delete(temp_path) rescue nil
 
-        puts "[NanoBanana] 캡처 완료 (#{resolution[:width]}x#{resolution[:height]}, #{file_size_kb}KB, Edge OFF)"
+        puts "[SketchupShow] 캡처 완료 (#{resolution[:width]}x#{resolution[:height]}, #{file_size_kb}KB, Edge OFF)"
 
         # UI에 캡처 완료 알림
         if @main_dialog
@@ -1033,7 +1169,7 @@ CRITICAL RULES:
       rescue StandardError => e
         # 에러 발생해도 Edge 복원 시도
         rendering_options["DrawEdges"] = original_edges rescue nil
-        puts "[NanoBanana] 캡처 에러: #{e.message}"
+        puts "[SketchupShow] 캡처 에러: #{e.message}"
         puts e.backtrace.first(5).join("\n")
         if @main_dialog
           @main_dialog.execute_script("onCaptureError('#{e.message}')")
@@ -1044,7 +1180,7 @@ CRITICAL RULES:
     # 씬 분석 - 재질/구조 데이터만 추출 (프롬프트 생성 X)
     def analyze_scene_only
       unless @api_client
-        puts "[NanoBanana] API 클라이언트 없음 - 분석 스킵"
+        puts "[SketchupShow] API 클라이언트 없음 - 분석 스킵"
         @scene_analysis = nil
         @main_dialog&.execute_script("onConvertComplete('')")
         return
@@ -1079,7 +1215,7 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
 }
           PROMPT
 
-          puts "[NanoBanana] 씬 분석 시작 (데이터 추출만)..."
+          puts "[SketchupShow] 씬 분석 시작 (데이터 추출만)..."
 
           @main_dialog&.execute_script("updateConvertProgress('이미지 캡처 완료', '공간 구조 분석 중...')")
           sleep(0.3)
@@ -1093,19 +1229,19 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
 
           if result && result[:text]
             @scene_analysis = result[:text]
-            puts "[NanoBanana] 씬 분석 완료"
+            puts "[SketchupShow] 씬 분석 완료"
             puts @scene_analysis[0..300] + "..."
 
             # Convert 완료 - 프롬프트는 비워두고 활성화만
             @main_dialog&.execute_script("onConvertComplete('')")
           else
-            puts "[NanoBanana] 씬 분석 실패"
+            puts "[SketchupShow] 씬 분석 실패"
             @scene_analysis = nil
             @main_dialog&.execute_script("onConvertError('씬 분석 실패')")
           end
 
         rescue StandardError => e
-          puts "[NanoBanana] 씬 분석 에러: #{e.message}"
+          puts "[SketchupShow] 씬 분석 에러: #{e.message}"
           @scene_analysis = nil
           @main_dialog&.execute_script("onConvertError('#{e.message.gsub("'", "\\'")}')")
         end
@@ -1204,35 +1340,37 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
 
     # Auto 프롬프트 생성 (분석 데이터 + 스타일 기반 + SketchUp 재질 정보 + 라이팅)
     def generate_auto_prompt(user_style = '', time_preset = 'day', light_switch = 'on')
-      puts "[NanoBanana] ========== AUTO 프롬프트 생성 시작 =========="
-      puts "[NanoBanana] user_style: #{user_style.inspect}"
-      puts "[NanoBanana] time_preset: #{time_preset}, light_switch: #{light_switch}"
+      puts "[SketchupShow] ========== AUTO 프롬프트 생성 시작 =========="
+      puts "[SketchupShow] user_style: #{user_style.inspect}"
+      puts "[SketchupShow] time_preset: #{time_preset}, light_switch: #{light_switch}"
 
       unless @api_client
-        puts "[NanoBanana] API 클라이언트 없음"
+        puts "[SketchupShow] API 클라이언트 없음"
         return
       end
 
       unless @current_image
-        puts "[NanoBanana] 이미지 없음 - Convert 먼저 실행하세요"
+        puts "[SketchupShow] 이미지 없음 - Convert 먼저 실행하세요"
         return
       end
 
-      puts "[NanoBanana] 이미지 있음: #{@current_image.length} bytes"
+      puts "[SketchupShow] 이미지 있음: #{@current_image.length} bytes"
+
+      # ★★★ SketchUp API는 Thread 밖에서 호출 ★★★
+      puts "[SketchupShow] 재질 정보 추출 중..."
+      materials_info = extract_materials_info
+      puts "[SketchupShow] 추출된 재질 정보:"
+      puts materials_info[0..500] + "..." if materials_info && materials_info.length > 500
+
+      # 재질 중심 시스템 인스트럭션 생성 (라이팅 설정 포함)
+      prompt_request = get_ai_instruction_template(materials_info, user_style, time_preset, light_switch)
+      image_copy = @current_image.dup
+
+      @main_dialog&.execute_script("onAutoPromptStart()")
 
       Thread.new do
         begin
-          @main_dialog&.execute_script("onAutoPromptStart()")
-
-          # ★★★ SketchUp 모델에서 재질 정보 추출 ★★★
-          materials_info = extract_materials_info
-          puts "[NanoBanana] 추출된 재질 정보:"
-          puts materials_info[0..500] + "..."
-
-          # 재질 중심 시스템 인스트럭션 생성 (라이팅 설정 포함)
-          prompt_request = get_ai_instruction_template(materials_info, user_style, time_preset, light_switch)
-
-          result = @api_client.analyze_scene(@current_image, prompt_request)
+          result = @api_client.analyze_scene(image_copy, prompt_request)
 
           if result && result[:text]
             raw_prompt = result[:text]
@@ -1270,19 +1408,19 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
               negative_prompt = required_negatives + negative_prompt
             end
 
-            puts "[NanoBanana] Auto 프롬프트 생성 완료"
-            puts "[NanoBanana] 네거티브: #{negative_prompt[0..50]}..."
+            puts "[SketchupShow] Auto 프롬프트 생성 완료"
+            puts "[SketchupShow] 네거티브: #{negative_prompt[0..50]}..."
 
             escaped_main = main_prompt.to_json
             escaped_negative = negative_prompt.to_json
             @main_dialog&.execute_script("onAutoPromptComplete(#{escaped_main}, #{escaped_negative})")
           else
-            puts "[NanoBanana] Auto 프롬프트 생성 실패"
+            puts "[SketchupShow] Auto 프롬프트 생성 실패"
             @main_dialog&.execute_script("onAutoPromptError('프롬프트 생성 실패')")
           end
 
         rescue StandardError => e
-          puts "[NanoBanana] Auto 프롬프트 에러: #{e.message}"
+          puts "[SketchupShow] Auto 프롬프트 에러: #{e.message}"
           @main_dialog&.execute_script("onAutoPromptError('#{e.message.gsub("'", "\\'")}')")
         end
       end
@@ -1290,8 +1428,8 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
 
     # 렌더링 시작 (새 UI용 - time preset + light switch)
     def start_render_with_preset(time_preset, light_switch)
-      puts "[NanoBanana] ========== 렌더링 시작 =========="
-      puts "[NanoBanana] 엔진: #{@current_api}, time=#{time_preset}, light=#{light_switch}"
+      puts "[SketchupShow] ========== 렌더링 시작 =========="
+      puts "[SketchupShow] 엔진: #{@current_api}, time=#{time_preset}, light=#{light_switch}"
 
       # 엔진에 따라 클라이언트 확인
       if @current_api == 'replicate'
@@ -1316,15 +1454,15 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
       current_scene = model.pages.selected_page&.name || 'Unknown'
 
       # 렌더링 시작 시 현재 이미지를 별도로 복사 (다른 씬 작업해도 영향 없음)
-      puts "[NanoBanana] 이미지 복사 시작..."
+      puts "[SketchupShow] 이미지 복사 시작..."
       render_source_image = @current_image.dup
-      puts "[NanoBanana] 이미지 복사 완료: #{render_source_image.length} bytes"
+      puts "[SketchupShow] 이미지 복사 완료: #{render_source_image.length} bytes"
 
       # UI에 렌더링 시작 알림 (씬 이름 포함)
-      puts "[NanoBanana] UI 알림 전송 중..."
+      puts "[SketchupShow] UI 알림 전송 중..."
       @main_dialog&.execute_script("onRenderStart('#{current_scene}')")
-      puts "[NanoBanana] UI 알림 완료"
-      puts "[NanoBanana] 렌더링 시작 (동기 모드)..."
+      puts "[SketchupShow] UI 알림 완료"
+      puts "[SketchupShow] 렌더링 시작 (동기 모드)..."
 
       # Thread 없이 직접 실행 (SketchUp Ruby Thread 문제 회피)
       begin
@@ -1333,24 +1471,24 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
         prompt = build_render_prompt(time_preset, light_switch)
         negative = @negative_prompt || 'cartoon, anime, sketch, drawing, wireframe, outline, black lines, CGI, 3D render'
 
-        puts "[NanoBanana] Prompt: #{prompt[0..200]}..."
-        puts "[NanoBanana] 렌더링 씬: #{current_scene}"
-        puts "[NanoBanana] 이미지 크기: #{render_source_image.length} bytes"
+        puts "[SketchupShow] Prompt: #{prompt[0..200]}..."
+        puts "[SketchupShow] 렌더링 씬: #{current_scene}"
+        puts "[SketchupShow] 이미지 크기: #{render_source_image.length} bytes"
 
         # ★★★ 엔진에 따라 API 호출 분기 ★★★
         result = if @current_api == 'replicate'
-          puts "[NanoBanana] Replicate API 사용 (ControlNet)"
+          puts "[SketchupShow] Replicate API 사용 (ControlNet)"
           @replicate_client.generate(render_source_image, prompt, negative)
         elsif @reference_image
-          puts "[NanoBanana] Gemini API + 레퍼런스 이미지"
+          puts "[SketchupShow] Gemini API + 레퍼런스 이미지"
           @api_client.generate_with_references(render_source_image, [@reference_image], prompt)
         else
-          puts "[NanoBanana] Gemini API 사용"
+          puts "[SketchupShow] Gemini API 사용"
           @api_client.generate(render_source_image, prompt)
         end
 
         render_elapsed = (Time.now - render_start).round(1)
-        puts "[NanoBanana] 렌더링 총 소요시간: #{render_elapsed}초"
+        puts "[SketchupShow] 렌더링 총 소요시간: #{render_elapsed}초"
 
         if result && result[:image]
           # 렌더링 결과를 저장 (Export 기능에서 사용)
@@ -1363,7 +1501,7 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
           @main_dialog&.execute_script("onRenderError('렌더링 결과를 받지 못했습니다.', '#{current_scene}')")
         end
       rescue StandardError => e
-        puts "[NanoBanana] Render Error: #{e.message}"
+        puts "[SketchupShow] Render Error: #{e.message}"
         puts e.backtrace.first(5).join("\n")
         @main_dialog&.execute_script("onRenderError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}', '#{current_scene}')")
       end
@@ -1402,7 +1540,7 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
 
       meaningful_textures.join(", ")
     rescue StandardError => e
-      puts "[NanoBanana] 재질 추출 에러: #{e.message}"
+      puts "[SketchupShow] 재질 추출 에러: #{e.message}"
       "Premium interior finishes"
     end
 
@@ -1724,7 +1862,7 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
       negative_section = <<~NEGATIVE
 
 [NEGATIVE PROMPT - ABSOLUTELY AVOID]
-black outlines, visible edges, sketch lines, wireframe appearance, line art style, hard black lines, 3D render look, CGI appearance, computer graphics, architectural visualization, clean perfect surfaces, uniform flat lighting, artificial plastic look, cartoon style, anime style, painting style, illustration, hand-drawn, digital art, concept art, unrealistic colors, oversaturated, HDR artifacts, bloom effects, lens flare, motion blur, added objects, new furniture, mirrors not in original, extra decorations
+black outlines, visible edges, sketch lines, wireframe appearance, line art style, hard black lines, 3D render look, CGI appearance, computer graphics, architectural visualization, clean perfect surfaces, uniform flat lighting, artificial plastic look, cartoon style, anime style, painting style, illustration, hand-drawn, digital art, concept art, unrealistic colors, oversaturated, HDR artifacts, bloom effects, lens flare, motion blur, added objects, new furniture, mirrors not in original, extra decorations, added downlights, added spotlights, added recessed lights, added ceiling lights, new light fixtures, extra lighting elements
       NEGATIVE
 
       if @negative_prompt && !@negative_prompt.empty?
@@ -1734,8 +1872,8 @@ black outlines, visible edges, sketch lines, wireframe appearance, line art styl
       # Convert 여부에 따라 다른 프롬프트 생성
       if @converted_prompt && !@converted_prompt.empty?
         # ★ Convert 완료 - AI가 생성한 상세 프롬프트 사용
-        puts "[NanoBanana] Convert 모드 - AI 생성 프롬프트 사용"
-        puts "[NanoBanana] 조명 설정: #{light_desc}"
+        puts "[SketchupShow] Convert 모드 - AI 생성 프롬프트 사용"
+        puts "[SketchupShow] 조명 설정: #{light_desc}"
 
         # 조명 설정을 프롬프트 앞에 강조
         lighting_prefix = <<~LIGHTING
@@ -1750,6 +1888,7 @@ Your ONLY job is to convert this 3D SketchUp model render into a photorealistic 
 3. PRESERVE EXACT FURNITURE LAYOUT: Every piece of furniture must stay in its exact location and size
 4. NO ADDITIONS: Do NOT add any objects, furniture, decorations, mirrors, handles, plants, or accessories that are not in the source image
 5. NO REMOVALS: Do NOT remove any objects that exist in the source image
+6. NO LIGHT FIXTURE ADDITIONS: Do NOT add downlights, spotlights, recessed lights, ceiling lights, or any light fixtures that are not visible in the source image. Only render the light fixtures that ALREADY EXIST in the source.
 
 [LIGHTING SETTINGS - APPLY EXACTLY]
 Time of Day: #{time_desc}
@@ -1760,7 +1899,7 @@ Interior Lighting: #{light_desc}
         lighting_prefix + @converted_prompt + negative_section
       else
         # Convert 안함 - 기본 렌더링 (상세 프롬프트)
-        puts "[NanoBanana] 일반 모드 - 기본 프롬프트"
+        puts "[SketchupShow] 일반 모드 - 기본 프롬프트"
         <<~PROMPT
 [CRITICAL INSTRUCTION - MUST FOLLOW EXACTLY]
 
@@ -1774,6 +1913,7 @@ Your ONLY job is to convert this 3D SketchUp model render into a photorealistic 
 4. NO ADDITIONS: Do NOT add any objects, furniture, decorations, mirrors, handles, plants, or accessories that are not in the source image
 5. NO REMOVALS: Do NOT remove any objects that exist in the source image
 6. NO MODIFICATIONS: Do NOT resize, move, rotate, or transform any existing objects
+7. NO LIGHT FIXTURE ADDITIONS: Do NOT add downlights, spotlights, recessed lights, ceiling lights, or any light fixtures that are not visible in the source image. Only render the light fixtures that ALREADY EXIST in the source.
 
 [LIGHTING SETTINGS - APPLY EXACTLY]
 Time of Day: #{time_desc}
@@ -1807,11 +1947,11 @@ Convert all surfaces to photorealistic materials with natural imperfections:
 
     # 이미지 저장
     def save_image(filename)
-      puts "[NanoBanana] save_image 호출됨, filename: #{filename}"
-      puts "[NanoBanana] @current_image 존재: #{@current_image ? '있음 (' + @current_image.length.to_s + ' bytes)' : '없음'}"
+      puts "[SketchupShow] save_image 호출됨, filename: #{filename}"
+      puts "[SketchupShow] @current_image 존재: #{@current_image ? '있음 (' + @current_image.length.to_s + ' bytes)' : '없음'}"
 
       unless @current_image
-        puts "[NanoBanana] 저장할 이미지가 없습니다"
+        puts "[SketchupShow] 저장할 이미지가 없습니다"
         @main_dialog&.execute_script("setStatus('No image to save')")
         return
       end
@@ -1831,7 +1971,7 @@ Convert all surfaces to photorealistic materials with natural imperfections:
         if model_path.empty?
           default_dir = File.expand_path('~/Desktop')
         else
-          default_dir = File.join(File.dirname(model_path), 'NanoBanana_Renders')
+          default_dir = File.join(File.dirname(model_path), 'SketchupShow_Renders')
           Dir.mkdir(default_dir) unless Dir.exist?(default_dir)
         end
       end
@@ -1853,11 +1993,11 @@ Convert all surfaces to photorealistic materials with natural imperfections:
         # Base64 디코딩 후 저장
         image_data = Base64.decode64(@current_image)
         File.binwrite(save_path, image_data)
-        puts "[NanoBanana] 이미지 저장 완료: #{save_path}"
+        puts "[SketchupShow] 이미지 저장 완료: #{save_path}"
         # UI 상태바에만 표시
         @main_dialog&.execute_script("setStatus('Saved: #{File.basename(save_path)}')")
       rescue StandardError => e
-        puts "[NanoBanana] 저장 실패: #{e.message}"
+        puts "[SketchupShow] 저장 실패: #{e.message}"
         @main_dialog&.execute_script("setStatus('Save failed')")
       end
     end
@@ -1907,10 +2047,10 @@ Convert all surfaces to photorealistic materials with natural imperfections:
       begin
         image_data = Base64.decode64(image_base64)
         File.binwrite(save_path, image_data)
-        puts "[NanoBanana] 보정 이미지 저장 완료: #{save_path}"
+        puts "[SketchupShow] 보정 이미지 저장 완료: #{save_path}"
         @editor_dialog&.execute_script("alert('저장 완료: #{File.basename(save_path)}')")
       rescue StandardError => e
-        puts "[NanoBanana] 저장 실패: #{e.message}"
+        puts "[SketchupShow] 저장 실패: #{e.message}"
         @editor_dialog&.execute_script("alert('저장 실패: #{e.message}')")
       end
     end
@@ -1930,7 +2070,15 @@ Convert all surfaces to photorealistic materials with natural imperfections:
     end
 
     # API Key 저장 (메인 다이얼로그용)
-    def save_api_key_from_main(key)
+    def save_api_key_from_main(key_json)
+      # JSON 배열로 들어올 수 있으므로 파싱
+      key = key_json
+      begin
+        parsed = JSON.parse(key_json)
+        key = parsed.is_a?(Array) ? parsed[0] : parsed
+      rescue
+        key = key_json
+      end
       @config_store.save_api_key(key)
       @api_client = ApiClient.new(key, @gemini_model)
       check_api_status  # 상태 업데이트
@@ -1946,7 +2094,7 @@ Convert all surfaces to photorealistic materials with natural imperfections:
       else
         masked_key = ''
       end
-      puts "[NanoBanana] API Key 로드: #{masked_key.length > 0 ? '저장됨' : '없음'}"
+      puts "[SketchupShow] API Key 로드: #{masked_key.length > 0 ? '저장됨' : '없음'}"
       @main_dialog&.execute_script("onApiKeyLoaded('#{masked_key}')")
     end
 
@@ -1954,7 +2102,7 @@ Convert all surfaces to photorealistic materials with natural imperfections:
     def save_replicate_token(token)
       @config_store.save_setting('replicate_token', token)
       @replicate_client = ReplicateClient.new(token, @replicate_model || 'photorealistic-fx')
-      puts "[NanoBanana] Replicate 토큰 저장됨"
+      puts "[SketchupShow] Replicate 토큰 저장됨"
       check_api_status
     end
 
@@ -1973,7 +2121,7 @@ Convert all surfaces to photorealistic materials with natural imperfections:
     def set_current_engine(engine)
       @current_api = engine
       @config_store.save_setting('current_api', engine)
-      puts "[NanoBanana] 엔진 변경: #{engine}"
+      puts "[SketchupShow] 엔진 변경: #{engine}"
       check_api_status
     end
 
@@ -1997,7 +2145,7 @@ Convert all surfaces to photorealistic materials with natural imperfections:
       @config_store.save_setting('gemini_model', model)
       @gemini_model = model
       @api_client.model = model if @api_client
-      puts "[NanoBanana] Gemini 모델 설정: #{model}"
+      puts "[SketchupShow] Gemini 모델 설정: #{model}"
     end
 
     # 모델 로드
@@ -2116,8 +2264,8 @@ Convert all surfaces to photorealistic materials with natural imperfections:
       end
 
       options = {
-        dialog_title: 'Prompt - NanoBanana',
-        preferences_key: 'NanoBanana_PromptDialog',
+        dialog_title: 'Prompt - SketchupShow',
+        preferences_key: 'SketchupShow_PromptDialog',
         width: 500,
         height: 450,
         min_width: 400,
@@ -2154,15 +2302,15 @@ Convert all surfaces to photorealistic materials with natural imperfections:
           @converted_prompt = data['prompt'] || ''
           @reference_image = data['referenceImage']  # 레퍼런스 이미지 저장
 
-          puts "[NanoBanana] Prompt 적용: #{@converted_prompt[0..100]}..."
-          puts "[NanoBanana] Reference 이미지: #{@reference_image ? '있음' : '없음'}"
+          puts "[SketchupShow] Prompt 적용: #{@converted_prompt[0..100]}..."
+          puts "[SketchupShow] Reference 이미지: #{@reference_image ? '있음' : '없음'}"
 
           # 메인 다이얼로그에 프롬프트 업데이트 알림
           @main_dialog&.execute_script("onPromptUpdated()")
 
           dialog.close
         rescue StandardError => e
-          puts "[NanoBanana] Prompt 적용 에러: #{e.message}"
+          puts "[SketchupShow] Prompt 적용 에러: #{e.message}"
         end
       end
 
@@ -2194,8 +2342,8 @@ Convert all surfaces to photorealistic materials with natural imperfections:
       end
 
       options = {
-        dialog_title: 'Mix - NanoBanana',
-        preferences_key: 'NanoBanana_MixDialog',
+        dialog_title: 'Mix - SketchupShow',
+        preferences_key: 'SketchupShow_MixDialog',
         width: 1200,
         height: 750,
         min_width: 1000,
@@ -2258,7 +2406,7 @@ Convert all surfaces to photorealistic materials with natural imperfections:
           @mix_dialog&.execute_script("onCoordReceived(null)")
         end
       rescue StandardError => e
-        puts "[NanoBanana] 3D 좌표 추출 에러: #{e.message}"
+        puts "[SketchupShow] 3D 좌표 추출 에러: #{e.message}"
         @mix_dialog&.execute_script("onCoordReceived(null)")
       end
     end
@@ -2271,7 +2419,7 @@ Convert all surfaces to photorealistic materials with natural imperfections:
 
         @mix_dialog&.execute_script("onSceneContextLoaded('#{context.to_json}')")
       rescue StandardError => e
-        puts "[NanoBanana] 씬 컨텍스트 추출 에러: #{e.message}"
+        puts "[SketchupShow] 씬 컨텍스트 추출 에러: #{e.message}"
         @mix_dialog&.execute_script("onSceneContextLoaded(null)")
       end
     end
@@ -2310,7 +2458,7 @@ Convert all surfaces to photorealistic materials with natural imperfections:
               @mix_dialog&.execute_script("onMixError('결과 이미지를 받지 못했습니다.')")
             end
           rescue StandardError => e
-            puts "[NanoBanana] Mix Error: #{e.message}"
+            puts "[SketchupShow] Mix Error: #{e.message}"
             @mix_dialog&.execute_script("onMixError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}')")
           end
         end
@@ -2321,11 +2469,16 @@ Convert all surfaces to photorealistic materials with natural imperfections:
 
     # Mix: 요소 추가/삭제 (3D 좌표 기반)
     def mix_add_remove(data)
+      puts "[SketchupShow] ===== MIX ADD-REMOVE 시작 ====="
+
       base_image = data['baseImage']
       hotspots = data['hotspots'] || []
       instruction = data['instruction'] || ''
       scene_context = data['sceneContext']
       preserve_settings = data['preserveSettings'] || {}
+
+      puts "[SketchupShow] 핫스팟 수: #{hotspots.length}"
+      puts "[SketchupShow] 베이스 이미지 크기: #{base_image&.length || 0} bytes"
 
       # 핫스팟 정보를 3D 좌표 기반 프롬프트로 변환
       hotspot_descriptions = hotspots.map.with_index do |h, i|
@@ -2334,8 +2487,9 @@ Convert all surfaces to photorealistic materials with natural imperfections:
         rotation = h['rotation'] || 0
         scale = h['scale'] || 1.0
 
+        object_name = h['name'] || h['objectName'] || 'Unknown'
         <<~HOTSPOT
-Object #{i + 1} - "#{h['objectName'] || 'Unknown'}":
+Object #{i + 1} - "#{object_name}":
 - World Position: (#{pos['x']&.round || 0}mm, #{pos['y']&.round || 0}mm, #{pos['z']&.round || 0}mm)
 - Estimated Size: #{size['width'] || 500}mm W × #{size['depth'] || 500}mm D × #{size['height'] || 800}mm H
 - Rotation: #{rotation}° (Z-axis)
@@ -2387,12 +2541,17 @@ CRITICAL RULES:
 - DO NOT modify anything else in the scene
       PROMPT
 
-      # 참조 이미지들 수집
-      reference_images = hotspots.map { |h| h['objectImage'] }.compact
+      # 참조 이미지들 수집 (JavaScript에서 'image' 키 사용)
+      reference_images = hotspots.map { |h| h['image'] }.compact
+
+      puts "[SketchupShow] 참조 이미지 수: #{reference_images.length}"
+      puts "[SketchupShow] 프롬프트: #{prompt[0..200]}..."
 
       if reference_images.any?
+        puts "[SketchupShow] generate_with_references 호출..."
         @api_client.generate_with_references(base_image, reference_images, prompt)
       else
+        puts "[SketchupShow] generate 호출 (참조 이미지 없음)..."
         @api_client.generate(base_image, prompt)
       end
     end
@@ -2551,10 +2710,10 @@ Output: High-quality isometric rendering with furniture, materials, and lighting
             res.body = { status: 'ok', app: 'BananaShow', ip: local_ip, port: @local_port }.to_json
           end
 
-          puts "[NanoBanana] 로컬 서버 시작: http://#{local_ip}:#{@local_port}"
+          puts "[SketchupShow] 로컬 서버 시작: http://#{local_ip}:#{@local_port}"
           @local_server.start
         rescue StandardError => e
-          puts "[NanoBanana] 로컬 서버 에러: #{e.message}"
+          puts "[SketchupShow] 로컬 서버 에러: #{e.message}"
         end
       end
 
@@ -2582,7 +2741,7 @@ Output: High-quality isometric rendering with furniture, materials, and lighting
         @local_server_thread = nil
       end
 
-      puts "[NanoBanana] 로컬 서버 중지"
+      puts "[SketchupShow] 로컬 서버 중지"
     end
 
     def capture_current_view
@@ -2618,9 +2777,9 @@ Output: High-quality isometric rendering with furniture, materials, and lighting
     end
 
     # ========================================
-    # 2차 생성 (이전 결과를 소스로 재생성)
+    # 2차 생성 (이전 결과를 소스로 재생성, 새 패널에 표시)
     # ========================================
-    def regenerate_image(source_base64, prompt, panel_id)
+    def regenerate_image(source_base64, prompt, negative_prompt, panel_id)
       unless @api_client
         @main_dialog&.execute_script("onRegenerateError('API Key가 설정되지 않았습니다.', #{panel_id})")
         return
@@ -2628,7 +2787,13 @@ Output: High-quality isometric rendering with furniture, materials, and lighting
 
       Thread.new do
         begin
-          puts "[NanoBanana] 2차 생성 시작 (패널 #{panel_id})"
+          puts "[SketchupShow] 2차 생성 시작 (패널 #{panel_id})"
+
+          # 네거티브 프롬프트 처리
+          negative_section = ""
+          if negative_prompt && !negative_prompt.empty?
+            negative_section = "\n\n[NEGATIVE - AVOID]\n#{negative_prompt}"
+          end
 
           # 프롬프트가 비어있으면 기본 프롬프트 사용
           render_prompt = if prompt && !prompt.empty?
@@ -2645,6 +2810,8 @@ CRITICAL RULES:
 - Maintain photorealistic quality with consistent lighting
 - DO NOT add elements that weren't requested
 - DO NOT remove elements unless specifically requested
+- DO NOT add downlights, spotlights, recessed lights, or any light fixtures not in the source
+#{negative_section}
             PROMPT
           else
             <<~PROMPT
@@ -2662,22 +2829,24 @@ CRITICAL RULES:
 - PRESERVE all furniture positions and materials
 - PRESERVE color tones (do not shift colors)
 - DO NOT add or remove any objects
+- DO NOT add downlights, spotlights, recessed lights, or any light fixtures not in the source
+#{negative_section}
             PROMPT
           end
 
-          puts "[NanoBanana] 2차 생성 프롬프트: #{render_prompt[0..200]}..."
+          puts "[SketchupShow] 2차 생성 프롬프트: #{render_prompt[0..200]}..."
 
           # API 호출 (이전 결과 이미지를 소스로)
           result = @api_client.generate(source_base64, render_prompt)
 
           if result && result[:image]
             @main_dialog&.execute_script("onRegenerateComplete('#{result[:image]}', #{panel_id})")
-            puts "[NanoBanana] 2차 생성 완료 (패널 #{panel_id})"
+            puts "[SketchupShow] 2차 생성 완료 (패널 #{panel_id})"
           else
             @main_dialog&.execute_script("onRegenerateError('결과를 받지 못했습니다.', #{panel_id})")
           end
         rescue StandardError => e
-          puts "[NanoBanana] 2차 생성 에러: #{e.message}"
+          puts "[SketchupShow] 2차 생성 에러: #{e.message}"
           @main_dialog&.execute_script("onRegenerateError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}', #{panel_id})")
         end
       end

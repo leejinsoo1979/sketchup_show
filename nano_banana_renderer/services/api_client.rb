@@ -90,10 +90,34 @@ module NanoBanana
 
     private
 
+    # 구도 유지를 위한 시스템 인스트럭션 (절대 수정 불가)
+    LOCKED_SYSTEM_INSTRUCTION = <<~INSTRUCTION
+      You are an image-to-image transformation tool, NOT a creative image generator.
+
+      ABSOLUTE REQUIREMENTS:
+      1. The output image MUST have the EXACT SAME composition as the input image
+      2. Every object in the input MUST appear in the output at the EXACT SAME position and size
+      3. The camera angle, perspective, and framing MUST be identical
+      4. You are ONLY allowed to change textures and lighting - NOTHING else
+      5. DO NOT add ANY new objects (no plants, rugs, mirrors, decorations, furniture)
+      6. DO NOT remove ANY existing objects
+      7. DO NOT move, resize, or rotate ANY objects
+
+      Your task is TEXTURE ENHANCEMENT only:
+      - Convert flat 3D surfaces to photorealistic materials
+      - Add realistic lighting and shadows
+      - Make it look like a real photograph of the SAME scene
+
+      If you change the composition or add/remove objects, you have FAILED the task.
+    INSTRUCTION
+
     # 단일 이미지 요청 본문 구성 (이미지 생성)
     def build_single_image_body(image_base64, prompt)
-      # 사용자 프롬프트를 그대로 전달 (불필요한 래핑 제거)
+      # 시스템 인스트럭션 + 사용자 프롬프트 결합
       {
+        system_instruction: {
+          parts: [{ text: LOCKED_SYSTEM_INSTRUCTION }]
+        },
         contents: [
           {
             parts: [
