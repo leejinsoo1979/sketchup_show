@@ -1,5 +1,9 @@
-import { Maximize2, Monitor, ClipboardList, ChevronUp } from 'lucide-react'
+import { Maximize2 } from 'lucide-react'
 import { useUIStore, type InspectorTab } from '../../state/uiStore'
+import { useGraphStore } from '../../state/graphStore'
+import { PreviewTab } from './PreviewTab'
+import { RenderSettings } from './RenderSettings'
+import { PromptPresets } from './PromptPresets'
 
 const tabs: { id: InspectorTab; label: string }[] = [
   { id: 'preview', label: 'Preview' },
@@ -10,6 +14,12 @@ const tabs: { id: InspectorTab; label: string }[] = [
 export function InspectorPanel() {
   const activeTab = useUIStore((s) => s.activeTab)
   const setActiveTab = useUIStore((s) => s.setActiveTab)
+
+  const selectedNodeId = useGraphStore((s) => s.selectedNodeId)
+  const nodes = useGraphStore((s) => s.nodes)
+  const selectedNode = selectedNodeId
+    ? nodes.find((n) => n.id === selectedNodeId) ?? null
+    : null
 
   return (
     <aside
@@ -69,72 +79,34 @@ export function InspectorPanel() {
         })}
       </div>
 
-      {/* Preview Area */}
-      <div
-        className="flex items-center justify-center"
-        style={{
-          minHeight: 200,
-          borderBottom: '1px solid #222233',
-          color: '#555555',
-          fontSize: 13,
-        }}
-      >
+      {/* Tab Content */}
+      <div style={{ borderBottom: '1px solid #222233' }}>
         {activeTab === 'preview' && (
-          <span>No image selected</span>
+          <PreviewTab selectedNode={selectedNode} />
         )}
         {activeTab === 'compare' && (
-          <span>Assign images with Compare A / Compare B</span>
+          <div
+            className="flex items-center justify-center"
+            style={{ minHeight: 200, color: '#555555', fontSize: 13 }}
+          >
+            Assign images with Compare A / Compare B
+          </div>
         )}
         {activeTab === 'draw' && (
-          <span>Select a node to start drawing</span>
+          <div
+            className="flex items-center justify-center"
+            style={{ minHeight: 200, color: '#555555', fontSize: 13 }}
+          >
+            {selectedNode ? 'Draw tab (coming soon)' : 'Select a node to start drawing'}
+          </div>
         )}
       </div>
 
       {/* Render Settings Section */}
-      <div style={{ borderBottom: '1px solid #222233' }}>
-        <div
-          className="flex items-center gap-2 px-4"
-          style={{ height: 40 }}
-        >
-          <Monitor size={16} style={{ color: '#888888' }} />
-          <span
-            className="flex-1 text-sm"
-            style={{ color: '#ffffff', fontWeight: 500 }}
-          >
-            Render settings
-          </span>
-          <ChevronUp size={16} style={{ color: '#888888' }} />
-        </div>
-        <div
-          className="px-4 pb-3"
-          style={{ color: '#555555', fontSize: 12 }}
-        >
-          Select a node to configure
-        </div>
-      </div>
+      <RenderSettings selectedNode={selectedNode} />
 
       {/* Prompt Presets Section */}
-      <div>
-        <div
-          className="flex items-center gap-2 px-4"
-          style={{ height: 40 }}
-        >
-          <ClipboardList size={16} style={{ color: '#888888' }} />
-          <span
-            className="flex-1 text-sm"
-            style={{ color: '#ffffff', fontWeight: 500 }}
-          >
-            Prompt Presets
-          </span>
-          <ChevronUp size={16} style={{ color: '#888888' }} />
-        </div>
-        <div
-          className="px-4 pb-3"
-          style={{ color: '#555555', fontSize: 12 }}
-        >
-          Select a node to see presets
-        </div>
-      </div>
+      <PromptPresets selectedNode={selectedNode} />
     </aside>
   )
 }
