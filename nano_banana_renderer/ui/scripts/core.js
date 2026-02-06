@@ -1,5 +1,5 @@
 // NanoBanana Renderer - Core (state, bridge, DOM cache)
-    const state = {
+    var state = {
       originalImage: null,
       renderImage: null,
       isRendering: false,
@@ -17,7 +17,7 @@
     };
 
     // 씬별 상태 저장소
-    const sceneStates = new Map();
+    var sceneStates = new Map();
 
     // 현재 씬 상태 저장
     function saveCurrentSceneState() {
@@ -145,7 +145,7 @@
       console.log('[NanoBanana] Scene changed to:', sceneName);
     };
 
-    const el = {
+    var el = {
       originalImage: document.getElementById('original-image'),
       originalEmpty: document.getElementById('original-empty'),
       renderImage: document.getElementById('render-image'),
@@ -193,7 +193,7 @@
       window.location = 'skp:' + action + '@' + encodeURIComponent(param);
     }
 
-    const sketchup = {
+    var sketchup = {
       captureScene: (size) => callRuby('capture_scene', size),
       startRender: (time, light, prompt, negativePrompt, renderId) => callRuby('start_render', time, light, prompt, negativePrompt, renderId || ''),
       generateAutoPrompt: (style, time, light) => callRuby('generate_auto_prompt', style || '', time || 'day', light || 'on'),

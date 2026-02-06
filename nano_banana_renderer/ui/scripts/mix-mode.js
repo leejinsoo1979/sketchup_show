@@ -2,7 +2,7 @@
     // ========================================
     // Mix Mode - State & Elements
     // ========================================
-    const mixState = {
+    var mixState = {
       mode: 'add-remove',
       baseImage: null,
       baseImageBase64: null,

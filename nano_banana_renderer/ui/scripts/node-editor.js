@@ -2,7 +2,7 @@
     // ========================================
     // Node Editor System
     // ========================================
-    const nodeEditor = {
+    var nodeEditor = {
       nodes: [],
       connections: [],
       nextNodeId: 1,
