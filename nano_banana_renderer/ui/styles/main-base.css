@@ -1,0 +1,767 @@
+/* NanoBanana Renderer - Base Layout & Components Styles */
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      font-size: 12px;
+    }
+
+    /* 초기 로딩 화면 */
+    .app-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+
+    .app-loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .app-loader-logo {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 24px;
+      letter-spacing: -1px;
+    }
+
+    .app-loader-logo span {
+      color: #ffe033;
+    }
+
+    .app-loader-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid #222;
+      border-top-color: #ffe033;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .app-loader-text {
+      color: #666;
+      font-size: 13px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 좌측 아이콘 메뉴바 */
+    .icon-menu {
+      width: 48px;
+      background: #0a0a0a;
+      border-right: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0;
+      flex-shrink: 0;
+    }
+
+    .icon-menu-item {
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-bottom: 4px;
+    }
+
+    .icon-menu-item:hover {
+      background: #1a1a1a;
+      color: #ccc;
+    }
+
+    .icon-menu-item.active {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .icon-menu-item svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .icon-menu-spacer {
+      flex: 1;
+    }
+
+    .icon-menu-divider {
+      width: 24px;
+      height: 1px;
+      background: #333;
+      margin: 8px 0;
+    }
+
+    /* 좌측 컨트롤 패널 */
+    .sidebar {
+      width: 200px;
+      background: #141414;
+      border-right: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #333;
+    }
+
+    .logo {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .sidebar-content {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .control-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .segmented {
+      display: flex;
+      background: #0a0a0a;
+      border-radius: 6px;
+      padding: 3px;
+      border: 1px solid #333;
+    }
+
+    /* 커스텀 드롭다운 */
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+    }
+
+    .dropdown-selected {
+      width: 100%;
+      padding: 8px 10px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+    }
+
+    .dropdown-selected:hover {
+      border-color: #555;
+    }
+
+    .dropdown-arrow {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid #888;
+      transition: transform 0.2s;
+    }
+
+    .custom-dropdown.open .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      margin-top: 4px;
+      max-height: 250px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .custom-dropdown.open .dropdown-menu {
+      display: block;
+    }
+
+    .dropdown-group-label {
+      padding: 8px 10px 4px;
+      font-size: 10px;
+      color: #666;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .dropdown-item {
+      padding: 8px 10px;
+      font-size: 11px;
+      color: #ccc;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .dropdown-item:hover {
+      background: #2a2a2a;
+    }
+
+    .dropdown-item.selected {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .dropdown-item-desc {
+      font-size: 9px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .seg-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .seg-btn:hover {
+      color: #aaa;
+    }
+
+    .seg-btn.active {
+      background: #333;
+      color: #fff;
+    }
+
+    .sidebar-actions {
+      padding: 16px;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      height: 36px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #0055dd;
+    }
+
+    .btn-primary:disabled {
+      background: #222;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #2a2a2a;
+      color: #ccc;
+    }
+
+    .btn-secondary:hover {
+      background: #333;
+    }
+
+    .btn-secondary:disabled {
+      background: #222;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    .sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .api-key-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .api-key-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .api-key-input-row {
+      display: flex;
+      gap: 4px;
+    }
+
+    .api-key-input {
+      flex: 1;
+      padding: 6px 8px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #ccc;
+      font-size: 11px;
+      outline: none;
+    }
+
+    .api-key-input:focus {
+      border-color: #0066ff;
+    }
+
+    .api-key-btn {
+      padding: 0 10px;
+      background: #0066ff;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .api-key-btn:hover {
+      background: #0055dd;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #666;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ff3b30;
+    }
+
+    .status-dot.connected {
+      background: #30d158;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .icon-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* 우측 이미지 영역 */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0a0a0a;
+      min-width: 0;
+    }
+
+    /* 설정 화면 */
+    .settings-main-area {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .settings-container {
+      width: 400px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      border: 1px solid #333;
+      overflow: hidden;
+    }
+
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #333;
+    }
+
+    .settings-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin: 0;
+    }
+
+    .settings-close-btn {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      color: #888;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .settings-close-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .settings-content {
+      padding: 20px;
+    }
+
+    .settings-section {
+      margin-bottom: 20px;
+    }
+
+    .settings-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #ccc;
+      margin-bottom: 8px;
+    }
+
+    .settings-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .settings-input {
+      flex: 1;
+      padding: 10px 12px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .settings-input:focus {
+      border-color: #0066ff;
+    }
+
+    .settings-toggle-btn {
+      padding: 0 12px;
+      background: #2a2a2a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #ccc;
+      cursor: pointer;
+    }
+
+    .settings-toggle-btn:hover {
+      background: #333;
+    }
+
+    .settings-help {
+      font-size: 11px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    .settings-help a {
+      color: #0066ff;
+      text-decoration: none;
+    }
+
+    .settings-help a:hover {
+      text-decoration: underline;
+    }
+
+    .settings-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #0a0a0a;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .settings-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #666;
+    }
+
+    .settings-status-dot.success {
+      background: #34c759;
+    }
+
+    .settings-status-dot.error {
+      background: #ff3b30;
+    }
+
+    .settings-status-dot.testing {
+      background: #ff9500;
+      animation: pulse 1s infinite;
+    }
+
+    .settings-btn {
+      padding: 10px 16px;
+      background: #2a2a2a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .settings-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .settings-btn-primary {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .settings-btn-primary:hover {
+      background: #0055dd;
+    }
+
+    .settings-actions {
+      margin-top: 20px;
+      text-align: right;
+    }
+
+    .image-container {
+      flex: 1;
+      display: flex;
+      gap: 1px;
+      background: #333;
+      min-height: 0;
+    }
+
+    .image-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #111;
+      min-width: 0;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.15s;
+    }
+
+    .image-panel.selected {
+      border-color: #0066ff;
+    }
+
+    .image-panel.selected .panel-label {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .panel-label {
+      height: 24px;
+      padding: 0 12px;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .panel-label span {
+      flex: 1;
+    }
+
+    .panel-expand-btn {
+      width: 20px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .panel-expand-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .panel-expand-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .panel-regenerate-btn {
+      width: 20px;
+      height: 20px;
+      background: #0066ff;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-right: 4px;
+    }
+
+    .panel-regenerate-btn:hover {
+      background: #0055dd;
+    }
+
+    .panel-regenerate-btn.hidden {
+      display: none;
+    }
+
+    .panel-regenerate-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .panel-close-btn {
+      width: 20px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-left: auto;
+      margin-right: 4px;
+    }
+
+    .panel-close-btn:hover {
+      background: #ff3b30;
+      color: #fff;
+    }
+
+    .panel-close-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .panel-guide-btn {
+      width: 20px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-right: 4px;
+    }
+
+    .panel-guide-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .panel-guide-btn.active {
+      background: #0066ff;
+      color: #fff;
+    }
+
+    .panel-guide-btn svg {
+      width: 12px;
+      height: 12px;
+    }

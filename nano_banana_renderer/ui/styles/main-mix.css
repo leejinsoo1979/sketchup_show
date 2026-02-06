@@ -1,0 +1,630 @@
+/* NanoBanana Renderer - Mix Mode Styles */
+
+    /* ========================================
+       Mix Mode Styles
+    ======================================== */
+
+    /* Mix 모드 패널 */
+    .mix-mode-panel {
+      display: none;
+      width: 220px;
+      background: #141414;
+      border-right: 1px solid #333;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .mix-mode-panel.active {
+      display: flex;
+    }
+
+    .mix-mode-header {
+      padding: 16px;
+      border-bottom: 1px solid #333;
+    }
+
+    .mix-mode-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .mix-mode-subtitle {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .mix-mode-list {
+      flex: 1;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    .mix-mode-item {
+      padding: 14px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mix-mode-item:hover {
+      background: #252525;
+      border-color: #444;
+    }
+
+    .mix-mode-item.active {
+      background: #0066ff15;
+      border-color: #0066ff;
+    }
+
+    .mix-mode-item-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mix-mode-item-title svg {
+      width: 16px;
+      height: 16px;
+      color: #0066ff;
+    }
+
+    .mix-mode-item-desc {
+      font-size: 10px;
+      color: #888;
+      line-height: 1.5;
+    }
+
+    .mix-mode-item-badge {
+      font-size: 9px;
+      padding: 2px 6px;
+      background: #0066ff30;
+      color: #0066ff;
+      border-radius: 3px;
+      margin-left: auto;
+    }
+
+    /* Mix 메인 영역 */
+    .mix-main-area {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      background: #0a0a0a;
+      min-width: 0;
+    }
+
+    .mix-main-area.active {
+      display: flex;
+    }
+
+    .mix-toolbar {
+      height: 48px;
+      background: #141414;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .mix-toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mix-tool-btn {
+      width: 32px;
+      height: 32px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .mix-tool-btn:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .mix-tool-btn.active {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .mix-tool-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .mix-tool-divider {
+      width: 1px;
+      height: 24px;
+      background: #333;
+    }
+
+    .mix-tool-label {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .mix-canvas-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: #0d0d0d;
+    }
+
+    .mix-canvas-wrapper {
+      position: relative;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .mix-canvas-wrapper canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .mix-overlay-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    #mix-draw-canvas {
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+
+    .mix-empty-state {
+      color: #444;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .mix-empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .mix-empty-state p {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* Mix 좌표 오버레이 */
+    .mix-coord-overlay {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-family: 'Monaco', 'Consolas', monospace;
+      color: #0f0;
+      display: none;
+    }
+
+    .mix-coord-overlay.visible {
+      display: block;
+    }
+
+    /* Mix 옵션 패널 */
+    .mix-options-panel {
+      display: none;
+      width: 300px;
+      background: #141414;
+      border-left: 1px solid #333;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .mix-options-panel.active {
+      display: flex;
+    }
+
+    .mix-options-header {
+      padding: 16px;
+      border-bottom: 1px solid #333;
+    }
+
+    .mix-options-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .mix-options-subtitle {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .mix-options-content {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .mix-option-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mix-option-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mix-option-label-badge {
+      font-size: 8px;
+      padding: 2px 4px;
+      background: #ff3b3020;
+      color: #ff3b30;
+      border-radius: 2px;
+    }
+
+    .mix-option-input {
+      width: 100%;
+      height: 36px;
+      padding: 0 12px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .mix-option-input:focus {
+      border-color: #0066ff;
+    }
+
+    .mix-option-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px 12px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+
+    .mix-option-textarea:focus {
+      border-color: #0066ff;
+    }
+
+    /* Mix 업로드 영역 */
+    .mix-upload-area {
+      border: 2px dashed #333;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mix-upload-area:hover {
+      border-color: #0066ff;
+      background: #0066ff08;
+    }
+
+    .mix-upload-area.has-image {
+      border-style: solid;
+      border-color: #30d158;
+      background: #30d15808;
+    }
+
+    .mix-upload-area svg {
+      width: 32px;
+      height: 32px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .mix-upload-area p {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .mix-upload-preview {
+      max-width: 100%;
+      max-height: 100px;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+
+    /* Mix 슬라이더 */
+    .mix-slider-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mix-slider {
+      flex: 1;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #333;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .mix-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #0066ff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .mix-slider-value {
+      font-size: 11px;
+      color: #fff;
+      min-width: 50px;
+      text-align: right;
+      font-family: 'Monaco', 'Consolas', monospace;
+    }
+
+    /* Mix 핫스팟 마커 */
+    .mix-hotspot-marker {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      background: #ff3b30;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: move;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      z-index: 10;
+      transition: transform 0.1s;
+    }
+
+    .mix-hotspot-marker:hover {
+      background: #ff6b60;
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    .mix-hotspot-marker.selected {
+      background: #0066ff;
+      box-shadow: 0 0 0 4px rgba(0,102,255,0.3);
+    }
+
+    /* Mix 핫스팟 목록 */
+    .mix-hotspot-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .mix-hotspot-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .mix-hotspot-item:hover {
+      border-color: #444;
+    }
+
+    .mix-hotspot-item.selected {
+      border-color: #0066ff;
+      background: #0066ff10;
+    }
+
+    .mix-hotspot-item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mix-hotspot-item-num {
+      width: 24px;
+      height: 24px;
+      background: #ff3b30;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .mix-hotspot-item.selected .mix-hotspot-item-num {
+      background: #0066ff;
+    }
+
+    .mix-hotspot-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .mix-hotspot-item-name {
+      font-size: 11px;
+      color: #fff;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mix-hotspot-item-coords {
+      font-size: 9px;
+      color: #666;
+      font-family: 'Monaco', 'Consolas', monospace;
+      margin-top: 2px;
+    }
+
+    .mix-hotspot-item-delete {
+      width: 24px;
+      height: 24px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .mix-hotspot-item-delete:hover {
+      background: #ff3b30;
+      color: #fff;
+    }
+
+    /* Mix 액션 버튼 */
+    .mix-options-actions {
+      padding: 16px;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Mix 상태바 */
+    .mix-status-bar {
+      height: 28px;
+      background: #141414;
+      border-top: 1px solid #333;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #666;
+    }
+
+    /* Mix 색상 버튼 */
+    .mix-color-picker-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mix-color-btn {
+      width: 28px;
+      height: 28px;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mix-color-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .mix-color-btn.active {
+      border-color: #fff;
+    }
+
+    .mix-color-btn.red { background: rgba(255, 59, 48, 0.6); }
+    .mix-color-btn.blue { background: rgba(0, 102, 255, 0.6); }
+    .mix-color-btn.green { background: rgba(48, 209, 88, 0.6); }
+    .mix-color-btn.yellow { background: rgba(255, 214, 10, 0.6); }
+
+    /* Mix 파라미터 그리드 */
+    .mix-param-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mix-param-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .mix-param-item label {
+      font-size: 10px;
+      color: #666;
+    }
+
+    .mix-param-item input {
+      height: 32px;
+      padding: 0 10px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 11px;
+    }
+
+    .mix-param-item input:focus {
+      border-color: #0066ff;
+      outline: none;
+    }
+
+    /* Mix 로딩 오버레이 */
+    .mix-loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .mix-loading-overlay.hidden {
+      display: none;
+    }

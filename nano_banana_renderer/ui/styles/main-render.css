@@ -1,0 +1,1031 @@
+/* NanoBanana Renderer - Render Mode Styles */
+
+    /* 프롬프트 영역 */
+    .prompt-area {
+      height: 200px;
+      min-height: 180px;
+      background: #111;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .prompt-header {
+      display: flex;
+      align-items: center;
+      background: #0a0a0a;
+      border-bottom: 1px solid #333;
+      flex-shrink: 0;
+    }
+
+    .prompt-tabs {
+      display: flex;
+      flex: 1;
+    }
+
+    .prompt-auto-btn {
+      height: 28px;
+      padding: 0 12px;
+      margin-right: 8px;
+      background: linear-gradient(135deg, #6b5ce7, #8b5cf6);
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .prompt-auto-btn:hover {
+      background: linear-gradient(135deg, #7c6ef0, #9d6fff);
+      transform: scale(1.02);
+    }
+
+    .prompt-auto-btn:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .prompt-auto-btn.loading {
+      background: #444;
+      pointer-events: none;
+    }
+
+    .prompt-auto-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .prompt-auto-btn svg.spin {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .prompt-tab {
+      flex: 1;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .prompt-tab:hover {
+      color: #aaa;
+      background: #1a1a1a;
+    }
+
+    .prompt-tab.active {
+      color: #fff;
+      border-bottom-color: #0066ff;
+      background: #1a1a1a;
+    }
+
+    .prompt-tab.negative {
+      color: #ff6b6b;
+    }
+
+    .prompt-tab.negative.active {
+      border-bottom-color: #ff6b6b;
+    }
+
+    .prompt-content {
+      flex: 1;
+      display: none;
+      padding: 8px 10px;
+      min-height: 0;
+    }
+
+    .prompt-content.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .prompt-area textarea {
+      flex: 1;
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #e0e0e0;
+      font-size: 11px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      resize: none;
+      outline: none;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    .prompt-area textarea.negative {
+      color: #ff9999;
+    }
+
+    .prompt-area textarea::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .prompt-area textarea::-webkit-scrollbar-track {
+      background: #1a1a1a;
+      border-radius: 4px;
+    }
+
+    .prompt-area textarea::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 4px;
+    }
+
+    .prompt-area textarea::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    .prompt-area textarea:focus {
+      border-color: #0066ff;
+      background: #1e1e1e;
+    }
+
+    .prompt-area textarea.negative:focus {
+      border-color: #ff6b6b;
+    }
+
+    .prompt-area textarea::placeholder {
+      color: #555;
+    }
+
+    .prompt-area textarea:disabled {
+      background: #141414;
+      color: #666;
+      cursor: default;
+    }
+
+    /* 프롬프트 입력 + 생성 버튼 래퍼 */
+    .prompt-input-wrapper {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .prompt-input-wrapper textarea {
+      flex: 1;
+    }
+
+    .prompt-generate-btn {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      background: linear-gradient(135deg, #0066ff, #0044cc);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .prompt-generate-btn:hover {
+      background: linear-gradient(135deg, #0077ff, #0055dd);
+      transform: scale(1.02);
+    }
+
+    .prompt-generate-btn:active {
+      transform: scale(0.98);
+    }
+
+    .prompt-generate-btn:disabled {
+      background: #333;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .prompt-generate-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .prompt-generate-btn.hidden {
+      display: none;
+    }
+
+    /* 프롬프트 버튼 그룹 */
+    .prompt-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .prompt-attach-btn {
+      width: 44px;
+      height: 44px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #ccc;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .prompt-attach-btn:hover {
+      background: #3a3a3a;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .prompt-attach-btn:disabled {
+      background: #1a1a1a;
+      border-color: #333;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    .prompt-attach-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .prompt-attach-btn.has-image {
+      background: #0066ff20;
+      border-color: #0066ff;
+      color: #0066ff;
+    }
+
+    /* 가이드 오버레이 */
+    .guide-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      overflow: hidden;
+    }
+
+    .guide-overlay.hidden {
+      display: none;
+    }
+
+    /* 그리드 캔버스 */
+    .guide-grid-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 그리드 슬라이더 컨트롤 */
+    .guide-controls {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    .guide-controls.hidden {
+      display: none;
+    }
+
+    .guide-controls label {
+      font-size: 10px;
+      color: #aaa;
+    }
+
+    .guide-slider {
+      width: 100px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #444;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .guide-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #0066ff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .guide-value {
+      font-size: 10px;
+      color: #fff;
+      min-width: 35px;
+    }
+
+    .guide-lock-btn {
+      width: 24px;
+      height: 24px;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #aaa;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+    }
+
+    .guide-lock-btn:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .guide-lock-btn.locked {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .guide-lock-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .guide-controls.locked .guide-slider {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .guide-zoom-slider {
+      width: 80px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #444;
+      border-radius: 2px;
+      outline: none;
+      margin-left: 8px;
+    }
+
+    .guide-zoom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #ff6600;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .image-zoom-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .image-zoom-wrapper {
+      position: relative;
+      transform-origin: center center;
+    }
+
+    .image-zoom-wrapper img {
+      display: block;
+      max-width: none;
+      max-height: none;
+    }
+
+    .image-zoom-wrapper canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .image-panel.hidden {
+      display: none !important;
+    }
+
+    .image-panel.fullscreen {
+      flex: 1 1 100% !important;
+      max-width: 100% !important;
+    }
+
+    .panel-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: #0d0d0d;
+    }
+
+    .panel-content img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .empty-state {
+      color: #333;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .auto-prompt-loading,
+    .auto-prompt-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .auto-prompt-loading .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid #333;
+      border-top-color: #0066ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .auto-prompt-loading .loading-status {
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .auto-prompt-loading .loading-detail {
+      color: #888;
+      font-size: 12px;
+    }
+
+    /* 프롬프트 생성 프로그레스 바 */
+    .prompt-progress-container {
+      width: 200px;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .prompt-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0066ff, #00aaff);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .prompt-progress-text {
+      font-size: 11px;
+      color: #888;
+      margin-top: 6px;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      height: 24px;
+      background: #141414;
+      border-top: 1px solid #333;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      font-size: 10px;
+      color: #555;
+      flex-shrink: 0;
+    }
+
+
+    /* Loading */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .loading-spinner {
+      position: relative;
+      width: 56px;
+      height: 56px;
+    }
+
+    .loading-spinner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .loading-spinner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: #fff;
+      animation: spinner-rotate 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    }
+
+    @keyframes spinner-rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 24px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .loading-subtext {
+      margin-top: 8px;
+      color: #555;
+      font-size: 11px;
+    }
+
+    .loading-progress {
+      margin-top: 20px;
+      width: 160px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .loading-progress-bar {
+      height: 100%;
+      background: #fff;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    /* Style Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-content {
+      background: #1a1a1a;
+      border-radius: 12px;
+      width: 480px;
+      max-width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      border: 1px solid #333;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #333;
+    }
+
+    .modal-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .modal-close:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .style-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    .preset-label {
+      font-size: 12px;
+      color: #888;
+      margin-right: 4px;
+    }
+
+    .style-preset-btn {
+      padding: 6px 12px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 16px;
+      color: #ccc;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .style-preset-btn:hover {
+      background: #333;
+      border-color: #666;
+      color: #fff;
+    }
+
+    .style-preset-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .style-input-group {
+      margin-bottom: 12px;
+    }
+
+    .style-input-group label {
+      display: block;
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+
+    .style-input-group textarea {
+      width: 100%;
+      height: 80px;
+      padding: 12px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      resize: none;
+      font-family: inherit;
+    }
+
+    .style-input-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .style-input-group textarea::placeholder {
+      color: #555;
+    }
+
+    .style-help-text {
+      font-size: 11px;
+      color: #666;
+      margin: 0;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 20px;
+      border-top: 1px solid #333;
+    }
+
+    .modal-footer .btn {
+      padding: 8px 20px;
+      font-size: 12px;
+    }
+
+    .loading-progress-bar.indeterminate {
+      animation: progress-indeterminate 1.5s ease-in-out infinite;
+    }
+
+    @keyframes progress-indeterminate {
+      0% { width: 0%; margin-left: 0%; }
+      50% { width: 40%; margin-left: 30%; }
+      100% { width: 0%; margin-left: 100%; }
+    }
+
+    .loading-percent {
+      font-weight: 600;
+      color: #0066ff;
+    }
+
+    /* Camera Controls */
+    .camera-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .camera-move {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .move-row {
+      display: flex;
+      gap: 2px;
+    }
+
+    .camera-height, .camera-rotate {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cam-btn {
+      width: 28px;
+      height: 28px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #ccc;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+    }
+
+    .cam-btn:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .cam-btn:active {
+      background: #0066ff;
+    }
+
+    .cam-btn.small {
+      width: 24px;
+      height: 24px;
+      font-size: 10px;
+    }
+
+    .btn-mirror {
+      width: 100%;
+      height: 32px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: all 0.15s;
+    }
+
+    .btn-mirror:hover {
+      background: #444;
+    }
+
+    .btn-mirror.active {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .camera-btns-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .camera-btns-row .btn-mirror {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .btn-2point {
+      width: 40px;
+      height: 32px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #ccc;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-2point svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-2point:hover {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .cam-btn.wasd {
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    .cam-btn.active-key {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    .keyboard-hint {
+      font-size: 9px;
+      color: #555;
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    /* Render 모드 비활성화 시 숨김 */
+    .render-mode-content {
+      display: flex;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .render-mode-content.hidden {
+      display: none;
+    }
+
+    /* Mix 모드 전체 컨테이너 */
+    .mix-mode-container {
+      display: none;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .mix-mode-container.active {
+      display: flex;
+    }
+
+    /* Scene Tabs */
+    .scene-tabs {
+      display: flex;
+      background: #141414;
+      border-bottom: 1px solid #333;
+      padding: 0 8px;
+      overflow-x: auto;
+      flex-shrink: 0;
+      height: 32px;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .scene-tabs::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .scene-tabs::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 2px;
+    }
+
+    .scene-tab {
+      padding: 6px 14px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: #888;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      position: relative;
+      top: 1px;
+    }
+
+    .scene-tab:hover {
+      background: #252525;
+      color: #ccc;
+    }
+
+    .scene-tab.active {
+      background: #0a0a0a;
+      color: #fff;
+      border-color: #333;
+    }
+
+    .scene-add-btn {
+      width: 28px;
+      height: 24px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: #888;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 4px;
+      transition: all 0.15s;
+      position: relative;
+      top: 1px;
+    }
+
+    .scene-add-btn:hover {
+      background: #0066ff;
+      border-color: #0066ff;
+      color: #fff;
+    }
+
+    /* 씬 탭 렌더링 로딩 아이콘 */
+    .scene-tab-content {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scene-tab-spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid #555;
+      border-top-color: #0066ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .scene-tab.rendering {
+      background: #1a2a3a;
+      border-color: #0066ff;
+      color: #0066ff;
+    }
+
+    .scene-tab.render-complete {
+      background: #1a3a2a;
+      border-color: #30d158;
+      color: #30d158;
+    }
+
+    .scene-tab.render-error {
+      background: #3a1a1a;
+      border-color: #ff3b30;
+      color: #ff3b30;
+    }
