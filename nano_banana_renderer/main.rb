@@ -596,9 +596,9 @@ module NanoBanana
         poll_render_complete
       end
 
-      # 파일에서 이미지 읽기 (폴링 결과용)
-      dialog.add_action_callback('readImageFile') do |_ctx, file_path, scene_name|
-        read_image_file(file_path.to_s, scene_name.to_s)
+      # 다음 청크 요청 (JS에서 호출)
+      dialog.add_action_callback('getNextChunk') do |_ctx|
+        get_next_chunk
       end
 
       # 히스토리 저장
@@ -2914,25 +2914,40 @@ CRITICAL RULES:
 
         puts "[SketchupShow] 폴링 응답: #{scene_name}, #{image_data.to_s.length} bytes"
 
-        safe_scene = scene_name.to_s.gsub("'", "\\\\'")
+        # 이미지를 청크로 분할하여 @pending_chunks에 저장
+        chunk_size = 30_000  # 30KB씩
+        @pending_chunks = []
+        @pending_scene = scene_name
 
-        # 직접 전송 (UI.start_timer로 메인 스레드에서 실행)
-        image_copy = image_data.dup
-        UI.start_timer(0.1, false) do
-          begin
-            puts "[SketchupShow] 이미지 전송 시작..."
-            escaped_image = image_copy.gsub("\\", "\\\\\\\\").gsub("'", "\\\\'")
-            @main_dialog&.execute_script("onPollResultDirect('#{safe_scene}', '#{escaped_image}')")
-            puts "[SketchupShow] 이미지 전송 완료"
-          rescue StandardError => e
-            puts "[SketchupShow] 이미지 전송 오류: #{e.message}"
-          end
+        image_data.chars.each_slice(chunk_size) do |chunk|
+          @pending_chunks << chunk.join
         end
-        puts "[SketchupShow] 폴링 전달 예약됨"
+
+        puts "[SketchupShow] 청크 준비 완료: #{@pending_chunks.length}개"
+
+        # 첫 번째 청크 전송 시작 신호
+        safe_scene = scene_name.to_s.gsub("'", "\\\\'")
+        @main_dialog&.execute_script("onChunkStart('#{safe_scene}', #{@pending_chunks.length})")
       rescue StandardError => e
         puts "[SketchupShow] 폴링 오류: #{e.message}"
         @main_dialog&.execute_script("onPollResult(null)")
       end
+    end
+
+    # JS에서 다음 청크 요청
+    def get_next_chunk
+      @pending_chunks ||= []
+
+      if @pending_chunks.empty?
+        @main_dialog&.execute_script("onChunkData(null, true)")
+        return
+      end
+
+      chunk = @pending_chunks.shift
+      is_last = @pending_chunks.empty?
+      escaped = chunk.gsub("\\", "\\\\\\\\").gsub("'", "\\\\'")
+
+      @main_dialog&.execute_script("onChunkData('#{escaped}', #{is_last})")
     end
 
     # 파일에서 이미지 읽기 (폴링 결과용)
