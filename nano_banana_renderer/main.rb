@@ -2927,7 +2927,9 @@ CRITICAL RULES:
 
         # 첫 번째 청크 전송 시작 신호
         safe_scene = scene_name.to_s.gsub("'", "\\\\'")
+        puts "[SketchupShow] onChunkStart 호출..."
         @main_dialog&.execute_script("onChunkStart('#{safe_scene}', #{@pending_chunks.length})")
+        puts "[SketchupShow] onChunkStart 호출 완료"
       rescue StandardError => e
         puts "[SketchupShow] 폴링 오류: #{e.message}"
         @main_dialog&.execute_script("onPollResult(null)")
@@ -2936,6 +2938,7 @@ CRITICAL RULES:
 
     # JS에서 다음 청크 요청
     def get_next_chunk
+      puts "[SketchupShow] getNextChunk 호출됨"
       @pending_chunks ||= []
 
       if @pending_chunks.empty?
