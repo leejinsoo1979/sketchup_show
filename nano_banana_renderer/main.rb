@@ -601,6 +601,11 @@ module NanoBanana
         get_next_chunk
       end
 
+      # 이미지를 파일로 저장 (JS에서 호출)
+      dialog.add_action_callback('saveImageToFile') do |_ctx, base64, scene_name|
+        save_image_to_temp_file(base64.to_s, scene_name.to_s)
+      end
+
       # 히스토리 저장
       dialog.add_action_callback('save_history') do |_ctx, history_json|
         save_history_to_file(history_json)
@@ -2954,6 +2959,7 @@ CRITICAL RULES:
           if is_last
             # 마지막 청크 - 이미지 처리 호출
             puts "[SketchupShow] 마지막 청크 전송 완료"
+            # JS에서 saveImageToFile 호출하도록 (base64 -> 파일 -> URL)
             @main_dialog&.execute_script("onChunkComplete(window._chunkBuffer, window._chunkScene);")
           else
             # 다음 청크 전송
@@ -2962,6 +2968,33 @@ CRITICAL RULES:
         rescue StandardError => e
           puts "[SketchupShow] 청크 전송 오류: #{e.message}"
         end
+      end
+    end
+
+    # base64 이미지를 파일로 저장 (JS에서 호출)
+    def save_image_to_temp_file(base64, scene_name)
+      begin
+        puts "[SketchupShow] 이미지 파일 저장 시작: #{base64.length} bytes"
+
+        temp_dir = File.join(ENV['HOME'], '.sketchupshow', 'renders')
+        FileUtils.mkdir_p(temp_dir) unless File.directory?(temp_dir)
+
+        filename = "render_#{Time.now.to_i}_#{rand(1000)}.png"
+        file_path = File.join(temp_dir, filename)
+
+        # base64 디코드하여 파일로 저장
+        image_binary = Base64.decode64(base64)
+        File.binwrite(file_path, image_binary)
+
+        puts "[SketchupShow] 이미지 파일 저장 완료: #{file_path}"
+
+        # JS에 파일 경로 전달
+        safe_path = file_path.gsub("\\", "/").gsub("'", "\\\\'")
+        safe_scene = scene_name.to_s.gsub("'", "\\\\'")
+        @main_dialog&.execute_script("onImageFileSaved('#{safe_path}', '#{safe_scene}')")
+      rescue StandardError => e
+        puts "[SketchupShow] 이미지 파일 저장 오류: #{e.message}"
+        puts e.backtrace.first(3).join("\n")
       end
     end
 

@@ -4364,13 +4364,65 @@
 
       if (!fullImage) return;
 
-      // 이미지 처리
+      // Ruby에 이미지 파일 저장 요청 후 file:// URL로 로드
+      sketchup.saveImageToFile(fullImage, sceneName);
+    }
+
+    // 이미지 파일 저장 완료 콜백 (Ruby에서 호출)
+    function onImageFileSaved(filePath, sceneName) {
+      console.log('[NanoBanana] 이미지 파일 저장됨:', filePath);
+
+      // file:// URL로 이미지 로드
+      const fileUrl = 'file://' + filePath;
+
       if (sceneName.startsWith('regenerate_')) {
         const panelId = parseInt(sceneName.replace('regenerate_', ''));
-        onRegenerateComplete(fullImage, panelId);
+        onRegenerateCompleteWithUrl(fileUrl, panelId, sceneName);
       } else {
-        onRenderComplete(fullImage, sceneName);
+        onRenderCompleteWithUrl(fileUrl, sceneName);
       }
+    }
+
+    // URL로 렌더 완료 처리
+    function onRenderCompleteWithUrl(imageUrl, sceneName) {
+      // base64 대신 URL 저장
+      state.renderImageUrl = imageUrl;
+
+      el.renderImage.src = imageUrl;
+      el.renderImage.style.display = 'block';
+      el.renderEmpty.style.display = 'none';
+      el.loading.classList.add('hidden');
+      el.btnRender.disabled = false;
+      el.btnEdit.disabled = false;
+      el.btnSave.disabled = false;
+
+      el.promptResult.disabled = false;
+      el.promptResult.placeholder = '2차 생성용 프롬프트를 입력하세요.';
+      el.promptResultNegative.disabled = false;
+      el.btnAutoPromptResult.disabled = false;
+      el.btnRegenerateResult.disabled = false;
+
+      if (sceneName) {
+        renderingScenes.delete(sceneName);
+        updateSceneTabStatus(sceneName, 'complete');
+        setTimeout(() => updateSceneTabStatus(sceneName, 'normal'), 3000);
+      }
+
+      state.isRendering = renderingScenes.size > 0;
+      setStatus('Complete: ' + (sceneName || 'Unknown'));
+
+      // 히스토리는 나중에 base64로 변환 필요 (일단 스킵)
+    }
+
+    // URL로 재생성 완료 처리
+    function onRegenerateCompleteWithUrl(imageUrl, panelId, sceneName) {
+      el.renderImage.src = imageUrl;
+      el.renderImage.style.display = 'block';
+      el.loading.classList.add('hidden');
+      state.isRegenerating = false;
+      el.btnRegenerateResult.disabled = false;
+
+      setStatus('Regenerate Complete');
     }
 
     // 히스토리 로드 콜백
