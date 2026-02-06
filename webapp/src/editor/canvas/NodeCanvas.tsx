@@ -1,36 +1,352 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
   type OnConnect,
+  type OnConnectStart,
   type OnNodesChange,
   type OnEdgesChange,
+  type Node as RFNode,
+  type Edge as RFEdge,
+  type Connection,
+  type NodeTypes,
+  type XYPosition,
+  applyNodeChanges,
+  applyEdgeChanges,
+  useReactFlow,
+  ReactFlowProvider,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { FolderOpen, ImageIcon } from 'lucide-react'
+import { v4 as uuid } from 'uuid'
+import { SourceNode } from '../nodes/SourceNode'
+import { RenderNode } from '../nodes/RenderNode'
+import { ModifierNode } from '../nodes/ModifierNode'
+import { UpscaleNode } from '../nodes/UpscaleNode'
+import { VideoNode } from '../nodes/VideoNode'
+import { CompareNode } from '../nodes/CompareNode'
+import { useGraphStore } from '../../state/graphStore'
+import type { NodeType } from '../../types/node'
 
-export function NodeCanvas() {
-  const nodes: never[] = []
-  const edges: never[] = []
+const nodeTypes: NodeTypes = {
+  SOURCE: SourceNode,
+  RENDER: RenderNode,
+  MODIFIER: ModifierNode,
+  UPSCALE: UpscaleNode,
+  VIDEO: VideoNode,
+  COMPARE: CompareNode,
+}
 
-  const onNodesChange: OnNodesChange = useCallback(() => {}, [])
-  const onEdgesChange: OnEdgesChange = useCallback(() => {}, [])
-  const onConnect: OnConnect = useCallback(() => {}, [])
+interface DropMenuState {
+  visible: boolean
+  position: XYPosition
+  screenPosition: { x: number; y: number }
+  sourceNodeId: string
+  sourcePortName: string
+}
+
+const RENDER_MODE_OPTIONS: { type: NodeType; label: string }[] = [
+  { type: 'RENDER', label: '1. Main renderer' },
+  { type: 'MODIFIER', label: '2. Details editor' },
+  { type: 'UPSCALE', label: '3. Creative upscaler' },
+  { type: 'VIDEO', label: '4. Image to video' },
+  { type: 'COMPARE', label: 'Compare' },
+]
+
+function NodeCanvasInner() {
+  const reactFlowInstance = useReactFlow()
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const connectingRef = useRef<{ nodeId: string; handleId: string } | null>(null)
+
+  const nodes = useGraphStore((s) => s.nodes)
+  const edges = useGraphStore((s) => s.edges)
+  const selectedNodeId = useGraphStore((s) => s.selectedNodeId)
+  const selectNode = useGraphStore((s) => s.selectNode)
+  const updateNodePosition = useGraphStore((s) => s.updateNodePosition)
+  const addEdge = useGraphStore((s) => s.addEdge)
+  const createSourceNode = useGraphStore((s) => s.createSourceNode)
+  const createNode = useGraphStore((s) => s.createNode)
+  const removeNode = useGraphStore((s) => s.removeNode)
+  const removeEdge = useGraphStore((s) => s.removeEdge)
+
+  const [dropMenu, setDropMenu] = useState<DropMenuState>({
+    visible: false,
+    position: { x: 0, y: 0 },
+    screenPosition: { x: 0, y: 0 },
+    sourceNodeId: '',
+    sourcePortName: '',
+  })
+
+  // Convert graphStore nodes to React Flow nodes
+  const rfNodes: RFNode[] = useMemo(
+    () =>
+      nodes.map((n) => ({
+        id: n.id,
+        type: n.type,
+        position: n.position,
+        selected: n.id === selectedNodeId,
+        data: {
+          status: n.status,
+          params: n.params,
+          resultImage: n.result?.image ?? null,
+        },
+      })),
+    [nodes, selectedNodeId],
+  )
+
+  // Convert graphStore edges to React Flow edges
+  const rfEdges: RFEdge[] = useMemo(
+    () =>
+      edges.map((e) => ({
+        id: e.id,
+        source: e.from,
+        sourceHandle: e.fromPort,
+        target: e.to,
+        targetHandle: e.toPort,
+        style: { stroke: '#555555', strokeWidth: 2 },
+        animated: false,
+      })),
+    [edges],
+  )
+
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes) => {
+      // Apply position changes to graphStore
+      for (const change of changes) {
+        if (change.type === 'position' && change.position && change.id) {
+          updateNodePosition(change.id, change.position)
+        }
+        if (change.type === 'remove' && change.id) {
+          removeNode(change.id)
+        }
+      }
+      // Let React Flow handle visual updates via rfNodes derivation
+      void applyNodeChanges(changes, rfNodes)
+    },
+    [updateNodePosition, removeNode, rfNodes],
+  )
+
+  const onEdgesChange: OnEdgesChange = useCallback(
+    (changes) => {
+      for (const change of changes) {
+        if (change.type === 'remove' && change.id) {
+          removeEdge(change.id)
+        }
+      }
+      void applyEdgeChanges(changes, rfEdges)
+    },
+    [removeEdge, rfEdges],
+  )
+
+  // When connecting two existing nodes
+  const onConnect: OnConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return
+      addEdge({
+        id: uuid(),
+        from: connection.source,
+        fromPort: connection.sourceHandle ?? 'image',
+        to: connection.target,
+        toPort: connection.targetHandle ?? 'image',
+      })
+    },
+    [addEdge],
+  )
+
+  // Track which node/port started a connection drag
+  const onConnectStart: OnConnectStart = useCallback(
+    (_event, params) => {
+      if (params.nodeId && params.handleType === 'source') {
+        connectingRef.current = {
+          nodeId: params.nodeId,
+          handleId: params.handleId ?? 'image',
+        }
+      }
+    },
+    [],
+  )
+
+  // When a connection drag ends on empty canvas → show node creation menu
+  const onConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      const connecting = connectingRef.current
+      connectingRef.current = null
+      if (!connecting) return
+
+      const targetIsPane = (event.target as HTMLElement)?.classList?.contains(
+        'react-flow__pane',
+      )
+      if (!targetIsPane) return
+
+      const clientX = 'changedTouches' in event ? event.changedTouches[0].clientX : event.clientX
+      const clientY = 'changedTouches' in event ? event.changedTouches[0].clientY : event.clientY
+
+      const flowPosition = reactFlowInstance.screenToFlowPosition({
+        x: clientX,
+        y: clientY,
+      })
+
+      setDropMenu({
+        visible: true,
+        position: flowPosition,
+        screenPosition: { x: clientX, y: clientY },
+        sourceNodeId: connecting.nodeId,
+        sourcePortName: connecting.handleId,
+      })
+    },
+    [reactFlowInstance],
+  )
+
+  const handleDropMenuSelect = useCallback(
+    (nodeType: NodeType) => {
+      const newNodeId = createNode(nodeType, dropMenu.position)
+      // Auto-connect: source output → new node input
+      const targetPort = nodeType === 'COMPARE' ? 'imageA' : 'image'
+      addEdge({
+        id: uuid(),
+        from: dropMenu.sourceNodeId,
+        fromPort: dropMenu.sourcePortName,
+        to: newNodeId,
+        toPort: targetPort,
+      })
+      setDropMenu((s) => ({ ...s, visible: false }))
+    },
+    [createNode, addEdge, dropMenu],
+  )
+
+  const handleDropMenuClose = useCallback(() => {
+    setDropMenu((s) => ({ ...s, visible: false }))
+  }, [])
+
+  // Node selection
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: RFNode) => {
+      selectNode(node.id)
+    },
+    [selectNode],
+  )
+
+  const onPaneClick = useCallback(() => {
+    selectNode(null)
+    setDropMenu((s) => ({ ...s, visible: false }))
+  }, [selectNode])
+
+  // Image drag and drop → Source node
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'copy'
+  }, [])
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault()
+      const files = event.dataTransfer.files
+      if (files.length === 0) return
+
+      const file = files[0]
+      if (!file.type.startsWith('image/')) return
+
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      })
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        const base64 = reader.result as string
+        createSourceNode(base64, 'upload', position)
+      }
+      reader.readAsDataURL(file)
+    },
+    [reactFlowInstance, createSourceNode],
+  )
+
+  // Browse button file selection
+  const handleBrowse = useCallback(() => {
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (!file || !file.type.startsWith('image/')) return
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        const base64 = reader.result as string
+        // Place at canvas center
+        const position = reactFlowInstance.screenToFlowPosition({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+        })
+        createSourceNode(base64, 'upload', position)
+      }
+      reader.readAsDataURL(file)
+      // Reset input so same file can be selected again
+      event.target.value = ''
+    },
+    [reactFlowInstance, createSourceNode],
+  )
+
+  // Paste handler for images
+  const onPaste = useCallback(
+    (event: React.ClipboardEvent) => {
+      const items = event.clipboardData.items
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (!file) continue
+
+          const reader = new FileReader()
+          reader.onload = () => {
+            const base64 = reader.result as string
+            const position = reactFlowInstance.screenToFlowPosition({
+              x: window.innerWidth / 2,
+              y: window.innerHeight / 2,
+            })
+            createSourceNode(base64, 'paste', position)
+          }
+          reader.readAsDataURL(file)
+          event.preventDefault()
+          break
+        }
+      }
+    },
+    [reactFlowInstance, createSourceNode],
+  )
 
   const isEmpty = nodes.length === 0
 
   return (
-    <div className="relative flex-1" style={{ backgroundColor: '#111118' }}>
+    <div
+      ref={wrapperRef}
+      className="relative flex-1"
+      style={{ backgroundColor: '#111118' }}
+      onPaste={onPaste}
+      tabIndex={0}
+    >
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={rfNodes}
+        edges={rfEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
         style={{ backgroundColor: '#111118' }}
+        defaultEdgeOptions={{
+          style: { stroke: '#555555', strokeWidth: 2 },
+        }}
+        deleteKeyCode="Delete"
       >
         <Background
           variant={BackgroundVariant.Dots}
@@ -69,6 +385,7 @@ export function NodeCanvas() {
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = '#00c9a7')
               }
+              onClick={handleBrowse}
             >
               <FolderOpen size={14} />
               Browse
@@ -76,6 +393,67 @@ export function NodeCanvas() {
           </div>
         </div>
       )}
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
+      {/* Render Mode dropdown when dragging port to empty canvas */}
+      {dropMenu.visible && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={handleDropMenuClose}
+          />
+          <div
+            className="absolute z-50 rounded-md py-1"
+            style={{
+              left: dropMenu.screenPosition.x - (wrapperRef.current?.getBoundingClientRect().left ?? 0),
+              top: dropMenu.screenPosition.y - (wrapperRef.current?.getBoundingClientRect().top ?? 0),
+              backgroundColor: '#1a1a2e',
+              border: '1px solid #333344',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+              minWidth: 180,
+            }}
+          >
+            <div
+              className="px-3 py-1.5"
+              style={{ color: '#888888', fontSize: 11, borderBottom: '1px solid #333344' }}
+            >
+              Add node
+            </div>
+            {RENDER_MODE_OPTIONS.map((opt) => (
+              <button
+                key={opt.type}
+                className="block w-full px-3 py-2 text-left text-sm transition-colors duration-100"
+                style={{ color: '#cccccc' }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = '#2a2a3e')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = 'transparent')
+                }
+                onClick={() => handleDropMenuSelect(opt.type)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
+  )
+}
+
+export function NodeCanvas() {
+  return (
+    <ReactFlowProvider>
+      <NodeCanvasInner />
+    </ReactFlowProvider>
   )
 }
