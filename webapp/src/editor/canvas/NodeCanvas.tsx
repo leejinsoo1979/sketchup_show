@@ -26,8 +26,12 @@ import { ModifierNode } from '../nodes/ModifierNode'
 import { UpscaleNode } from '../nodes/UpscaleNode'
 import { VideoNode } from '../nodes/VideoNode'
 import { CompareNode } from '../nodes/CompareNode'
+import { ContextMenu, type MenuItem } from './ContextMenu'
 import { useGraphStore } from '../../state/graphStore'
+import { useUIStore } from '../../state/uiStore'
+import { executePipeline } from '../../engine'
 import type { NodeType } from '../../types/node'
+import type { EdgeData } from '../../types/graph'
 
 const nodeTypes: NodeTypes = {
   SOURCE: SourceNode,
@@ -46,6 +50,13 @@ interface DropMenuState {
   sourcePortName: string
 }
 
+interface ContextMenuState {
+  visible: boolean
+  x: number
+  y: number
+  items: MenuItem[]
+}
+
 const RENDER_MODE_OPTIONS: { type: NodeType; label: string }[] = [
   { type: 'RENDER', label: '1. Main renderer' },
   { type: 'MODIFIER', label: '2. Details editor' },
@@ -54,10 +65,70 @@ const RENDER_MODE_OPTIONS: { type: NodeType; label: string }[] = [
   { type: 'COMPARE', label: 'Compare' },
 ]
 
+// ── DAG-based auto layout ──
+
+function rearrangeNodes(
+  nodeIds: string[],
+  edgeList: EdgeData[],
+  updatePosition: (id: string, pos: { x: number; y: number }) => void,
+) {
+  if (nodeIds.length === 0) return
+
+  const nodeSet = new Set(nodeIds)
+  const relevantEdges = edgeList.filter((e) => nodeSet.has(e.from) && nodeSet.has(e.to))
+
+  // Compute in-degree
+  const inDegree = new Map<string, number>()
+  const adj = new Map<string, string[]>()
+  for (const id of nodeIds) {
+    inDegree.set(id, 0)
+    adj.set(id, [])
+  }
+  for (const edge of relevantEdges) {
+    inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1)
+    adj.get(edge.from)!.push(edge.to)
+  }
+
+  // Kahn's algorithm → levels
+  const levels: string[][] = []
+  let queue = nodeIds.filter((id) => inDegree.get(id) === 0)
+
+  while (queue.length > 0) {
+    levels.push([...queue])
+    const next: string[] = []
+    for (const id of queue) {
+      for (const neighborId of adj.get(id)!) {
+        const newDeg = inDegree.get(neighborId)! - 1
+        inDegree.set(neighborId, newDeg)
+        if (newDeg === 0) next.push(neighborId)
+      }
+    }
+    queue = next
+  }
+
+  // Assign positions: Source on left, horizontal 250px, vertical 150px
+  const H_GAP = 250
+  const V_GAP = 150
+
+  for (let col = 0; col < levels.length; col++) {
+    const level = levels[col]
+    // Sort by out-degree descending (hub nodes top)
+    level.sort((a, b) => (adj.get(b)?.length ?? 0) - (adj.get(a)?.length ?? 0))
+
+    const totalHeight = (level.length - 1) * V_GAP
+    const startY = -totalHeight / 2
+
+    for (let row = 0; row < level.length; row++) {
+      updatePosition(level[row], { x: col * H_GAP, y: startY + row * V_GAP })
+    }
+  }
+}
+
 function NodeCanvasInner() {
   const reactFlowInstance = useReactFlow()
   const wrapperRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const contextFileInputRef = useRef<HTMLInputElement>(null)
   const connectingRef = useRef<{ nodeId: string; handleId: string } | null>(null)
 
   const nodes = useGraphStore((s) => s.nodes)
@@ -70,6 +141,10 @@ function NodeCanvasInner() {
   const createNode = useGraphStore((s) => s.createNode)
   const removeNode = useGraphStore((s) => s.removeNode)
   const removeEdge = useGraphStore((s) => s.removeEdge)
+  const duplicateNode = useGraphStore((s) => s.duplicateNode)
+  const clearAll = useGraphStore((s) => s.clearAll)
+  const setCompareA = useUIStore((s) => s.setCompareA)
+  const setCompareB = useUIStore((s) => s.setCompareB)
 
   const [dropMenu, setDropMenu] = useState<DropMenuState>({
     visible: false,
@@ -77,6 +152,13 @@ function NodeCanvasInner() {
     screenPosition: { x: 0, y: 0 },
     sourceNodeId: '',
     sourcePortName: '',
+  })
+
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    visible: false,
+    x: 0,
+    y: 0,
+    items: [],
   })
 
   // Convert graphStore nodes to React Flow nodes
@@ -113,7 +195,6 @@ function NodeCanvasInner() {
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      // Apply position changes to graphStore
       for (const change of changes) {
         if (change.type === 'position' && change.position && change.id) {
           updateNodePosition(change.id, change.position)
@@ -122,7 +203,6 @@ function NodeCanvasInner() {
           removeNode(change.id)
         }
       }
-      // Let React Flow handle visual updates via rfNodes derivation
       void applyNodeChanges(changes, rfNodes)
     },
     [updateNodePosition, removeNode, rfNodes],
@@ -140,7 +220,6 @@ function NodeCanvasInner() {
     [removeEdge, rfEdges],
   )
 
-  // When connecting two existing nodes
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => {
       if (!connection.source || !connection.target) return
@@ -155,7 +234,6 @@ function NodeCanvasInner() {
     [addEdge],
   )
 
-  // Track which node/port started a connection drag
   const onConnectStart: OnConnectStart = useCallback(
     (_event, params) => {
       if (params.nodeId && params.handleType === 'source') {
@@ -168,7 +246,6 @@ function NodeCanvasInner() {
     [],
   )
 
-  // When a connection drag ends on empty canvas → show node creation menu
   const onConnectEnd = useCallback(
     (event: MouseEvent | TouchEvent) => {
       const connecting = connectingRef.current
@@ -202,7 +279,6 @@ function NodeCanvasInner() {
   const handleDropMenuSelect = useCallback(
     (nodeType: NodeType) => {
       const newNodeId = createNode(nodeType, dropMenu.position)
-      // Auto-connect: source output → new node input
       const targetPort = nodeType === 'COMPARE' ? 'imageA' : 'image'
       addEdge({
         id: uuid(),
@@ -220,6 +296,93 @@ function NodeCanvasInner() {
     setDropMenu((s) => ({ ...s, visible: false }))
   }, [])
 
+  // ── Context menus ──
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu((s) => ({ ...s, visible: false }))
+  }, [])
+
+  // Node right-click
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: RFNode) => {
+      event.preventDefault()
+      selectNode(node.id)
+
+      const items: MenuItem[] = [
+        {
+          label: 'Make',
+          action: () => { executePipeline(node.id) },
+        },
+        {
+          label: 'Duplicate',
+          action: () => { duplicateNode(node.id) },
+        },
+        {
+          label: 'Delete',
+          action: () => { removeNode(node.id) },
+          danger: true,
+        },
+        {
+          label: 'Compare A',
+          action: () => { setCompareA(node.id) },
+        },
+        {
+          label: 'Compare B',
+          action: () => { setCompareB(node.id) },
+        },
+      ]
+
+      setContextMenu({
+        visible: true,
+        x: event.clientX,
+        y: event.clientY,
+        items,
+      })
+    },
+    [selectNode, duplicateNode, removeNode, setCompareA, setCompareB],
+  )
+
+  // Canvas right-click (empty area)
+  const onPaneContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault()
+
+      const items: MenuItem[] = [
+        {
+          label: 'Load image...',
+          action: () => { contextFileInputRef.current?.click() },
+        },
+        {
+          label: 'Clear all',
+          action: () => { clearAll() },
+          danger: true,
+        },
+        {
+          label: 'Rearrange nodes',
+          action: () => {
+            const currentNodes = useGraphStore.getState().nodes
+            const currentEdges = useGraphStore.getState().edges
+            rearrangeNodes(
+              currentNodes.map((n) => n.id),
+              currentEdges,
+              updateNodePosition,
+            )
+            // Fit view after rearrange
+            setTimeout(() => reactFlowInstance.fitView({ padding: 0.2 }), 50)
+          },
+        },
+      ]
+
+      setContextMenu({
+        visible: true,
+        x: event.clientX,
+        y: event.clientY,
+        items,
+      })
+    },
+    [clearAll, updateNodePosition, reactFlowInstance],
+  )
+
   // Node selection
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: RFNode) => {
@@ -231,6 +394,7 @@ function NodeCanvasInner() {
   const onPaneClick = useCallback(() => {
     selectNode(null)
     setDropMenu((s) => ({ ...s, visible: false }))
+    setContextMenu((s) => ({ ...s, visible: false }))
   }, [selectNode])
 
   // Image drag and drop → Source node
@@ -276,7 +440,6 @@ function NodeCanvasInner() {
       const reader = new FileReader()
       reader.onload = () => {
         const base64 = reader.result as string
-        // Place at canvas center
         const position = reactFlowInstance.screenToFlowPosition({
           x: window.innerWidth / 2,
           y: window.innerHeight / 2,
@@ -284,7 +447,27 @@ function NodeCanvasInner() {
         createSourceNode(base64, 'upload', position)
       }
       reader.readAsDataURL(file)
-      // Reset input so same file can be selected again
+      event.target.value = ''
+    },
+    [reactFlowInstance, createSourceNode],
+  )
+
+  // Context menu "Load image..." file select
+  const handleContextFileSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (!file || !file.type.startsWith('image/')) return
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        const base64 = reader.result as string
+        const position = reactFlowInstance.screenToFlowPosition({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+        })
+        createSourceNode(base64, 'upload', position)
+      }
+      reader.readAsDataURL(file)
       event.target.value = ''
     },
     [reactFlowInstance, createSourceNode],
@@ -336,7 +519,9 @@ function NodeCanvasInner() {
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         onNodeClick={onNodeClick}
+        onNodeContextMenu={onNodeContextMenu}
         onPaneClick={onPaneClick}
+        onPaneContextMenu={onPaneContextMenu}
         onDragOver={onDragOver}
         onDrop={onDrop}
         nodeTypes={nodeTypes}
@@ -394,13 +579,20 @@ function NodeCanvasInner() {
         </div>
       )}
 
-      {/* Hidden file input */}
+      {/* Hidden file inputs */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         className="hidden"
         onChange={handleFileSelect}
+      />
+      <input
+        ref={contextFileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleContextFileSelect}
       />
 
       {/* Render Mode dropdown when dragging port to empty canvas */}
@@ -445,6 +637,16 @@ function NodeCanvasInner() {
             ))}
           </div>
         </>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenu.items}
+          onClose={closeContextMenu}
+        />
       )}
     </div>
   )

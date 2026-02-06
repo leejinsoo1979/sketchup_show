@@ -2,6 +2,8 @@ import { Maximize2 } from 'lucide-react'
 import { useUIStore, type InspectorTab } from '../../state/uiStore'
 import { useGraphStore } from '../../state/graphStore'
 import { PreviewTab } from './PreviewTab'
+import { CompareTab } from './CompareTab'
+import { DrawTab } from './DrawTab'
 import { RenderSettings } from './RenderSettings'
 import { PromptPresets } from './PromptPresets'
 
@@ -84,22 +86,8 @@ export function InspectorPanel() {
         {activeTab === 'preview' && (
           <PreviewTab selectedNode={selectedNode} />
         )}
-        {activeTab === 'compare' && (
-          <div
-            className="flex items-center justify-center"
-            style={{ minHeight: 200, color: '#555555', fontSize: 13 }}
-          >
-            Assign images with Compare A / Compare B
-          </div>
-        )}
-        {activeTab === 'draw' && (
-          <div
-            className="flex items-center justify-center"
-            style={{ minHeight: 200, color: '#555555', fontSize: 13 }}
-          >
-            {selectedNode ? 'Draw tab (coming soon)' : 'Select a node to start drawing'}
-          </div>
-        )}
+        {activeTab === 'compare' && <CompareTab />}
+        {activeTab === 'draw' && <DrawTab selectedNode={selectedNode} />}
       </div>
 
       {/* Render Settings Section */}

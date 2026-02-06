@@ -9,12 +9,16 @@ interface UIState {
   zoom: number
   pan: { x: number; y: number }
   promptText: string
+  compareANodeId: string | null
+  compareBNodeId: string | null
 
   setActiveSidebarItem: (item: SidebarItem) => void
   setActiveTab: (tab: InspectorTab) => void
   setZoom: (zoom: number) => void
   setPan: (pan: { x: number; y: number }) => void
   setPromptText: (text: string) => void
+  setCompareA: (nodeId: string | null) => void
+  setCompareB: (nodeId: string | null) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -23,10 +27,14 @@ export const useUIStore = create<UIState>((set) => ({
   zoom: 1.0,
   pan: { x: 0, y: 0 },
   promptText: '',
+  compareANodeId: null,
+  compareBNodeId: null,
 
   setActiveSidebarItem: (item) => set({ activeSidebarItem: item }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setZoom: (zoom) => set({ zoom }),
   setPan: (pan) => set({ pan }),
   setPromptText: (text) => set({ promptText: text }),
+  setCompareA: (nodeId) => set({ compareANodeId: nodeId }),
+  setCompareB: (nodeId) => set({ compareBNodeId: nodeId }),
 }))
