@@ -156,3 +156,22 @@ sketchup.regenerate(sourceBase64, prompt, negativePrompt, panelId);
 ```
 
 최대 500개 항목 저장
+
+---
+
+## Vizmaker 노드 에디터 (신규 개발)
+
+기존 플러그인에 Vizmaker 스타일의 노드 기반 AI 렌더링 에디터를 webapp/ 폴더에 추가 개발한다.
+기존 Ruby 플러그인(nano_banana_renderer/)은 그대로 유지하며, SketchUp 브릿지 역할을 한다.
+
+상세 지시는 아래 문서를 참조하라:
+
+1. **BRIEFING.md** — 프로젝트 브리핑 (최상위 지시, 두 레이어 역할 분담, 금지 사항)
+2. **docs/SPEC.md** — Vizmaker 전체 기획 문서
+3. **skills/UI_DESIGN.md** — UI 픽셀 단위 명세
+4. **skills/NODE_TYPES.md** — 노드 타입별 상세 정의
+5. **skills/PROMPT_PRESETS.md** — 프롬프트 프리셋 전체 목록
+6. **skills/PIPELINE.md** — DAG 실행 파이프라인 의사코드
+7. **skills/UI_RULES.md** — UI/UX 동작 규칙
+8. **skills/SKETCHUP.md** — SketchUp 연동 명세
+9. **INITIAL_COMMANDS.md** — 클로드 코드 최초 명령어
