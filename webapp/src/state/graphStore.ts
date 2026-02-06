@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { NodeData, NodeType, NodeParams, NodeResult, NodeStatus } from '../types/node'
+import type { NodeData, NodeType, NodeParams, NodeResult, NodeStatus, SceneMeta } from '../types/node'
 import type { EdgeData } from '../types/graph'
 import { v4 as uuid } from 'uuid'
 import { useUndoStore } from './undoStore'
@@ -21,7 +21,7 @@ interface GraphState {
   selectNode: (nodeId: string | null) => void
   clearAll: () => void
 
-  createSourceNode: (image: string, origin: 'upload' | 'paste' | 'sketchup', position: { x: number; y: number }) => string
+  createSourceNode: (image: string, origin: 'upload' | 'paste' | 'sketchup', position: { x: number; y: number }, meta?: { sceneMeta: SceneMeta; cameraLocked: boolean }) => string
   createNode: (type: NodeType, position: { x: number; y: number }) => string
   duplicateNode: (nodeId: string) => string | null
   getNode: (nodeId: string) => NodeData | undefined
@@ -138,7 +138,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     set({ nodes: [], edges: [], selectedNodeId: null })
   },
 
-  createSourceNode: (image, origin, position) => {
+  createSourceNode: (image, origin, position, meta) => {
     saveUndo()
     const id = uuid()
     const node: NodeData = {
@@ -146,7 +146,12 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       type: 'SOURCE',
       position,
       status: 'done',
-      params: { origin, image, cameraLocked: false, sceneMeta: null },
+      params: {
+        origin,
+        image,
+        cameraLocked: meta?.cameraLocked ?? false,
+        sceneMeta: meta?.sceneMeta ?? null,
+      },
       result: { image, timestamp: new Date().toISOString(), cacheKey: '' },
       cost: 0,
       version: '1.0.0',

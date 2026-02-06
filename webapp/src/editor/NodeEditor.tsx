@@ -9,8 +9,26 @@ import { useGraphStore } from '../state/graphStore'
 import { useExecutionStore } from '../state/executionStore'
 import { useCreditStore } from '../state/creditStore'
 import { useUIStore } from '../state/uiStore'
+import type { ConnectionStatus } from '../state/uiStore'
 import { useUndoStore } from '../state/undoStore'
 import { executePipeline, estimatePipelineCost } from '../engine'
+import { startBridge, stopBridge } from '../api/sketchupBridge'
+
+function statusColor(s: ConnectionStatus): string {
+  switch (s) {
+    case 'connected': return '#00c9a7'
+    case 'connecting': return '#ffaa00'
+    case 'disconnected': return '#666666'
+  }
+}
+
+function statusLabel(s: ConnectionStatus): string {
+  switch (s) {
+    case 'connected': return 'Connected'
+    case 'connecting': return 'Connecting...'
+    case 'disconnected': return 'Offline'
+  }
+}
 
 export function NodeEditor() {
   const selectedNodeId = useGraphStore((s) => s.selectedNodeId)
@@ -19,6 +37,13 @@ export function NodeEditor() {
   const executionError = useExecutionStore((s) => s.error)
   const balance = useCreditStore((s) => s.balance)
   const activeSidebarItem = useUIStore((s) => s.activeSidebarItem)
+  const sketchUpStatus = useUIStore((s) => s.sketchUpStatus)
+
+  // Start/stop SketchUp bridge polling
+  useEffect(() => {
+    startBridge()
+    return () => stopBridge()
+  }, [])
 
   // Estimate cost for the selected node's pipeline
   const estimatedCost = useMemo(() => {
@@ -98,8 +123,10 @@ export function NodeEditor() {
         </span>
         <span style={{ color: '#444444', fontSize: 12, margin: '0 8px' }}>|</span>
         <span style={{ color: '#888888', fontSize: 12 }}>
-          Server connection:{' '}
-          <span style={{ color: '#00c9a7' }}>Connected</span>
+          SketchUp:{' '}
+          <span style={{ color: statusColor(sketchUpStatus) }}>
+            {statusLabel(sketchUpStatus)}
+          </span>
         </span>
       </div>
 
