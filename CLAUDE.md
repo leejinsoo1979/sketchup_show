@@ -97,3 +97,52 @@ SketchUp 씬 → 1차 렌더링 → 로컬 보정 → 조명 변경 → 오브�
 - [ ] 낮/밤 전환 후 구조 변형 없음
 - [ ] 핫스팟 오브젝트 위치/스케일 정확도
 - [ ] 최종 재생성 후 배치 상태 유지
+
+---
+
+## ⚠️ 중요 기술 이슈 (반드시 읽을 것)
+
+### HtmlDialog 이미지 전송 크래시 문제
+
+**문제**: `execute_script()`로 큰 데이터(~1MB base64)를 한 번에 전송하면 HtmlDialog가 크래시됨
+
+**해결책 (현재 구현)**: JS-driven 청크 폴링
+1. Ruby가 이미지를 30KB 청크로 분할하여 `@pending_chunks` 배열에 저장
+2. Ruby가 `onChunkStart(sceneName, totalChunks)` 호출
+3. JS가 `sketchup.getNextChunk()` 콜백으로 청크 요청
+4. Ruby가 `onChunkData(data, isLast)` 호출하여 한 청크 전송
+5. JS가 10ms 딜레이 후 다음 청크 요청 반복
+6. 마지막 청크 수신 시 이미지 조합하여 처리
+
+**관련 코드**:
+- `main.rb`: `poll_render_complete()`, `get_next_chunk()`
+- `main_dialog.html`: `onChunkStart()`, `onChunkData()`
+
+**절대 하지 말 것**:
+- ❌ `execute_script()`로 500KB 이상 데이터 한 번에 전송
+- ❌ Thread 내에서 직접 `execute_script()` 호출 (UI.start_timer 사용)
+
+### 2차 렌더링 (regenerate) 필수 파라미터
+
+**문제**: 2차 렌더링 호출 시 `negative_prompt` 파라미터 누락하면 작동 안 함
+
+**해결책**: JS에서 `sketchup.regenerate()` 호출 시 4개 파라미터 필수
+```javascript
+sketchup.regenerate(sourceBase64, prompt, negativePrompt, panelId);
+```
+
+### SketchUp 플러그인 배포 경로
+
+```
+~/Library/Application Support/SketchUp 2022/SketchUp/Plugins/nano_banana_renderer/
+```
+
+수정 후 반드시 이 경로로 복사해야 SketchUp에서 반영됨
+
+### 히스토리 저장 위치
+
+```
+~/.sketchupshow/history.json
+```
+
+최대 500개 항목 저장
