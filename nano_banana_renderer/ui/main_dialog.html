@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SketchupShow</title>
+  <title>NanoBanana Renderer</title>
   <style>
     * {
       margin: 0;
@@ -51,7 +51,7 @@
     }
 
     .app-loader-logo span {
-      color: #0066ff;
+      color: #ffe033;
     }
 
     .app-loader-spinner {
@@ -2429,336 +2429,12 @@
       border-color: #ff3b30;
       color: #ff3b30;
     }
-
-    /* ========================================
-       히스토리 패널 스타일
-       ======================================== */
-    .history-panel {
-      display: none;
-      flex-direction: column;
-      flex: 1;
-      background: #0a0a0a;
-      overflow: hidden;
-    }
-
-    .history-panel.active {
-      display: flex;
-    }
-
-    .history-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid #2a2a2a;
-      background: #111;
-    }
-
-    .history-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .history-subtitle {
-      font-size: 11px;
-      color: #888;
-      margin-top: 2px;
-    }
-
-    .history-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .history-btn {
-      padding: 6px 12px;
-      border: 1px solid #333;
-      border-radius: 6px;
-      background: #1a1a1a;
-      color: #ccc;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .history-btn:hover {
-      background: #252525;
-      border-color: #444;
-    }
-
-    .history-btn.danger:hover {
-      background: #3a1a1a;
-      border-color: #ff3b30;
-      color: #ff3b30;
-    }
-
-    .history-gallery {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-    }
-
-    .history-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: #666;
-      font-size: 14px;
-    }
-
-    .history-empty svg {
-      width: 64px;
-      height: 64px;
-      stroke: #444;
-      margin-bottom: 16px;
-    }
-
-    .history-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 20px;
-    }
-
-    .history-card {
-      background: #151515;
-      border: 1px solid #2a2a2a;
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .history-card:hover {
-      border-color: #0066ff;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 102, 255, 0.15);
-    }
-
-    .history-card-image {
-      width: 100%;
-      aspect-ratio: 16/9;
-      object-fit: cover;
-      background: #0a0a0a;
-    }
-
-    .history-card-info {
-      padding: 14px 16px;
-    }
-
-    .history-card-scene {
-      font-size: 14px;
-      font-weight: 600;
-      color: #fff;
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .history-card-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 10px;
-      color: #888;
-    }
-
-    .history-card-time {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .history-card-time svg {
-      width: 12px;
-      height: 12px;
-    }
-
-    .history-card-model {
-      padding: 2px 6px;
-      background: #252525;
-      border-radius: 4px;
-      font-size: 9px;
-      color: #aaa;
-    }
-
-    /* 히스토리 상세 모달 */
-    .history-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .history-modal.active {
-      display: flex;
-    }
-
-    .history-modal-content {
-      width: 95%;
-      max-width: 1200px;
-      height: 85vh;
-      background: #151515;
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .history-modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid #2a2a2a;
-    }
-
-    .history-modal-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .history-modal-close {
-      width: 32px;
-      height: 32px;
-      border: none;
-      border-radius: 6px;
-      background: #252525;
-      color: #888;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-
-    .history-modal-close:hover {
-      background: #333;
-      color: #fff;
-    }
-
-    .history-modal-body {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    .history-modal-image-section {
-      flex: 1;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #0a0a0a;
-    }
-
-    .history-modal-image {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 8px;
-    }
-
-    .history-modal-details {
-      width: 320px;
-      padding: 20px;
-      border-left: 1px solid #2a2a2a;
-      overflow-y: auto;
-    }
-
-    .history-detail-section {
-      margin-bottom: 20px;
-    }
-
-    .history-detail-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: #666;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .history-detail-value {
-      font-size: 13px;
-      color: #ddd;
-      line-height: 1.5;
-    }
-
-    .history-detail-prompt {
-      font-size: 12px;
-      color: #aaa;
-      line-height: 1.6;
-      background: #1a1a1a;
-      padding: 12px;
-      border-radius: 8px;
-      max-height: 150px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .history-detail-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .history-detail-tag {
-      padding: 4px 10px;
-      background: #252525;
-      border-radius: 4px;
-      font-size: 11px;
-      color: #aaa;
-    }
-
-    .history-modal-actions {
-      display: flex;
-      gap: 8px;
-      padding: 16px 20px;
-      border-top: 1px solid #2a2a2a;
-    }
-
-    .history-modal-btn {
-      flex: 1;
-      padding: 10px 16px;
-      border: 1px solid #333;
-      border-radius: 8px;
-      background: #1a1a1a;
-      color: #ccc;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .history-modal-btn:hover {
-      background: #252525;
-    }
-
-    .history-modal-btn.primary {
-      background: #0066ff;
-      border-color: #0066ff;
-      color: #fff;
-    }
-
-    .history-modal-btn.primary:hover {
-      background: #0055dd;
-    }
   </style>
 </head>
 <body>
   <!-- 초기 로딩 화면 -->
   <div class="app-loader" id="app-loader">
-    <div class="app-loader-logo">Sketchup<span>Show</span></div>
+    <div class="app-loader-logo">Nano<span>Banana</span></div>
     <div class="app-loader-spinner"></div>
     <div class="app-loader-text">Loading renderer...</div>
   </div>
@@ -2880,7 +2556,7 @@
   <!-- 좌측 사이드바 -->
   <aside class="sidebar" id="render-sidebar">
     <div class="sidebar-header">
-      <div class="logo">Sketchup<span style="color:#0066ff">Show</span></div>
+      <div class="logo">NanoBanana</div>
     </div>
 
     <div class="sidebar-content">
@@ -2913,22 +2589,22 @@
         <span class="section-label">Model</span>
         <div class="custom-dropdown" id="model-dropdown">
           <div class="dropdown-selected" id="model-dropdown-selected">
-            <span id="model-selected-text">Gemini 3 Pro (추천)</span>
+            <span id="model-selected-text">Flash 2.0 (추천)</span>
             <span class="dropdown-arrow"></span>
           </div>
           <div class="dropdown-menu" id="model-dropdown-menu">
             <div class="dropdown-group-label">Gemini</div>
-            <div class="dropdown-item selected" data-value="gemini-3-pro-image" data-engine="gemini">
-              Gemini 3 Pro (추천)
-              <div class="dropdown-item-desc">1~2분, 최고품질</div>
+            <div class="dropdown-item selected" data-value="gemini-2.0-flash-exp" data-engine="gemini">
+              Flash 2.0 (추천)
+              <div class="dropdown-item-desc">20~40초, 고속</div>
             </div>
             <div class="dropdown-item" data-value="gemini-2.5-flash-image" data-engine="gemini">
               Flash 2.5
               <div class="dropdown-item-desc">30~60초</div>
             </div>
-            <div class="dropdown-item" data-value="gemini-2.0-flash-exp" data-engine="gemini">
-              Flash 2.0
-              <div class="dropdown-item-desc">20~40초, 고속</div>
+            <div class="dropdown-item" data-value="gemini-3-pro-image" data-engine="gemini">
+              Gemini 3 Pro
+              <div class="dropdown-item-desc">1~2분, 최고품질</div>
             </div>
             <div class="dropdown-group-label">Imagen</div>
             <div class="dropdown-item" data-value="imagen-4.0-fast-generate-001" data-engine="gemini">
@@ -3239,78 +2915,6 @@
     </div>
   </aside>
 
-  <!-- 히스토리 패널 -->
-  <main class="main-area history-panel" id="history-main-area">
-    <div class="history-header">
-      <div>
-        <div class="history-title">Render History</div>
-        <div class="history-subtitle">All generated images are saved here</div>
-      </div>
-      <div class="history-actions">
-        <button class="history-btn" id="btn-history-export">Export All</button>
-        <button class="history-btn danger" id="btn-history-clear">Clear All</button>
-      </div>
-    </div>
-    <div class="history-gallery" id="history-gallery">
-      <div class="history-empty" id="history-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        <span>No render history yet</span>
-        <span style="font-size: 12px; margin-top: 4px;">Generated images will appear here</span>
-      </div>
-      <div class="history-grid" id="history-grid" style="display: none;"></div>
-    </div>
-  </main>
-
-  <!-- 히스토리 상세 모달 -->
-  <div class="history-modal" id="history-modal">
-    <div class="history-modal-content">
-      <div class="history-modal-header">
-        <div class="history-modal-title" id="history-modal-title">Render Details</div>
-        <button class="history-modal-close" id="history-modal-close">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <div class="history-modal-body">
-        <div class="history-modal-image-section">
-          <img class="history-modal-image" id="history-modal-image" src="" alt="Rendered image">
-        </div>
-        <div class="history-modal-details">
-          <div class="history-detail-section">
-            <div class="history-detail-label">Scene</div>
-            <div class="history-detail-value" id="history-modal-scene">-</div>
-          </div>
-          <div class="history-detail-section">
-            <div class="history-detail-label">Generated</div>
-            <div class="history-detail-value" id="history-modal-time">-</div>
-          </div>
-          <div class="history-detail-section">
-            <div class="history-detail-label">Settings</div>
-            <div class="history-detail-tags" id="history-modal-tags"></div>
-          </div>
-          <div class="history-detail-section">
-            <div class="history-detail-label">Prompt</div>
-            <div class="history-detail-prompt" id="history-modal-prompt">-</div>
-          </div>
-          <div class="history-detail-section">
-            <div class="history-detail-label">Negative Prompt</div>
-            <div class="history-detail-prompt" id="history-modal-negative">-</div>
-          </div>
-        </div>
-      </div>
-      <div class="history-modal-actions">
-        <button class="history-modal-btn" id="history-modal-download">Download</button>
-        <button class="history-modal-btn" id="history-modal-delete">Delete</button>
-        <button class="history-modal-btn primary" id="history-modal-reuse">Use This Image</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Mix 메인 작업 영역 -->
   <main class="mix-main-area" id="mix-main-area">
     <div class="mix-toolbar">
@@ -3494,7 +3098,7 @@
             <div class="prompt-input-wrapper">
               <textarea id="prompt-source" placeholder="Convert 후 직접 입력하거나 Auto 버튼으로 자동 생성하세요." disabled></textarea>
               <div class="prompt-btn-group">
-                <button class="prompt-attach-btn" id="btn-attach-source" title="레퍼런스 이미지 첨부">
+                <button class="prompt-attach-btn" id="btn-attach-source" title="이미지 첨부" disabled>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -3584,7 +3188,7 @@
             <div class="prompt-input-wrapper">
               <textarea id="prompt-result" placeholder="렌더링 완료 후 2차 생성용 프롬프트를 입력하세요." disabled></textarea>
               <div class="prompt-btn-group">
-                <button class="prompt-attach-btn" id="btn-attach-result" title="외부 이미지 불러오기">
+                <button class="prompt-attach-btn" id="btn-attach-result" title="이미지 첨부" disabled>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -3628,264 +3232,9 @@
       resultPanels: [{ id: 1, image: null }],  // 결과 패널 목록
       nextResultId: 2,
       currentScene: null,  // 현재 활성 씬 이름
-      history: [],  // 렌더링 히스토리
+      history: [],  // 히스토리 배열
       nextHistoryId: 1
     };
-
-    // ========================================
-    // 히스토리 관리 함수
-    // ========================================
-
-    // 히스토리에 항목 추가
-    function addToHistory(imageBase64, sceneName, prompt, negativePrompt, model, timePreset, lightSwitch) {
-      const historyItem = {
-        id: state.nextHistoryId++,
-        image: imageBase64,
-        scene: sceneName || 'Unknown',
-        prompt: prompt || '',
-        negativePrompt: negativePrompt || '',
-        model: model || 'gemini-3-pro',
-        timePreset: timePreset || 'day',
-        lightSwitch: lightSwitch || 'on',
-        timestamp: new Date().toISOString(),
-        displayTime: formatTimestamp(new Date())
-      };
-
-      state.history.unshift(historyItem);  // 최신 항목을 맨 앞에
-
-      // 로컬 스토리지에 저장 (최대 50개)
-      if (state.history.length > 50) {
-        state.history = state.history.slice(0, 50);
-      }
-      saveHistoryToStorage();
-
-      // UI 업데이트
-      renderHistoryGallery();
-
-      console.log('[SketchupShow] 히스토리 추가:', sceneName, '총', state.history.length, '개');
-    }
-
-    // 타임스탬프 포맷
-    function formatTimestamp(date) {
-      const now = new Date();
-      const diff = now - date;
-      const minutes = Math.floor(diff / 60000);
-      const hours = Math.floor(diff / 3600000);
-      const days = Math.floor(diff / 86400000);
-
-      if (minutes < 1) return 'Just now';
-      if (minutes < 60) return `${minutes}m ago`;
-      if (hours < 24) return `${hours}h ago`;
-      if (days < 7) return `${days}d ago`;
-
-      return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-    }
-
-    // 히스토리 갤러리 렌더링
-    function renderHistoryGallery() {
-      const emptyEl = document.getElementById('history-empty');
-      const gridEl = document.getElementById('history-grid');
-
-      if (state.history.length === 0) {
-        emptyEl.style.display = 'flex';
-        gridEl.style.display = 'none';
-        return;
-      }
-
-      emptyEl.style.display = 'none';
-      gridEl.style.display = 'grid';
-
-      gridEl.innerHTML = state.history.map(item => `
-        <div class="history-card" data-history-id="${item.id}">
-          <img class="history-card-image" src="data:image/png;base64,${item.image}" alt="Render">
-          <div class="history-card-info">
-            <div class="history-card-scene">${escapeHtml(item.scene)}</div>
-            <div class="history-card-meta">
-              <span class="history-card-time">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                ${item.displayTime}
-              </span>
-              <span class="history-card-model">${getModelDisplayName(item.model)}</span>
-            </div>
-          </div>
-        </div>
-      `).join('');
-
-      // 카드 클릭 이벤트
-      gridEl.querySelectorAll('.history-card').forEach(card => {
-        card.addEventListener('click', () => {
-          const id = parseInt(card.dataset.historyId);
-          openHistoryModal(id);
-        });
-      });
-    }
-
-    // 모델 표시명
-    function getModelDisplayName(model) {
-      const names = {
-        'gemini-3-pro-image': 'Gemini 3 Pro',
-        'gemini-2.5-flash-image': 'Gemini 2.5 Flash',
-        'gemini-2.0-flash-exp': 'Gemini 2.0 Flash',
-        'photorealistic-fx': 'ControlNet',
-        'sdxl-controlnet': 'SDXL',
-        'flux-canny': 'Flux Canny'
-      };
-      return names[model] || model;
-    }
-
-    // HTML 이스케이프
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    // 히스토리 모달 열기
-    function openHistoryModal(id) {
-      const item = state.history.find(h => h.id === id);
-      if (!item) return;
-
-      document.getElementById('history-modal-title').textContent = item.scene;
-      document.getElementById('history-modal-image').src = 'data:image/png;base64,' + item.image;
-      document.getElementById('history-modal-scene').textContent = item.scene;
-      document.getElementById('history-modal-time').textContent = new Date(item.timestamp).toLocaleString('ko-KR');
-      document.getElementById('history-modal-prompt').textContent = item.prompt || '(No prompt)';
-      document.getElementById('history-modal-negative').textContent = item.negativePrompt || '(No negative prompt)';
-
-      // 태그
-      const tagsEl = document.getElementById('history-modal-tags');
-      tagsEl.innerHTML = `
-        <span class="history-detail-tag">${getModelDisplayName(item.model)}</span>
-        <span class="history-detail-tag">${item.timePreset === 'day' ? 'Day' : item.timePreset === 'evening' ? 'Evening' : 'Night'}</span>
-        <span class="history-detail-tag">Light ${item.lightSwitch === 'on' ? 'ON' : 'OFF'}</span>
-      `;
-
-      // 모달 데이터 저장
-      document.getElementById('history-modal').dataset.currentId = id;
-      document.getElementById('history-modal').classList.add('active');
-    }
-
-    // 히스토리 모달 닫기
-    function closeHistoryModal() {
-      document.getElementById('history-modal').classList.remove('active');
-    }
-
-    // 히스토리 항목 삭제
-    function deleteHistoryItem(id) {
-      state.history = state.history.filter(h => h.id !== id);
-      saveHistoryToStorage();
-      renderHistoryGallery();
-      closeHistoryModal();
-    }
-
-    // 히스토리 전체 삭제
-    function clearAllHistory() {
-      if (!confirm('Are you sure you want to clear all history?')) return;
-      state.history = [];
-      saveHistoryToStorage();
-      renderHistoryGallery();
-    }
-
-    // 히스토리 이미지 다운로드
-    function downloadHistoryImage(id) {
-      const item = state.history.find(h => h.id === id);
-      if (!item) return;
-
-      const link = document.createElement('a');
-      link.href = 'data:image/png;base64,' + item.image;
-      link.download = `${item.scene}_${new Date(item.timestamp).getTime()}.png`;
-      link.click();
-    }
-
-    // 히스토리 이미지를 현재 작업에 사용
-    function reuseHistoryImage(id) {
-      const item = state.history.find(h => h.id === id);
-      if (!item) return;
-
-      // 렌더 모드로 전환
-      switchToRenderMode();
-
-      // Result 이미지로 설정
-      state.renderImage = item.image;
-      const panelData = state.resultPanels.find(p => p.id === 1);
-      if (panelData) panelData.image = item.image;
-
-      const renderImage = document.getElementById('render-image');
-      const renderEmpty = document.getElementById('render-empty');
-
-      renderImage.src = 'data:image/png;base64,' + item.image;
-      renderImage.style.display = 'block';
-      renderEmpty.style.display = 'none';
-
-      // 프롬프트 복원
-      document.getElementById('prompt-source').value = item.prompt || '';
-      document.getElementById('prompt-source-negative').value = item.negativePrompt || '';
-
-      closeHistoryModal();
-      setStatus('Image loaded from history');
-    }
-
-    // 히스토리 저장 (Ruby 파일 + localStorage)
-    function saveHistoryToStorage() {
-      try {
-        // 최근 500개만 저장
-        const toSave = state.history.slice(0, 500);
-
-        // Ruby 파일에 저장 (영구 저장)
-        callRuby('save_history', JSON.stringify(toSave));
-
-        // localStorage에도 백업
-        localStorage.setItem('sketchupshow_history', JSON.stringify(toSave.slice(0, 20)));
-      } catch (e) {
-        console.warn('[SketchupShow] 히스토리 저장 실패:', e.message);
-      }
-    }
-
-    // 히스토리 로드 (Ruby 파일에서)
-    function loadHistoryFromStorage() {
-      // Ruby에서 파일로 저장된 히스토리 로드
-      callRuby('load_history');
-      // 결과는 onHistoryLoaded 콜백으로 받음
-    }
-
-    // 히스토리 패널로 전환
-    function switchToHistoryMode() {
-      currentMode = 'history';
-
-      // 사이드바 숨기기
-      document.getElementById('render-sidebar').style.display = 'none';
-
-      // 다른 패널 숨기기
-      document.getElementById('render-main-area').style.display = 'none';
-      document.getElementById('mix-main-area').classList.remove('active');
-      document.getElementById('mix-mode-panel').classList.remove('active');
-      document.getElementById('mix-options-panel').classList.remove('active');
-      document.getElementById('settings-main-area').style.display = 'none';
-
-      // 히스토리 패널 표시
-      document.getElementById('history-main-area').classList.add('active');
-
-      document.querySelectorAll('.icon-menu-item').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('menu-history').classList.add('active');
-
-      // 타임스탬프 갱신
-      state.history.forEach(item => {
-        item.displayTime = formatTimestamp(new Date(item.timestamp));
-      });
-      renderHistoryGallery();
-    }
-
-    // 렌더 모드로 복귀 (히스토리에서)
-    function switchToRenderModeFromHistory() {
-      document.getElementById('history-main-area').classList.remove('active');
-      document.getElementById('render-main-area').style.display = 'flex';
-
-      document.querySelectorAll('.icon-menu-item').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('menu-render').classList.add('active');
-    }
 
     // 씬별 상태 저장소
     const sceneStates = new Map();
@@ -4081,9 +3430,6 @@
       // Engine selection
       setEngine: (engine) => callRuby('set_engine', engine),
       getEngine: () => callRuby('get_engine'),
-      // Reference image (file attachment)
-      setReferenceImage: (base64) => callRuby('set_reference_image', base64),
-      clearReferenceImage: () => callRuby('clear_reference_image'),
       // Model selection
       saveModel: (model) => callRuby('save_model', model),
       loadModel: () => callRuby('load_model'),
@@ -4327,123 +3673,17 @@
     // 렌더링 중인 씬 목록 관리
     const renderingScenes = new Map(); // sceneName -> { startTime }
 
-    // ========================================
-    // 폴링 시스템 (execute_script 크래시 방지)
-    // ========================================
-    let pollInterval = null;
-
-    function startRenderPolling() {
-      if (pollInterval) return;
-      console.log('[NanoBanana] 폴링 시작');
-      pollInterval = setInterval(() => {
-        callRuby('poll_render_complete');
-      }, 500);
-    }
-
-    function stopRenderPolling() {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
-        console.log('[NanoBanana] 폴링 중지');
-      }
-    }
-
-    // Ruby 폴링 응답 처리 (null인 경우)
-    function onPollResult(sceneName) {
-      if (!sceneName) {
-        if (renderingScenes.size === 0 && !state.isRegenerating) {
-          stopRenderPolling();
-        }
-        return;
-      }
-    }
-
-    // 청크 전송 완료 (Ruby 타이머에서 자동 호출)
-    function onChunkComplete(fullImage, sceneName) {
-      console.log('[NanoBanana] 청크 수신 완료:', sceneName, fullImage?.length, 'bytes');
-
-      if (!fullImage) return;
-
-      // Ruby에 이미지 파일 저장 요청 후 file:// URL로 로드
-      sketchup.saveImageToFile(fullImage, sceneName);
-    }
-
-    // 이미지 파일 저장 완료 콜백 (Ruby에서 호출)
-    function onImageFileSaved(filePath, sceneName) {
-      console.log('[NanoBanana] 이미지 파일 저장됨:', filePath);
-
-      // file:// URL로 이미지 로드
-      const fileUrl = 'file://' + filePath;
-
-      if (sceneName.startsWith('regenerate_')) {
-        const panelId = parseInt(sceneName.replace('regenerate_', ''));
-        onRegenerateCompleteWithUrl(fileUrl, panelId, sceneName);
-      } else {
-        onRenderCompleteWithUrl(fileUrl, sceneName);
-      }
-    }
-
-    // URL로 렌더 완료 처리
-    function onRenderCompleteWithUrl(imageUrl, sceneName) {
-      // base64 대신 URL 저장
-      state.renderImageUrl = imageUrl;
-
-      el.renderImage.src = imageUrl;
-      el.renderImage.style.display = 'block';
-      el.renderEmpty.style.display = 'none';
-      el.loading.classList.add('hidden');
-      el.btnRender.disabled = false;
-      el.btnEdit.disabled = false;
-      el.btnSave.disabled = false;
-
-      el.promptResult.disabled = false;
-      el.promptResult.placeholder = '2차 생성용 프롬프트를 입력하세요.';
-      el.promptResultNegative.disabled = false;
-      el.btnAutoPromptResult.disabled = false;
-      el.btnRegenerateResult.disabled = false;
-
-      if (sceneName) {
-        renderingScenes.delete(sceneName);
-        updateSceneTabStatus(sceneName, 'complete');
-        setTimeout(() => updateSceneTabStatus(sceneName, 'normal'), 3000);
-      }
-
-      state.isRendering = renderingScenes.size > 0;
-      setStatus('Complete: ' + (sceneName || 'Unknown'));
-
-      // 히스토리는 나중에 base64로 변환 필요 (일단 스킵)
-    }
-
-    // URL로 재생성 완료 처리
-    function onRegenerateCompleteWithUrl(imageUrl, panelId, sceneName) {
-      el.renderImage.src = imageUrl;
-      el.renderImage.style.display = 'block';
-      el.loading.classList.add('hidden');
-      state.isRegenerating = false;
-      el.btnRegenerateResult.disabled = false;
-
-      setStatus('Regenerate Complete');
-    }
-
-    // 히스토리 로드 콜백
-    function onHistoryLoaded(historyArray) {
-      console.log('[NanoBanana] 히스토리 로드:', historyArray.length, '개');
-      state.history = historyArray || [];
-      state.nextHistoryId = state.history.length > 0 ? Math.max(...state.history.map(h => h.id || 0)) + 1 : 1;
-      renderHistoryGallery();
-    }
-
     function onRenderStart(sceneName) {
       state.isRendering = true;
       el.loading.classList.remove('hidden');
+      // Render 버튼은 활성화 상태 유지 (연속 렌더링 가능)
+      // el.btnRender.disabled = true;
 
+      // 해당 씬 탭에 로딩 표시
       if (sceneName) {
         renderingScenes.set(sceneName, { startTime: Date.now() });
         updateSceneTabStatus(sceneName, 'rendering');
       }
-
-      // 폴링 시작
-      startRenderPolling();
 
       setStatus('Rendering: ' + (sceneName || 'Unknown'));
     }
@@ -4481,18 +3721,70 @@
       // 다른 씬이 아직 렌더링 중인지 확인
       state.isRendering = renderingScenes.size > 0;
 
-      // ★ 히스토리에 추가
-      addToHistory(
-        base64,
-        sceneName || 'Unknown',
-        el.promptSource?.value || '',
-        el.promptSourceNegative?.value || '',
-        currentModelValue,
-        state.timePreset,
-        state.lightSwitch
-      );
+      // 히스토리에 추가
+      addToHistory(base64, sceneName || 'Unknown');
 
       setStatus('Complete: ' + (sceneName || 'Unknown'));
+    }
+
+    // 히스토리에 추가
+    function addToHistory(image, sceneName) {
+      const historyItem = {
+        id: state.nextHistoryId++,
+        image: image,
+        scene: sceneName,
+        timestamp: Date.now(),
+        prompt: el.promptSource?.value || '',
+        negativePrompt: el.promptSourceNegative?.value || ''
+      };
+
+      state.history.unshift(historyItem);
+
+      // 최대 500개 유지
+      if (state.history.length > 500) {
+        state.history = state.history.slice(0, 500);
+      }
+
+      // 파일에 저장
+      sketchup.save_history(JSON.stringify(state.history));
+
+      // 갤러리 업데이트
+      renderHistoryGallery();
+    }
+
+    // 히스토리 갤러리 렌더링
+    function renderHistoryGallery() {
+      const gallery = document.getElementById('history-gallery');
+      if (!gallery) return;
+
+      gallery.innerHTML = '';
+
+      state.history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `<img src="data:image/png;base64,${item.image}" alt="${item.scene}">`;
+        div.onclick = () => loadHistoryItem(item);
+        gallery.appendChild(div);
+      });
+    }
+
+    // 히스토리 아이템 로드
+    function loadHistoryItem(item) {
+      state.renderImage = item.image;
+      el.renderImage.src = 'data:image/png;base64,' + item.image;
+      el.renderImage.style.display = 'block';
+      el.renderEmpty.style.display = 'none';
+
+      if (item.prompt) el.promptSource.value = item.prompt;
+      if (item.negativePrompt) el.promptSourceNegative.value = item.negativePrompt;
+    }
+
+    // 히스토리 로드 콜백 (Ruby에서 호출)
+    function onHistoryLoaded(historyArray) {
+      console.log('[NanoBanana] 히스토리 로드:', historyArray.length, '개');
+      state.history = historyArray || [];
+      state.nextHistoryId = state.history.length > 0 ? Math.max(...state.history.map(h => h.id || 0)) + 1 : 1;
+      renderHistoryGallery();
     }
 
     function onRenderError(msg, sceneName) {
@@ -4778,137 +4070,17 @@
     // 초기 선택: source
     selectPanel('source');
 
-    // 패널별 타이머 저장소
-    const panelTimers = {};
-
-    // 패널 타이머 시작
-    function startPanelTimer(panelId) {
-      const startTime = Date.now();
-      const loadingTextEl = document.getElementById(`loading-text-${panelId}`);
-
-      panelTimers[panelId] = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const mins = Math.floor(elapsed / 60);
-        const secs = elapsed % 60;
-        const timeStr = mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
-
-        if (loadingTextEl) {
-          loadingTextEl.textContent = `Generating... ${timeStr}`;
-        }
-      }, 1000);
-    }
-
-    // 패널 타이머 중지
-    function stopPanelTimer(panelId) {
-      if (panelTimers[panelId]) {
-        clearInterval(panelTimers[panelId]);
-        delete panelTimers[panelId];
-      }
-    }
-
-    // RESULT 패널 2차 생성 버튼 - 새 패널 추가
+    // RESULT 패널 2차 생성 버튼
     el.btnRegenerateResult.addEventListener('click', () => {
       if (!state.renderImage) return;
-
-      // ★ 새 결과 패널 추가
-      const newPanelId = addResultPanel(state.renderImage, 1);
-
-      // 프롬프트
       const prompt = el.promptResult.value || el.promptSource.value || '';
       const negativePrompt = el.promptResultNegative.value || el.promptSourceNegative.value || '';
-
-      // 로딩 표시
-      const loadingEl = document.getElementById(`loading-${newPanelId}`);
-      if (loadingEl) loadingEl.classList.remove('hidden');
-
-      // ★ 타이머 시작
-      startPanelTimer(newPanelId);
-
-      // ★ 폴링 시작
-      state.isRegenerating = true;
-      startRenderPolling();
-
-      setStatus(`Result ${newPanelId} 생성중...`);
-
-      // 2차 생성 요청 (이전 결과 이미지를 소스로, 새 패널 ID 전달)
-      sketchup.regenerate(state.renderImage, prompt, negativePrompt, newPanelId);
+      sketchup.startRender(state.timePreset, state.lightSwitch, prompt, negativePrompt);
     });
 
     // RESULT Auto 버튼 - 바로 생성 (현재 라이팅 설정 전달)
     el.btnAutoPromptResult.addEventListener('click', () => {
       sketchup.generateAutoPrompt('', state.timePreset, state.lightSwitch);
-    });
-
-    // ========================================
-    // 파일 첨부 기능
-    // ========================================
-
-    // 숨겨진 file input 생성
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    fileInput.style.display = 'none';
-    document.body.appendChild(fileInput);
-
-    let currentAttachTarget = null;  // 'source' 또는 'result'
-
-    // SOURCE 첨부 버튼
-    el.btnAttachSource.addEventListener('click', () => {
-      currentAttachTarget = 'source';
-      fileInput.click();
-    });
-
-    // RESULT 첨부 버튼
-    document.getElementById('btn-attach-result').addEventListener('click', () => {
-      currentAttachTarget = 'result';
-      fileInput.click();
-    });
-
-    // 파일 선택 처리
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target.result.split(',')[1];  // data:image/... 제거
-
-        if (currentAttachTarget === 'source') {
-          // SOURCE 패널에 이미지 설정 (레퍼런스로 사용)
-          state.referenceImage = base64;
-          setStatus('Reference image attached');
-
-          // 시각적 표시 (버튼 색상 변경)
-          el.btnAttachSource.style.background = '#0066ff';
-          el.btnAttachSource.style.color = '#fff';
-          el.btnAttachSource.title = 'Reference image attached (click to change)';
-
-          // Ruby에 레퍼런스 이미지 전달
-          sketchup.setReferenceImage(base64);
-
-        } else if (currentAttachTarget === 'result') {
-          // RESULT 패널에 이미지 로드 (2차 생성 소스로 사용)
-          state.renderImage = base64;
-          const panelData = state.resultPanels.find(p => p.id === 1);
-          if (panelData) panelData.image = base64;
-
-          el.renderImage.src = 'data:image/png;base64,' + base64;
-          el.renderImage.style.display = 'block';
-          el.renderEmpty.style.display = 'none';
-
-          // 버튼 활성화
-          el.btnEdit.disabled = false;
-          el.btnSave.disabled = false;
-          el.promptResult.disabled = false;
-          el.btnRegenerateResult.disabled = false;
-
-          setStatus('Image loaded for refinement');
-        }
-      };
-      reader.readAsDataURL(file);
-
-      // 같은 파일 다시 선택 가능하도록 초기화
-      fileInput.value = '';
     });
 
     document.querySelectorAll('#time-group .seg-btn').forEach(btn => {
@@ -5429,7 +4601,7 @@
             break;
           case 'menu-history':
             // 히스토리 패널
-            switchToHistoryMode();
+            switchToRenderMode();
             break;
           case 'menu-layers':
             // 레이어 관리
@@ -5451,6 +4623,7 @@
     let currentMode = 'render';
 
     function switchToRenderMode() {
+      if (currentMode === 'render') return;
       currentMode = 'render';
 
       // Render 모드 UI 표시
@@ -5461,13 +4634,6 @@
       document.getElementById('mix-mode-panel').classList.remove('active');
       document.getElementById('mix-main-area').classList.remove('active');
       document.getElementById('mix-options-panel').classList.remove('active');
-
-      // History 패널 숨김
-      document.getElementById('history-main-area').classList.remove('active');
-
-      // 메뉴 아이콘 업데이트
-      document.querySelectorAll('.icon-menu-item').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('menu-render').classList.add('active');
 
       setStatus('Render Mode');
     }
@@ -5596,10 +4762,6 @@
       const loadingEl = document.getElementById(`loading-${newPanelId}`);
       if (loadingEl) loadingEl.classList.remove('hidden');
 
-      // ★ 폴링 시작
-      state.isRegenerating = true;
-      startRenderPolling();
-
       // Ruby에 2차 생성 요청 (이전 결과 이미지를 소스로)
       setStatus(`Result ${newPanelId} 생성중...`);
       sketchup.regenerate(panelData.image, prompt, newPanelId);
@@ -5607,12 +4769,6 @@
 
     // 2차 생성 완료 콜백 (Ruby에서 호출)
     function onRegenerateComplete(base64, panelId) {
-      // ★ 타이머 중지
-      stopPanelTimer(panelId);
-
-      // ★ 상태 해제
-      state.isRegenerating = false;
-
       const panelData = state.resultPanels.find(p => p.id === panelId);
       if (panelData) panelData.image = base64;
 
@@ -5628,25 +4784,11 @@
       if (emptyEl) emptyEl.style.display = 'none';
       if (loadingEl) loadingEl.classList.add('hidden');
 
-      // ★ 히스토리에 추가
-      addToHistory(
-        base64,
-        `Result ${panelId}`,
-        el.promptResult?.value || el.promptSource?.value || '',
-        el.promptResultNegative?.value || el.promptSourceNegative?.value || '',
-        currentModelValue,
-        state.timePreset,
-        state.lightSwitch
-      );
-
       setStatus(`Result ${panelId} 완료`);
     }
 
     // 2차 생성 에러 콜백 (Ruby에서 호출)
     function onRegenerateError(msg, panelId) {
-      // ★ 타이머 중지
-      stopPanelTimer(panelId);
-
       const loadingEl = document.getElementById(`loading-${panelId}`);
       if (loadingEl) loadingEl.classList.add('hidden');
 
@@ -6281,7 +5423,7 @@
     document.getElementById('mix-material-description').addEventListener('input', updateMixApplyButton);
 
     // 커스텀 드롭다운 - 모델 선택
-    let currentModelValue = 'gemini-3-pro-image';
+    let currentModelValue = 'gemini-2.0-flash-exp';
     const modelDropdown = document.getElementById('model-dropdown');
     const modelDropdownSelected = document.getElementById('model-dropdown-selected');
     const modelDropdownMenu = document.getElementById('model-dropdown-menu');
@@ -6349,40 +5491,7 @@
     sketchup.checkApiStatus();
     sketchup.getScenes();
     sketchup.loadModel();
-
-    // 히스토리 로드
-    loadHistoryFromStorage();
-
-    // 히스토리 이벤트 바인딩
-    document.getElementById('btn-history-clear').addEventListener('click', clearAllHistory);
-    document.getElementById('btn-history-export').addEventListener('click', () => {
-      // 모든 이미지 다운로드
-      state.history.forEach((item, index) => {
-        setTimeout(() => downloadHistoryImage(item.id), index * 500);
-      });
-    });
-
-    document.getElementById('history-modal-close').addEventListener('click', closeHistoryModal);
-    document.getElementById('history-modal').addEventListener('click', (e) => {
-      if (e.target.id === 'history-modal') closeHistoryModal();
-    });
-
-    document.getElementById('history-modal-download').addEventListener('click', () => {
-      const id = parseInt(document.getElementById('history-modal').dataset.currentId);
-      downloadHistoryImage(id);
-    });
-
-    document.getElementById('history-modal-delete').addEventListener('click', () => {
-      const id = parseInt(document.getElementById('history-modal').dataset.currentId);
-      if (confirm('Delete this image from history?')) {
-        deleteHistoryItem(id);
-      }
-    });
-
-    document.getElementById('history-modal-reuse').addEventListener('click', () => {
-      const id = parseInt(document.getElementById('history-modal').dataset.currentId);
-      reuseHistoryImage(id);
-    });
+    sketchup.loadHistory();  // 히스토리 로드
 
     // 로딩 화면 숨기기
     setTimeout(function() {
