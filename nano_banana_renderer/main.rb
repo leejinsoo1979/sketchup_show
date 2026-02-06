@@ -2925,32 +2925,44 @@ CRITICAL RULES:
 
         puts "[SketchupShow] 청크 준비 완료: #{@pending_chunks.length}개"
 
-        # 첫 번째 청크 전송 시작 신호
         safe_scene = scene_name.to_s.gsub("'", "\\\\'")
-        puts "[SketchupShow] onChunkStart 호출..."
-        @main_dialog&.execute_script("onChunkStart('#{safe_scene}', #{@pending_chunks.length})")
-        puts "[SketchupShow] onChunkStart 호출 완료"
+
+        # Ruby 타이머로 청크 자동 전송 (JS 콜백 의존 안 함)
+        @main_dialog&.execute_script("window._chunkBuffer=''; window._chunkScene='#{safe_scene}';")
+        send_chunk_auto(0, safe_scene)
       rescue StandardError => e
         puts "[SketchupShow] 폴링 오류: #{e.message}"
         @main_dialog&.execute_script("onPollResult(null)")
       end
     end
 
-    # JS에서 다음 청크 요청
-    def get_next_chunk
-      puts "[SketchupShow] getNextChunk 호출됨"
-      @pending_chunks ||= []
+    # Ruby 타이머로 청크 자동 전송
+    def send_chunk_auto(index, scene_name)
+      return unless @pending_chunks && index < @pending_chunks.length
 
-      if @pending_chunks.empty?
-        @main_dialog&.execute_script("onChunkData(null, true)")
-        return
-      end
-
-      chunk = @pending_chunks.shift
-      is_last = @pending_chunks.empty?
+      chunk = @pending_chunks[index]
+      is_last = (index == @pending_chunks.length - 1)
       escaped = chunk.gsub("\\", "\\\\\\\\").gsub("'", "\\\\'")
 
-      @main_dialog&.execute_script("onChunkData('#{escaped}', #{is_last})")
+      puts "[SketchupShow] 청크 전송: #{index + 1}/#{@pending_chunks.length}"
+
+      UI.start_timer(0.05, false) do
+        begin
+          # 청크를 버퍼에 추가
+          @main_dialog&.execute_script("window._chunkBuffer+='#{escaped}';")
+
+          if is_last
+            # 마지막 청크 - 이미지 처리 호출
+            puts "[SketchupShow] 마지막 청크 전송 완료"
+            @main_dialog&.execute_script("onChunkComplete(window._chunkBuffer, window._chunkScene);")
+          else
+            # 다음 청크 전송
+            send_chunk_auto(index + 1, scene_name)
+          end
+        rescue StandardError => e
+          puts "[SketchupShow] 청크 전송 오류: #{e.message}"
+        end
+      end
     end
 
     # 파일에서 이미지 읽기 (폴링 결과용)

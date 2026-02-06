@@ -4358,48 +4358,18 @@
       }
     }
 
-    // 청크 전송 시작 (Ruby에서 호출)
-    let _chunkBuffer = '';
-    let _chunkScene = '';
-    let _chunkTotal = 0;
-    let _chunkReceived = 0;
+    // 청크 전송 완료 (Ruby 타이머에서 자동 호출)
+    function onChunkComplete(fullImage, sceneName) {
+      console.log('[NanoBanana] 청크 수신 완료:', sceneName, fullImage?.length, 'bytes');
 
-    function onChunkStart(sceneName, totalChunks) {
-      console.log('[NanoBanana] 청크 전송 시작:', sceneName, totalChunks, '개');
-      _chunkBuffer = '';
-      _chunkScene = sceneName;
-      _chunkTotal = totalChunks;
-      _chunkReceived = 0;
+      if (!fullImage) return;
 
-      // 첫 번째 청크 요청
-      setTimeout(() => sketchup.getNextChunk(), 10);
-    }
-
-    // 청크 데이터 수신 (Ruby에서 호출)
-    function onChunkData(data, isLast) {
-      if (data) {
-        _chunkBuffer += data;
-        _chunkReceived++;
-      }
-
-      if (isLast) {
-        console.log('[NanoBanana] 청크 수신 완료:', _chunkScene, _chunkBuffer.length, 'bytes');
-        const fullImage = _chunkBuffer;
-        const sceneName = _chunkScene;
-
-        _chunkBuffer = '';
-        _chunkScene = '';
-
-        // 이미지 처리
-        if (sceneName.startsWith('regenerate_')) {
-          const panelId = parseInt(sceneName.replace('regenerate_', ''));
-          onRegenerateComplete(fullImage, panelId);
-        } else {
-          onRenderComplete(fullImage, sceneName);
-        }
+      // 이미지 처리
+      if (sceneName.startsWith('regenerate_')) {
+        const panelId = parseInt(sceneName.replace('regenerate_', ''));
+        onRegenerateComplete(fullImage, panelId);
       } else {
-        // 다음 청크 요청 (10ms 딜레이)
-        setTimeout(() => sketchup.getNextChunk(), 10);
+        onRenderComplete(fullImage, sceneName);
       }
     }
 
