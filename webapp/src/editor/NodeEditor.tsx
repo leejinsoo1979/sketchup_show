@@ -1,12 +1,15 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { LeftSidebar } from './sidebar/LeftSidebar'
 import { NodeCanvas } from './canvas/NodeCanvas'
 import { InspectorPanel } from './panels/InspectorPanel'
 import { PromptBar } from './toolbar/PromptBar'
 import { MakeButton } from './toolbar/MakeButton'
+import { HistoryPage } from './pages/HistoryPage'
 import { useGraphStore } from '../state/graphStore'
 import { useExecutionStore } from '../state/executionStore'
 import { useCreditStore } from '../state/creditStore'
+import { useUIStore } from '../state/uiStore'
+import { useUndoStore } from '../state/undoStore'
 import { executePipeline, estimatePipelineCost } from '../engine'
 
 export function NodeEditor() {
@@ -15,6 +18,7 @@ export function NodeEditor() {
   const isRunning = useExecutionStore((s) => s.isRunning)
   const executionError = useExecutionStore((s) => s.error)
   const balance = useCreditStore((s) => s.balance)
+  const activeSidebarItem = useUIStore((s) => s.activeSidebarItem)
 
   // Estimate cost for the selected node's pipeline
   const estimatedCost = useMemo(() => {
@@ -30,6 +34,53 @@ export function NodeEditor() {
     if (!selectedNodeId || isRunning) return
     await executePipeline(selectedNodeId)
   }, [selectedNodeId, isRunning])
+
+  // Undo / Redo keyboard shortcuts
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const isMod = e.metaKey || e.ctrlKey
+      if (!isMod) return
+
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        const { nodes: curNodes, edges: curEdges, selectedNodeId: curSelected } = useGraphStore.getState()
+        const entry = useUndoStore.getState().undo({
+          nodes: structuredClone(curNodes),
+          edges: structuredClone(curEdges),
+          selectedNodeId: curSelected,
+        })
+        if (entry) {
+          useGraphStore.setState({
+            nodes: entry.nodes,
+            edges: entry.edges,
+            selectedNodeId: entry.selectedNodeId,
+          })
+        }
+      }
+
+      if ((e.key === 'z' && e.shiftKey) || (e.key === 'y' && !e.shiftKey)) {
+        e.preventDefault()
+        const { nodes: curNodes, edges: curEdges, selectedNodeId: curSelected } = useGraphStore.getState()
+        const entry = useUndoStore.getState().redo({
+          nodes: structuredClone(curNodes),
+          edges: structuredClone(curEdges),
+          selectedNodeId: curSelected,
+        })
+        if (entry) {
+          useGraphStore.setState({
+            nodes: entry.nodes,
+            edges: entry.edges,
+            selectedNodeId: entry.selectedNodeId,
+          })
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  const showHistory = activeSidebarItem === 'history'
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -59,59 +110,65 @@ export function NodeEditor() {
 
         {/* Center + Right */}
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Canvas + Inspector */}
-          <div className="flex flex-1 overflow-hidden">
-            <NodeCanvas />
-            <InspectorPanel />
-          </div>
+          {showHistory ? (
+            <HistoryPage />
+          ) : (
+            <>
+              {/* Canvas + Inspector */}
+              <div className="flex flex-1 overflow-hidden">
+                <NodeCanvas />
+                <InspectorPanel />
+              </div>
 
-          {/* Bottom Prompt Bar */}
-          <div
-            className="relative flex shrink-0 items-center"
-            style={{
-              height: 52,
-              backgroundColor: '#1a1a24',
-              borderTop: '1px solid #222233',
-            }}
-          >
-            <PromptBar />
-            <MakeButton
-              credits={estimatedCost}
-              disabled={makeDisabled}
-              isRunning={isRunning}
-              onClick={handleMake}
-            />
-
-            {/* Execution error display */}
-            {executionError && (
+              {/* Bottom Prompt Bar */}
               <div
-                className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-md px-3 py-1.5 text-xs"
+                className="relative flex shrink-0 items-center"
                 style={{
-                  backgroundColor: '#ff444433',
-                  color: '#ff4444',
-                  border: '1px solid #ff4444',
+                  height: 52,
+                  backgroundColor: '#1a1a24',
+                  borderTop: '1px solid #222233',
                 }}
               >
-                {executionError}
-              </div>
-            )}
-
-            {/* Progress bar during execution */}
-            {isRunning && (
-              <div
-                className="absolute bottom-0 left-0 right-0"
-                style={{ height: 2 }}
-              >
-                <div
-                  className="h-full animate-pulse"
-                  style={{
-                    background: 'linear-gradient(90deg, #ff4466, #ff6688)',
-                    width: '100%',
-                  }}
+                <PromptBar />
+                <MakeButton
+                  credits={estimatedCost}
+                  disabled={makeDisabled}
+                  isRunning={isRunning}
+                  onClick={handleMake}
                 />
+
+                {/* Execution error display */}
+                {executionError && (
+                  <div
+                    className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-md px-3 py-1.5 text-xs"
+                    style={{
+                      backgroundColor: '#ff444433',
+                      color: '#ff4444',
+                      border: '1px solid #ff4444',
+                    }}
+                  >
+                    {executionError}
+                  </div>
+                )}
+
+                {/* Progress bar during execution */}
+                {isRunning && (
+                  <div
+                    className="absolute bottom-0 left-0 right-0"
+                    style={{ height: 2 }}
+                  >
+                    <div
+                      className="h-full animate-pulse"
+                      style={{
+                        background: 'linear-gradient(90deg, #ff4466, #ff6688)',
+                        width: '100%',
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>

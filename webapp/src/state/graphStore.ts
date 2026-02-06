@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { NodeData, NodeType, NodeParams, NodeResult, NodeStatus } from '../types/node'
 import type { EdgeData } from '../types/graph'
 import { v4 as uuid } from 'uuid'
+import { useUndoStore } from './undoStore'
 
 interface GraphState {
   nodes: NodeData[]
@@ -56,31 +57,49 @@ function getDefaultCost(type: NodeType): number {
   }
 }
 
+function saveUndo() {
+  const { nodes, edges, selectedNodeId } = useGraphStore.getState()
+  useUndoStore.getState().pushUndo({
+    nodes: structuredClone(nodes),
+    edges: structuredClone(edges),
+    selectedNodeId,
+  })
+}
+
 export const useGraphStore = create<GraphState>((set, get) => ({
   nodes: [],
   edges: [],
   selectedNodeId: null,
 
-  addNode: (node) => set((s) => ({ nodes: [...s.nodes, node] })),
+  addNode: (node) => {
+    saveUndo()
+    set((s) => ({ nodes: [...s.nodes, node] }))
+  },
 
-  removeNode: (nodeId) =>
+  removeNode: (nodeId) => {
+    saveUndo()
     set((s) => ({
       nodes: s.nodes.filter((n) => n.id !== nodeId),
       edges: s.edges.filter((e) => e.from !== nodeId && e.to !== nodeId),
       selectedNodeId: s.selectedNodeId === nodeId ? null : s.selectedNodeId,
-    })),
+    }))
+  },
 
-  updateNode: (nodeId, partial) =>
+  updateNode: (nodeId, partial) => {
+    saveUndo()
     set((s) => ({
       nodes: s.nodes.map((n) => (n.id === nodeId ? { ...n, ...partial } : n)),
-    })),
+    }))
+  },
 
-  updateNodeParams: (nodeId, params) =>
+  updateNodeParams: (nodeId, params) => {
+    saveUndo()
     set((s) => ({
       nodes: s.nodes.map((n) =>
         n.id === nodeId ? { ...n, params: { ...n.params, ...params } } : n,
       ),
-    })),
+    }))
+  },
 
   updateNodePosition: (nodeId, position) =>
     set((s) => ({
@@ -97,23 +116,30 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       nodes: s.nodes.map((n) => (n.id === nodeId ? { ...n, result } : n)),
     })),
 
-  addEdge: (edge) =>
-    set((s) => {
-      const exists = s.edges.some(
-        (e) => e.from === edge.from && e.fromPort === edge.fromPort && e.to === edge.to && e.toPort === edge.toPort,
-      )
-      if (exists) return s
-      return { edges: [...s.edges, edge] }
-    }),
+  addEdge: (edge) => {
+    const s = get()
+    const exists = s.edges.some(
+      (e) => e.from === edge.from && e.fromPort === edge.fromPort && e.to === edge.to && e.toPort === edge.toPort,
+    )
+    if (exists) return
+    saveUndo()
+    set((prev) => ({ edges: [...prev.edges, edge] }))
+  },
 
-  removeEdge: (edgeId) =>
-    set((s) => ({ edges: s.edges.filter((e) => e.id !== edgeId) })),
+  removeEdge: (edgeId) => {
+    saveUndo()
+    set((s) => ({ edges: s.edges.filter((e) => e.id !== edgeId) }))
+  },
 
   selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
 
-  clearAll: () => set({ nodes: [], edges: [], selectedNodeId: null }),
+  clearAll: () => {
+    saveUndo()
+    set({ nodes: [], edges: [], selectedNodeId: null })
+  },
 
   createSourceNode: (image, origin, position) => {
+    saveUndo()
     const id = uuid()
     const node: NodeData = {
       id,
@@ -130,6 +156,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   },
 
   createNode: (type, position) => {
+    saveUndo()
     const id = uuid()
     const node: NodeData = {
       id,
@@ -148,6 +175,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   duplicateNode: (nodeId) => {
     const source = get().nodes.find((n) => n.id === nodeId)
     if (!source) return null
+    saveUndo()
     const id = uuid()
     const node: NodeData = {
       ...source,
