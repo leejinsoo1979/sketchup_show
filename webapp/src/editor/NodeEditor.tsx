@@ -1,10 +1,36 @@
+import { useCallback, useMemo } from 'react'
 import { LeftSidebar } from './sidebar/LeftSidebar'
 import { NodeCanvas } from './canvas/NodeCanvas'
 import { InspectorPanel } from './panels/InspectorPanel'
 import { PromptBar } from './toolbar/PromptBar'
 import { MakeButton } from './toolbar/MakeButton'
+import { useGraphStore } from '../state/graphStore'
+import { useExecutionStore } from '../state/executionStore'
+import { useCreditStore } from '../state/creditStore'
+import { executePipeline, estimatePipelineCost } from '../engine'
 
 export function NodeEditor() {
+  const selectedNodeId = useGraphStore((s) => s.selectedNodeId)
+  const nodes = useGraphStore((s) => s.nodes)
+  const isRunning = useExecutionStore((s) => s.isRunning)
+  const executionError = useExecutionStore((s) => s.error)
+  const balance = useCreditStore((s) => s.balance)
+
+  // Estimate cost for the selected node's pipeline
+  const estimatedCost = useMemo(() => {
+    if (!selectedNodeId) return 0
+    return estimatePipelineCost(selectedNodeId)
+  }, [selectedNodeId, nodes])
+
+  const insufficientCredits = estimatedCost > balance
+  const noNodeSelected = !selectedNodeId
+  const makeDisabled = isRunning || noNodeSelected || insufficientCredits
+
+  const handleMake = useCallback(async () => {
+    if (!selectedNodeId || isRunning) return
+    await executePipeline(selectedNodeId)
+  }, [selectedNodeId, isRunning])
+
   return (
     <div className="flex h-full w-full flex-col">
       {/* Title Bar */}
@@ -41,7 +67,7 @@ export function NodeEditor() {
 
           {/* Bottom Prompt Bar */}
           <div
-            className="flex shrink-0 items-center"
+            className="relative flex shrink-0 items-center"
             style={{
               height: 52,
               backgroundColor: '#1a1a24',
@@ -49,7 +75,42 @@ export function NodeEditor() {
             }}
           >
             <PromptBar />
-            <MakeButton credits={1} disabled={false} onClick={() => {}} />
+            <MakeButton
+              credits={estimatedCost}
+              disabled={makeDisabled}
+              isRunning={isRunning}
+              onClick={handleMake}
+            />
+
+            {/* Execution error display */}
+            {executionError && (
+              <div
+                className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-md px-3 py-1.5 text-xs"
+                style={{
+                  backgroundColor: '#ff444433',
+                  color: '#ff4444',
+                  border: '1px solid #ff4444',
+                }}
+              >
+                {executionError}
+              </div>
+            )}
+
+            {/* Progress bar during execution */}
+            {isRunning && (
+              <div
+                className="absolute bottom-0 left-0 right-0"
+                style={{ height: 2 }}
+              >
+                <div
+                  className="h-full animate-pulse"
+                  style={{
+                    background: 'linear-gradient(90deg, #ff4466, #ff6688)',
+                    width: '100%',
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

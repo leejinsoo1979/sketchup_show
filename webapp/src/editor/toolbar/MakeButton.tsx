@@ -1,12 +1,13 @@
-import { Check } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 
 interface MakeButtonProps {
   credits: number
   disabled: boolean
+  isRunning: boolean
   onClick: () => void
 }
 
-export function MakeButton({ credits, disabled, onClick }: MakeButtonProps) {
+export function MakeButton({ credits, disabled, isRunning, onClick }: MakeButtonProps) {
   return (
     <div className="flex flex-col items-center px-3">
       <button
@@ -26,8 +27,12 @@ export function MakeButton({ credits, disabled, onClick }: MakeButtonProps) {
           if (!disabled) e.currentTarget.style.backgroundColor = '#00c9a7'
         }}
       >
-        <Check size={14} />
-        Make
+        {isRunning ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : (
+          <Check size={14} />
+        )}
+        {isRunning ? 'Running...' : 'Make'}
       </button>
       <span style={{ color: '#666666', fontSize: 11 }}>
         Credits: {credits}
