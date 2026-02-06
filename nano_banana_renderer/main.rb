@@ -50,6 +50,7 @@ module NanoBanana
   @pages_observer = nil
   @converted_prompt = nil  # Convert 시 AI가 생성한 프롬프트
   @reference_image = nil   # 레퍼런스 이미지 (2차 생성용)
+  @is_isometric = false    # 아이소메트릭(orthographic) 뷰 여부
   @web_sync_active = false
   @web_session_id = nil
   @web_sync_timer = nil
@@ -134,19 +135,13 @@ module NanoBanana
     def register_toolbar
       toolbar = UI::Toolbar.new(PLUGIN_NAME)
 
-      # 렌더링 버튼
+      # 렌더링 버튼 (바나나 아이콘)
       cmd_render = UI::Command.new('렌더링') { show_main_dialog }
       cmd_render.tooltip = 'NanoBanana 렌더링 시작'
       cmd_render.status_bar_text = 'AI 실사 렌더링을 시작합니다'
-      # cmd_render.small_icon = File.join(PLUGIN_ROOT, 'assets/icons/render_small.png')
-      # cmd_render.large_icon = File.join(PLUGIN_ROOT, 'assets/icons/render_large.png')
+      cmd_render.small_icon = File.join(PLUGIN_ROOT, 'assets/icons/render_small.png')
+      cmd_render.large_icon = File.join(PLUGIN_ROOT, 'assets/icons/render_large.png')
       toolbar.add_item(cmd_render)
-
-      # 설정 버튼
-      cmd_settings = UI::Command.new('설정') { show_settings_dialog }
-      cmd_settings.tooltip = 'NanoBanana 설정'
-      cmd_settings.status_bar_text = 'API Key 및 설정을 관리합니다'
-      toolbar.add_item(cmd_settings)
 
       toolbar.show
     end
@@ -1036,6 +1031,11 @@ CRITICAL RULES:
         file_size_kb = File.size(temp_path) / 1024
         File.delete(temp_path) rescue nil
 
+        # ★ 아이소메트릭(orthographic) 뷰 감지
+        camera = view.camera
+        @is_isometric = !camera.perspective?
+        puts "[NanoBanana] 카메라 모드: #{@is_isometric ? 'Isometric (Orthographic)' : 'Perspective'}"
+
         puts "[NanoBanana] 캡처 완료 (#{resolution[:width]}x#{resolution[:height]}, #{file_size_kb}KB, Edge OFF)"
 
         # UI에 캡처 완료 알림
@@ -1134,6 +1134,12 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
       # 라이팅 설명 생성 (사용자 설정 기반)
       lighting_desc = build_lighting_description(time_preset, light_switch)
 
+      # ★ 아이소메트릭 뷰 전용 프롬프트
+      if @is_isometric
+        puts "[NanoBanana] 아이소메트릭 전용 프롬프트 템플릿 사용"
+        return get_isometric_instruction_template(materials_info, style_hint, lighting_desc)
+      end
+
       <<~TEXT
     [CRITICAL TASK]
     You must generate a detailed photorealistic rendering prompt for this interior space.
@@ -1194,6 +1200,80 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
     Generate ONLY the prompt content between ---START OF PROMPT--- and ---END OF PROMPT--- markers.
     Do NOT include any explanations, comments, or additional text.
     The prompt must be detailed and specific to achieve photorealistic results.
+      TEXT
+    end
+
+    # ★ 아이소메트릭 뷰 전용 AI 인스트럭션 템플릿
+    def get_isometric_instruction_template(materials_info, style_hint, lighting_desc)
+      <<~TEXT
+    [CRITICAL TASK - ISOMETRIC VIEW]
+    You must generate a detailed photorealistic rendering prompt for this ISOMETRIC interior scene.
+    This is an IMAGE-TO-IMAGE transformation task. The source image is an isometric (orthographic, top-down angled) 3D SketchUp model viewed from above at approximately 30-45 degrees.
+    The goal is to convert it into a photorealistic isometric architectural visualization with a PURE WHITE background.
+
+    [ABSOLUTE CONSTRAINTS - ISOMETRIC SPECIFIC]
+    1. PRESERVE EXACT ISOMETRIC CAMERA ANGLE: Keep the same orthographic top-down viewing angle. Do NOT change to perspective view.
+    2. PRESERVE EXACT LAYOUT: Every wall, floor, furniture, and object must remain in the EXACT same position and scale
+    3. PRESERVE EXACT FLOOR AND WALL MATERIALS: Do NOT change any floor material (wood, tile, concrete, etc.) or wall color/texture. Keep them IDENTICAL to the source.
+    4. NO ADDITIONS: Do NOT add any objects, furniture, plants, decorations, rugs, accessories, or items not present in the source image
+    5. NO REMOVALS: Do NOT remove anything that exists in the source image
+    6. PURE WHITE BACKGROUND: The area outside the room/building footprint must be PURE WHITE (#FFFFFF). No shadows, no gradients, no ground plane, no environment outside the building.
+    7. NO BACKGROUND ENVIRONMENT: Do NOT add sky, trees, landscape, ground texture, or any exterior elements outside the room boundary
+
+    [SOURCE MATERIALS FROM SKETCHUP MODEL]
+    #{materials_info}
+
+    [REQUIRED PROMPT STRUCTURE]
+    Generate a prompt following this EXACT format:
+
+    ---START OF PROMPT---
+
+    [STRICT IMAGE PRESERVATION - ISOMETRIC]
+    This is an isometric (orthographic) top-down angled view of an interior space.
+    Preserve the EXACT isometric camera angle, orthographic projection, and spatial layout.
+    Preserve the EXACT floor material, wall material, and all surface textures from the source image. Do NOT replace or change any material.
+    Do NOT add ANY new objects, furniture, plants, rugs, decorative items, door handles, light switches, or accessories.
+    Do NOT remove any existing objects from the scene.
+    The background outside the room footprint must be PURE WHITE.
+
+    [ISOMETRIC PHOTOREALISTIC TRANSFORMATION]
+    Transform this 3D SketchUp isometric model into a photorealistic isometric architectural visualization.
+    Style: #{style_hint}
+    Projection: Orthographic isometric, same angle as source
+    Quality: 8K resolution, sharp focus, clean rendering
+    Background: Pure white (#FFFFFF) outside the room boundary, no shadows cast outside
+
+    [MATERIAL RENDERING - PRESERVE SOURCE MATERIALS]
+    Convert surfaces to photorealistic versions of their EXISTING materials (do NOT change material types):
+    - Floor: Enhance the EXISTING floor material to photorealistic quality. Keep the same material type (wood stays wood, tile stays tile, etc.)
+    - Walls: Enhance the EXISTING wall color/texture to photorealistic quality. Keep the same color and material.
+    - Furniture: Add realistic material textures to existing furniture while preserving exact shape and position
+    - Glass surfaces: realistic reflections and proper transparency
+    - Metal surfaces: realistic reflections with appropriate finish
+
+    [LIGHTING FOR ISOMETRIC]
+    #{lighting_desc}
+    - Soft overhead studio-like lighting for clean isometric presentation
+    - Subtle ambient occlusion at wall-floor junctions and furniture bases
+    - Soft contact shadows under furniture (contained within the room footprint)
+    - No harsh shadows extending outside the room boundary
+
+    [ISOMETRIC QUALITY DETAILS]
+    - Clean, sharp edges on all architectural elements
+    - Consistent isometric scale across all objects
+    - No perspective distortion, maintain orthographic projection
+    - Professional architectural visualization quality
+    - Miniature diorama-like photorealistic feel
+
+    [NEGATIVE PROMPT - MUST AVOID]
+    perspective view, vanishing points, perspective distortion, background environment, sky, trees, landscape, ground outside room, colored background, gradient background, shadows outside room boundary, added furniture, new objects, extra plants, extra decorations, changed floor material, changed wall color, wireframe, sketch lines, black outlines, cartoon, anime, CGI look, 3D render artifacts, low quality, blurry
+
+    ---END OF PROMPT---
+
+    [YOUR OUTPUT]
+    Generate ONLY the prompt content between ---START OF PROMPT--- and ---END OF PROMPT--- markers.
+    Do NOT include any explanations, comments, or additional text.
+    The prompt must preserve the isometric angle and produce photorealistic results with a pure white background.
       TEXT
     end
 
@@ -1746,6 +1826,12 @@ black outlines, visible edges, sketch lines, wireframe appearance, line art styl
         negative_section += "\nAdditional exclusions: #{@negative_prompt}\n"
       end
 
+      # ★ 아이소메트릭 뷰인 경우 전용 프롬프트 사용
+      if @is_isometric
+        puts "[NanoBanana] 아이소메트릭 뷰 렌더링 프롬프트 사용"
+        return build_isometric_render_prompt(time_desc, light_desc, negative_section)
+      end
+
       # Convert 여부에 따라 다른 프롬프트 생성
       if @converted_prompt && !@converted_prompt.empty?
         # ★ Convert 완료 - AI가 생성한 상세 프롬프트 사용
@@ -1816,6 +1902,77 @@ Convert all surfaces to photorealistic materials with natural imperfections:
 - Global illumination and realistic light bounce
 #{negative_section}
         PROMPT
+      end
+    end
+
+    # ★ 아이소메트릭 전용 렌더링 프롬프트
+    def build_isometric_render_prompt(time_desc, light_desc, negative_section)
+      # Convert된 프롬프트가 있으면 아이소메트릭 프리픽스와 결합
+      iso_prefix = <<~ISO_PREFIX
+[CRITICAL INSTRUCTION - ISOMETRIC RENDERING]
+
+This is an IMAGE-TO-IMAGE transformation of an ISOMETRIC (orthographic) interior scene.
+Your ONLY job is to convert this 3D SketchUp isometric model into a photorealistic isometric visualization with a PURE WHITE background.
+
+[ABSOLUTE RULES - ISOMETRIC SPECIFIC - VIOLATION = FAILURE]
+1. PRESERVE EXACT ISOMETRIC ANGLE: Maintain the orthographic top-down viewing angle. Do NOT convert to perspective view.
+2. PRESERVE EXACT LAYOUT: Every wall, floor, ceiling, furniture must remain in the EXACT same position and scale
+3. PRESERVE EXACT MATERIALS: Do NOT change floor material (wood, tile, concrete, etc.) or wall color/texture. Keep them IDENTICAL to the source.
+4. NO ADDITIONS: Do NOT add any objects, furniture, plants, rugs, decorations, accessories, or items not in the source image
+5. NO REMOVALS: Do NOT remove any objects that exist in the source image
+6. PURE WHITE BACKGROUND: Area outside the room/building footprint must be PURE WHITE (#FFFFFF). No shadows, gradients, ground plane, or environment outside the building.
+7. NO EXTERIOR ENVIRONMENT: Do NOT add sky, trees, landscape, ground texture, or any elements outside the room boundary
+
+[LIGHTING - ISOMETRIC]
+Time: #{time_desc}
+Lights: #{light_desc}
+Soft overhead studio lighting for clean isometric presentation.
+Subtle ambient occlusion at wall-floor junctions and furniture bases.
+Contact shadows under furniture contained WITHIN the room footprint only.
+
+      ISO_PREFIX
+
+      if @converted_prompt && !@converted_prompt.empty?
+        puts "[NanoBanana] 아이소메트릭 + Convert 모드"
+        # AI 생성 프롬프트에 아이소 프리픽스 결합
+        iso_negative = <<~ISO_NEG
+
+[NEGATIVE PROMPT - ABSOLUTELY AVOID]
+perspective view, vanishing points, perspective distortion, background environment, sky, trees, landscape, ground outside room, colored background, gradient background, shadows outside room boundary, added furniture, new objects, extra plants, extra decorations, changed floor material, changed wall color, wireframe, sketch lines, black outlines, cartoon, anime, CGI look, 3D render artifacts, low quality, blurry
+        ISO_NEG
+
+        if @negative_prompt && !@negative_prompt.empty?
+          iso_negative += "\nAdditional exclusions: #{@negative_prompt}\n"
+        end
+
+        iso_prefix + @converted_prompt + iso_negative
+      else
+        puts "[NanoBanana] 아이소메트릭 기본 모드"
+        iso_prefix + <<~ISO_BODY
+[PHOTOREALISTIC ISOMETRIC TRANSFORMATION]
+Transform this SketchUp isometric model into a photorealistic isometric architectural visualization.
+Projection: Orthographic isometric, identical angle to source image.
+Quality: High resolution, sharp focus, clean rendering.
+Background: Pure white (#FFFFFF) outside room boundary.
+
+[MATERIAL RENDERING - PRESERVE SOURCE]
+Enhance existing materials to photorealistic quality WITHOUT changing material types:
+- Floor: Keep the SAME material type (wood→photorealistic wood, tile→photorealistic tile)
+- Walls: Keep the SAME color and texture, enhance to photorealistic quality
+- Furniture: Add realistic textures while preserving exact shape and position
+- Glass: Realistic reflections and transparency
+- Metal: Realistic reflections with appropriate finish
+
+[ISOMETRIC QUALITY]
+- Clean sharp edges on architectural elements
+- Consistent isometric scale across all objects
+- No perspective distortion
+- Professional architectural visualization quality
+- Miniature diorama-like photorealistic feel
+
+[NEGATIVE PROMPT - ABSOLUTELY AVOID]
+perspective view, vanishing points, perspective distortion, background environment, sky, trees, landscape, ground outside room, colored background, gradient background, shadows outside room boundary, added furniture, new objects, extra plants, extra decorations, changed floor material, changed wall color, wireframe, sketch lines, black outlines, cartoon, anime, CGI look, 3D render artifacts, low quality, blurry, added objects, new furniture, mirrors not in original
+        ISO_BODY
       end
     end
 
