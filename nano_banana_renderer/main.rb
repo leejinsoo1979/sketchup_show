@@ -408,12 +408,14 @@ module NanoBanana
         light_switch = args[1] || 'on'
         prompt = args[2] || ''
         negative_prompt = args[3] || ''
+        render_id = args[4] || ''  # 노드 에디터 병렬 렌더용 ID
 
         puts "[NanoBanana] ========== START_RENDER 콜백 =========="
         puts "[NanoBanana] time_preset: #{time_preset}"
         puts "[NanoBanana] light_switch: #{light_switch}"
         puts "[NanoBanana] prompt 길이: #{prompt ? prompt.length : 0}"
         puts "[NanoBanana] negative_prompt 길이: #{negative_prompt ? negative_prompt.length : 0}"
+        puts "[NanoBanana] render_id: #{render_id}" unless render_id.empty?
 
         # UI에서 직접 입력한 프롬프트가 있으면 사용
         if prompt && !prompt.empty?
@@ -423,7 +425,13 @@ module NanoBanana
           puts "[NanoBanana] 프롬프트 비어있음!"
         end
         @negative_prompt = negative_prompt if negative_prompt && !negative_prompt.empty?
-        start_render_with_preset(time_preset, light_switch)
+
+        if render_id && !render_id.empty?
+          # 노드 에디터 병렬 렌더 - Thread로 실행 (프롬프트 직접 전달)
+          start_render_parallel(time_preset, light_switch, render_id, prompt, negative_prompt)
+        else
+          start_render_with_preset(time_preset, light_switch)
+        end
       end
 
       # Auto 프롬프트 생성 요청 (스타일 + 라이팅 파라미터)
@@ -1462,6 +1470,84 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
         puts e.backtrace.first(5).join("\n")
         @main_dialog&.execute_script("onRenderError('#{e.message.gsub("'", "\\'").gsub("\n", ' ')}', '#{current_scene}')")
       end
+    end
+
+    # 노드 에디터 병렬 렌더링 (Thread 사용)
+    def start_render_parallel(time_preset, light_switch, render_id, user_prompt = '', user_negative = '')
+      puts "[NanoBanana] ========== 병렬 렌더링 시작 (#{render_id}) =========="
+
+      unless @api_client
+        UI.start_timer(0, false) {
+          @main_dialog&.execute_script("onNodeRenderError('#{render_id}', 'API Key가 설정되지 않았습니다.')")
+        }
+        return
+      end
+
+      unless @current_image
+        UI.start_timer(0, false) {
+          @main_dialog&.execute_script("onNodeRenderError('#{render_id}', '먼저 씬을 캡처하세요.')")
+        }
+        return
+      end
+
+      # 렌더링에 필요한 데이터를 Thread 시작 전에 복사 (공유 상태 의존 없음)
+      render_source_image = @current_image.dup
+      # 노드별 프롬프트 직접 사용 (공유 @converted_prompt 사용 안 함)
+      prompt = if user_prompt && !user_prompt.empty?
+        user_prompt
+      else
+        build_render_prompt(time_preset, light_switch)
+      end
+      negative = if user_negative && !user_negative.empty?
+        user_negative
+      else
+        'cartoon, anime, sketch, drawing, wireframe, outline, black lines, CGI, 3D render'
+      end
+      api_client = @api_client
+      reference_image = @reference_image
+      current_api = @current_api
+      replicate_client = @replicate_client
+      dialog = @main_dialog
+
+      puts "[NanoBanana] [#{render_id}] Prompt: #{prompt[0..150]}..."
+
+      Thread.new do
+        begin
+          render_start = Time.now
+
+          result = if current_api == 'replicate' && replicate_client
+            replicate_client.generate(render_source_image, prompt, negative)
+          elsif reference_image
+            api_client.generate_with_references(render_source_image, [reference_image], prompt)
+          else
+            api_client.generate(render_source_image, prompt)
+          end
+
+          render_elapsed = (Time.now - render_start).round(1)
+          puts "[NanoBanana] [#{render_id}] 렌더링 완료: #{render_elapsed}초"
+
+          if result && result[:image]
+            image_base64 = result[:image]
+            # UI.start_timer로 메인 스레드에서 execute_script 호출
+            UI.start_timer(0, false) {
+              dialog&.execute_script("onNodeRenderComplete('#{render_id}', '#{image_base64}')")
+            }
+          else
+            UI.start_timer(0, false) {
+              dialog&.execute_script("onNodeRenderError('#{render_id}', '렌더링 결과를 받지 못했습니다.')")
+            }
+          end
+        rescue StandardError => e
+          puts "[NanoBanana] [#{render_id}] Render Error: #{e.message}"
+          puts e.backtrace.first(5).join("\n")
+          err_msg = e.message.gsub("'", "\\'").gsub("\n", ' ')
+          UI.start_timer(0, false) {
+            dialog&.execute_script("onNodeRenderError('#{render_id}', '#{err_msg}')")
+          }
+        end
+      end
+
+      puts "[NanoBanana] [#{render_id}] Thread 시작됨 (비동기)"
     end
 
     # 모델에서 재질 정보 추출 (의미 있는 질감만, 영문으로)
