@@ -5671,11 +5671,13 @@
         nodeEditor.addNode('source', 80, 120);
         nodeEditor.addNode('renderer', 480, 120);
         // 자동 연결
-        const sourceNode = nodeEditor.nodes.find(n => n.type === 'source');
-        const rendererNode = nodeEditor.nodes.find(n => n.type === 'renderer');
-        if (sourceNode && rendererNode) {
-          nodeEditor.connect(sourceNode.id, rendererNode.id);
+        const srcN = nodeEditor.nodes.find(n => n.type === 'source');
+        const renN = nodeEditor.nodes.find(n => n.type === 'renderer');
+        if (srcN && renN) {
+          nodeEditor.connect(srcN.id, renN.id);
         }
+        // 소스 카드를 선택된 상태로 시작
+        if (srcN) nodeEditor.selectNode(srcN.id);
       }
 
       // Source 노드에 이미지 자동 로드
