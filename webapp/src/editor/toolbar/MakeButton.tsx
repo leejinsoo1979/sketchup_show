@@ -1,0 +1,37 @@
+import { Check } from 'lucide-react'
+
+interface MakeButtonProps {
+  credits: number
+  disabled: boolean
+  onClick: () => void
+}
+
+export function MakeButton({ credits, disabled, onClick }: MakeButtonProps) {
+  return (
+    <div className="flex flex-col items-center px-3">
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className="flex h-9 items-center gap-1.5 rounded-md px-5 text-sm font-bold transition-colors duration-150"
+        style={{
+          backgroundColor: disabled ? '#333340' : '#00c9a7',
+          color: disabled ? '#666666' : '#ffffff',
+          minWidth: 100,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+        }}
+        onMouseEnter={(e) => {
+          if (!disabled) e.currentTarget.style.backgroundColor = '#00ddb8'
+        }}
+        onMouseLeave={(e) => {
+          if (!disabled) e.currentTarget.style.backgroundColor = '#00c9a7'
+        }}
+      >
+        <Check size={14} />
+        Make
+      </button>
+      <span style={{ color: '#666666', fontSize: 11 }}>
+        Credits: {credits}
+      </span>
+    </div>
+  )
+}
