@@ -1293,13 +1293,49 @@
           sourceNode.thumbnail = state.originalImage;
           sourceNode.dirty = false;
           nodeEditor.renderNode(sourceNode);
+          requestAnimationFrame(() => nodeEditor.renderConnections());
         } else {
-          // 없으면 자동 캡처
-          nodeEditor.executeSourceNode(sourceNode);
+          // WEBrick 서버에서 캡처 이미지 가져오기 (1초 타이머로 캡처 대기)
+          autoLoadSourceFromBridge(sourceNode);
         }
       }
 
       setStatus('Node Editor Mode');
+    }
+
+    // WEBrick localhost:9876에서 캡처 이미지를 가져와 소스 노드에 자동 로드
+    function autoLoadSourceFromBridge(sourceNode) {
+      var attempts = 0;
+      var maxAttempts = 5;
+
+      function tryFetch() {
+        attempts++;
+        fetch('http://localhost:9876/api/data', { signal: AbortSignal.timeout(2000) })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data && data.source) {
+              sourceNode.data.image = data.source;
+              sourceNode.thumbnail = data.source;
+              sourceNode.dirty = false;
+              nodeEditor.renderNode(sourceNode);
+              nodeEditor.updateInspector();
+              requestAnimationFrame(function() { nodeEditor.renderConnections(); });
+            } else if (attempts < maxAttempts) {
+              // 아직 캡처 안 됐으면 1초 후 재시도
+              setTimeout(tryFetch, 1000);
+            } else {
+              // 최종 fallback: sketchup.captureScene 호출
+              nodeEditor.executeSourceNode(sourceNode);
+            }
+          })
+          .catch(function() {
+            // 서버 연결 실패 → sketchup.captureScene 콜백 방식으로 fallback
+            nodeEditor.executeSourceNode(sourceNode);
+          });
+      }
+
+      // 캡처 타이머(1초)가 최소 1회 실행될 때까지 대기
+      setTimeout(tryFetch, 500);
     }
 
     // ========================================
