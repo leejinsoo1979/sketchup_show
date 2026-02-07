@@ -49,6 +49,19 @@
 
       // 같은 타입의 노드 중 가장 아래에 있는 노드를 찾아서 그 아래에 배치
       addNodeBelow: function(clickedNode, newType) {
+        // ★ 체인 렌더링: 완성된 renderer/modifier에서 renderer 추가 시 오른쪽에 연결
+        const isChainRender = newType === 'renderer' &&
+          (clickedNode.type === 'renderer' || clickedNode.type === 'modifier') &&
+          clickedNode.data && clickedNode.data.image;
+
+        if (isChainRender) {
+          const targetX = clickedNode.x + 400;
+          const targetY = clickedNode.y;
+          const newNode = this.addNode(newType, targetX, targetY);
+          this.connect(clickedNode.id, newNode.id);
+          return;
+        }
+
         // 같은 타입의 기존 노드들 중 가장 아래(y가 큰) 노드 찾기
         const sameTypeNodes = this.nodes.filter(n => n.type === newType);
         let targetX, targetY;
@@ -61,7 +74,6 @@
         } else {
           // 같은 타입이 없으면 클릭한 노드 기준 배치
           if (newType === 'source') {
-            // 소스 카드가 없으면 클릭한 카드 왼쪽에 아래로
             const sourceNodes = this.nodes.filter(n => n.type === 'source');
             targetX = sourceNodes.length > 0 ? sourceNodes[0].x : 80;
             targetY = clickedNode.y + 260;
@@ -70,7 +82,6 @@
             targetX = rendererNodes.length > 0 ? rendererNodes[0].x : 480;
             targetY = clickedNode.y + 260;
           } else {
-            // animation - renderer 아래에 배치
             const rendererNodes = this.nodes.filter(n => n.type === 'renderer');
             if (rendererNodes.length > 0) {
               const bottomRenderer = rendererNodes.reduce((a, b) => a.y > b.y ? a : b);
@@ -172,12 +183,17 @@
 
         var title = '';
         var sublabel = '';
-        // 노드 순번 계산
+        // 노드 순번 계산: 연결 그래프 깊이(depth) 기반
         var orderNum = 1;
-        var orderedTypes = ['source', 'renderer', 'modifier', 'upscale', 'video', 'compare'];
-        for (var oi = 0; oi < orderedTypes.length; oi++) {
-          if (orderedTypes[oi] === node.type) break;
-          if (this.nodes.some(function(n) { return n.type === orderedTypes[oi]; })) orderNum++;
+        var depthNode = node;
+        var depthLimit = 20;
+        while (depthLimit-- > 0) {
+          var prevConn = this.connections.find(function(c) { return c.to === depthNode.id; });
+          if (!prevConn) break;
+          var prevNode = this.nodes.find(function(n) { return n.id === prevConn.from; });
+          if (!prevNode) break;
+          orderNum++;
+          depthNode = prevNode;
         }
 
         if (node.type === 'source') {
@@ -968,14 +984,28 @@
           var prompt = self.assemblePrompt(node);
           var negPrompt = self.assembleNegativePrompt(node);
 
+          // 체인 렌더링: 원본 source 노드까지 역추적하여 time/light 가져오기
+          var originNode = sourceNode;
+          var maxDepth = 20;
+          while (originNode && originNode.type !== 'source' && maxDepth-- > 0) {
+            var prevConn = self.connections.find(function(c) { return c.to === originNode.id; });
+            if (prevConn) {
+              originNode = self.nodes.find(function(n) { return n.id === prevConn.from; });
+            } else {
+              break;
+            }
+          }
+          var timePreset = (originNode && originNode.data && originNode.data.time) || 'day';
+          var lightSwitch = (originNode && originNode.data && originNode.data.light) || 'on';
+
           console.log('[NodeEditor] Callback registered for:', renderId);
           console.log('[NodeEditor] Prompt length:', prompt.length, 'NegPrompt length:', negPrompt.length);
-          console.log('[NodeEditor] Source time:', sourceNode.data.time, 'light:', sourceNode.data.light);
+          console.log('[NodeEditor] Source time:', timePreset, 'light:', lightSwitch, '(origin:', originNode ? originNode.type : 'none', ')');
 
           // 렌더링 요청
           sketchup.startRender(
-            sourceNode.data.time || 'day',
-            sourceNode.data.light || 'on',
+            timePreset,
+            lightSwitch,
             prompt,
             negPrompt,
             renderId,
