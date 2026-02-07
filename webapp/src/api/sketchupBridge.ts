@@ -3,7 +3,7 @@ import { useUIStore } from '../state/uiStore'
 import type { SceneMeta } from '../types/node'
 
 // ---------------------------------------------------------------------------
-// Types matching SKETCHUP.md JSON payload
+// Types matching SKETCHUP.md JSON payload (kept for future expansion)
 // ---------------------------------------------------------------------------
 
 export interface SketchUpCameraMeta {
@@ -42,9 +42,23 @@ export interface CapturePayload {
   timestamp: string // ISO-8601
 }
 
-interface StatusResponse {
-  connected: boolean
-  version?: string
+// ---------------------------------------------------------------------------
+// Ruby WEBrick server response types (actual API at localhost:9876)
+// ---------------------------------------------------------------------------
+
+/** GET /api/ping → { status: 'ok', app: 'BananaShow', ip: string, port: number } */
+interface PingResponse {
+  status: string
+  app?: string
+  ip?: string
+  port?: number
+}
+
+/** GET /api/data → { source: base64|null, rendered: base64|null, timestamp: number } */
+interface DataResponse {
+  source: string | null
+  rendered: string | null
+  timestamp: number // unix seconds
 }
 
 // ---------------------------------------------------------------------------
@@ -59,16 +73,16 @@ const REQUEST_TIMEOUT_MS = 2000
 // Helpers
 // ---------------------------------------------------------------------------
 
-function toSceneMeta(meta: SketchUpMeta): SceneMeta {
+function defaultSceneMeta(): SceneMeta {
   return {
-    modelName: meta.scene.modelName,
-    sceneId: meta.scene.sceneId ?? '',
-    fov: meta.camera.fov,
-    eye: meta.camera.eye,
-    target: meta.camera.target,
-    up: meta.camera.up,
-    shadow: meta.scene.shadow,
-    style: meta.scene.style,
+    modelName: 'SketchUp',
+    sceneId: '',
+    fov: 35,
+    eye: [0, 0, 0],
+    target: [0, 0, 0],
+    up: [0, 0, 1],
+    shadow: false,
+    style: 'default',
   }
 }
 
@@ -95,31 +109,43 @@ async function fetchWithTimeout(
 // ---------------------------------------------------------------------------
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
-let lastCaptureTimestamp: string | null = null
+/** Track previous source base64 to detect actual image changes */
+let lastSourceHash: string | null = null
 
+/**
+ * Ping the Ruby WEBrick server.
+ * Ruby endpoint: GET /api/ping → { status: 'ok', ... }
+ */
 async function ping(): Promise<boolean> {
   try {
-    const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/status`)
+    const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/ping`)
     if (!res.ok) return false
-    const data: StatusResponse = await res.json()
-    return data.connected === true
+    const data: PingResponse = await res.json()
+    return data.status === 'ok'
   } catch {
     return false
   }
 }
 
-async function fetchCapture(): Promise<CapturePayload | null> {
+/**
+ * Fetch the latest SketchUp capture from Ruby server.
+ * Ruby endpoint: GET /api/data → { source: base64, rendered: base64, timestamp: unix }
+ * Returns the source image base64 if it has changed since the last poll.
+ */
+async function fetchCapture(): Promise<string | null> {
   try {
-    const url = lastCaptureTimestamp
-      ? `${BRIDGE_BASE_URL}/api/capture?after=${encodeURIComponent(lastCaptureTimestamp)}`
-      : `${BRIDGE_BASE_URL}/api/capture`
+    const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/data`)
+    if (!res.ok) return null
 
-    const res = await fetchWithTimeout(url)
-    if (res.status === 204 || !res.ok) return null
+    const data: DataResponse = await res.json()
+    if (!data.source) return null
 
-    const payload: CapturePayload = await res.json()
-    if (!payload.image || !payload.meta) return null
-    return payload
+    // Deduplicate: compare first 100 chars of base64 to detect actual changes
+    const hash = data.source.slice(0, 100)
+    if (hash === lastSourceHash) return null
+
+    lastSourceHash = hash
+    return data.source
   } catch {
     return null
   }
@@ -149,21 +175,36 @@ export async function pushResult(
 // Capture → Source node injection
 // ---------------------------------------------------------------------------
 
-function injectCapture(payload: CapturePayload) {
-  const sceneMeta = toSceneMeta(payload.meta)
-  const imageDataUri = toDataUri(payload.image)
+/**
+ * Inject or update a SOURCE node from SketchUp capture.
+ * - If a sketchup-origin SOURCE node already exists → update its image
+ * - Otherwise → create a new SOURCE node
+ */
+function injectCapture(imageBase64: string) {
+  const imageDataUri = toDataUri(imageBase64)
+  const store = useGraphStore.getState()
 
-  // Place at center-left of the canvas viewport
-  const position = { x: 100, y: 200 }
+  // Find existing sketchup source node
+  const existing = store.nodes.find(
+    (n) => n.type === 'SOURCE' && n.params.origin === 'sketchup',
+  )
 
-  useGraphStore
-    .getState()
-    .createSourceNode(imageDataUri, 'sketchup', position, {
-      sceneMeta,
+  if (existing) {
+    // Update existing node's image without creating a new one
+    store.updateNodeParams(existing.id, { image: imageDataUri })
+    store.updateNodeResult(existing.id, {
+      image: imageDataUri,
+      timestamp: new Date().toISOString(),
+      cacheKey: '',
+    })
+  } else {
+    // Create new SOURCE node at center-left of canvas
+    const position = { x: 100, y: 200 }
+    store.createSourceNode(imageDataUri, 'sketchup', position, {
+      sceneMeta: defaultSceneMeta(),
       cameraLocked: true,
     })
-
-  lastCaptureTimestamp = payload.timestamp
+  }
 }
 
 // ---------------------------------------------------------------------------
