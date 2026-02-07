@@ -1219,18 +1219,10 @@
 
       // Node 모드 UI 숨김 + Enlarge 모드 리셋
       document.getElementById('node-editor-container').classList.remove('active');
-      var nodeEnlarged = document.getElementById('node-enlarged-preview');
-      if (nodeEnlarged) nodeEnlarged.classList.remove('active');
-      var nodeCanvas = document.getElementById('node-canvas-area');
-      if (nodeCanvas) nodeCanvas.classList.remove('minimized');
-      var inspPreview = document.querySelector('.node-inspector-preview');
-      if (inspPreview) inspPreview.classList.remove('minimap-mode');
-      var enlargeBtn = document.getElementById('node-enlarge-btn');
-      if (enlargeBtn) enlargeBtn.classList.remove('active');
-
-      // Vizmaker iframe 숨김
-      var vizIframe = document.getElementById('vizmaker-iframe');
-      if (vizIframe) vizIframe.style.display = 'none';
+      document.getElementById('node-enlarged-preview').classList.remove('active');
+      document.getElementById('node-canvas-area').classList.remove('minimized');
+      document.querySelector('.node-inspector-preview').classList.remove('minimap-mode');
+      document.getElementById('node-enlarge-btn').classList.remove('active');
 
       setStatus('Render Mode');
     }
@@ -1245,18 +1237,10 @@
 
       // Node 모드 UI 숨김 + Enlarge 모드 리셋
       document.getElementById('node-editor-container').classList.remove('active');
-      var nodeEnlarged2 = document.getElementById('node-enlarged-preview');
-      if (nodeEnlarged2) nodeEnlarged2.classList.remove('active');
-      var nodeCanvas2 = document.getElementById('node-canvas-area');
-      if (nodeCanvas2) nodeCanvas2.classList.remove('minimized');
-      var inspPreview2 = document.querySelector('.node-inspector-preview');
-      if (inspPreview2) inspPreview2.classList.remove('minimap-mode');
-      var enlargeBtn2 = document.getElementById('node-enlarge-btn');
-      if (enlargeBtn2) enlargeBtn2.classList.remove('active');
-
-      // Vizmaker iframe 숨김
-      var vizIframe2 = document.getElementById('vizmaker-iframe');
-      if (vizIframe2) vizIframe2.style.display = 'none';
+      document.getElementById('node-enlarged-preview').classList.remove('active');
+      document.getElementById('node-canvas-area').classList.remove('minimized');
+      document.querySelector('.node-inspector-preview').classList.remove('minimap-mode');
+      document.getElementById('node-enlarge-btn').classList.remove('active');
 
       // Mix 모드 UI 표시
       document.getElementById('mix-mode-panel').classList.add('active');
@@ -1281,28 +1265,42 @@
       document.getElementById('mix-main-area').classList.remove('active');
       document.getElementById('mix-options-panel').classList.remove('active');
 
-      // Node 모드 UI 표시 - Vizmaker iframe 로드
-      var container = document.getElementById('node-editor-container');
-      container.classList.add('active');
+      // Node 모드 UI 표시
+      document.getElementById('node-editor-container').classList.add('active');
 
-      // 기존 내용 숨기고 Vizmaker iframe 표시
-      var existingContent = container.querySelector('.node-canvas-wrapper');
-      var existingBottom = container.querySelector('.node-bottom-bar');
-      if (existingContent) existingContent.style.display = 'none';
-      if (existingBottom) existingBottom.style.display = 'none';
-
-      var iframe = document.getElementById('vizmaker-iframe');
-      if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'vizmaker-iframe';
-        iframe.src = 'vizmaker/index.html';
-        iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;right:0;bottom:0;';
-        container.style.position = 'relative';
-        container.appendChild(iframe);
+      // 초기 노드 없으면 자동 생성
+      if (nodeEditor.nodes.length === 0) {
+        nodeEditor.addNode('source', 80, 120);
+        nodeEditor.addNode('renderer', 480, 120);
+        // 자동 연결
+        const srcN = nodeEditor.nodes.find(n => n.type === 'source');
+        const renN = nodeEditor.nodes.find(n => n.type === 'renderer');
+        if (srcN && renN) {
+          nodeEditor.connect(srcN.id, renN.id);
+        }
+        // 소스 카드를 선택된 상태로 시작
+        if (srcN) nodeEditor.selectNode(srcN.id);
+        // 높이 캐시 후 연결선 재렌더
+        requestAnimationFrame(() => nodeEditor.renderConnections());
       }
-      iframe.style.display = 'block';
 
-      setStatus('Vizmaker Node Editor');
+      // Source 노드에 이미지 자동 로드
+      const sourceNode = nodeEditor.nodes.find(n => n.type === 'source');
+      if (sourceNode && !sourceNode.data.image) {
+        if (state.originalImage) {
+          // Render 모드에서 이미 캡처한 이미지가 있으면 바로 사용
+          sourceNode.data.image = state.originalImage;
+          sourceNode.thumbnail = state.originalImage;
+          sourceNode.dirty = false;
+          nodeEditor.renderNode(sourceNode);
+          requestAnimationFrame(() => nodeEditor.renderConnections());
+        } else {
+          // WEBrick 서버에서 캡처 이미지 가져오기 (1초 타이머로 캡처 대기)
+          autoLoadSourceFromBridge(sourceNode);
+        }
+      }
+
+      setStatus('Node Editor Mode');
     }
 
     // WEBrick localhost:9876에서 캡처 이미지를 가져와 소스 노드에 자동 로드
