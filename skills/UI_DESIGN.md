@@ -2,17 +2,25 @@
 
 > 이 문서는 Vizmaker 실제 스크린샷 11장을 픽셀 단위로 분석한 결과이다.
 > Claude Code는 이 문서를 UI 구현의 최우선 참조로 사용하라.
-> **이모지를 아이콘으로 절대 사용하지 마라.** 모든 아이콘은 SVG 또는 lucide-react 아이콘 라이브러리를 사용한다.
+> **이모지를 아이콘으로 절대 사용하지 마라.** 모든 아이콘은 인라인 SVG로 직접 작성한다.
 
 ---
 
 ## 아이콘 규칙 (절대 위반 금지)
 
 - **이모지 사용 금지.** 어떤 상황에서도 이모지를 UI 아이콘으로 렌더링하면 안 된다.
-- 모든 아이콘은 `lucide-react` 라이브러리를 사용한다.
+- 모든 아이콘은 **인라인 SVG 아이콘**으로 직접 마크업에 작성한다.
 - 아이콘 색상: 비활성 `#888888`, 활성 `#ffffff`
 - 아이콘 크기: 사이드바 20px, 프리셋 그리드 내부 40~48px, 섹션 헤더 16px
-- 프리셋 아이콘은 **커스텀 SVG 일러스트레이션**이다. lucide에 없는 것은 간결한 라인 아트 SVG로 직접 그린다. 배경 없이 단색(흰색) 선화 스타일.
+- 프리셋 아이콘은 **커스텀 SVG 일러스트레이션**이다. 간결한 라인 아트 SVG로 직접 그린다. 배경 없이 단색(흰색) 선화 스타일.
+
+인라인 SVG 아이콘 사용 예시:
+```html
+<!-- 인라인 SVG 아이콘 사용 예시 -->
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="3" y="3" width="18" height="18" rx="2"/>
+</svg>
+```
 
 ---
 
@@ -26,8 +34,8 @@
 ├──────┬──────────────────────────────────┬───────────────────────┤
 │      │                                  │                       │
 │ 좌측  │      중앙 캔버스                  │    우측 패널           │
-│ 사이드 │      (React Flow)               │    (Inspector)        │
-│ 바    │                                  │                       │
+│ 사이드 │      (커스텀 Canvas 기반          │    (Inspector)        │
+│ 바    │       노드 캔버스)                │                       │
 │ 56px │                                  │     ~320px            │
 │      │                                  │                       │
 │      │                                  │                       │
@@ -118,16 +126,16 @@
 └──────┘
 ```
 
-### 아이콘 매핑 (lucide-react)
+### 아이콘 매핑 (인라인 SVG)
 
-| 위치 | 라벨 | lucide-react 아이콘 | 비고 |
+| 위치 | 라벨 | SVG 설명 | 비고 |
 |---|---|---|---|
-| 상단 1 | Render | `LayoutGrid` 또는 `Monitor` | Vizmaker에서는 격자+모니터 형태의 커스텀 아이콘. 가장 가까운 것: `Monitor` |
-| 상단 2 | History | `RotateCcw` | 시계 반대 방향 화살표 |
-| 상단 3 | Account | `Users` | 두 사람 실루엣 |
-| 상단 4 | Tutorial | `PlaySquare` | 재생 버튼이 있는 사각형 |
-| 하단 1 | Support | `HelpCircle` | 물음표 원 |
-| 하단 2 | Settings | `Settings` | 톱니바퀴 |
+| 상단 1 | Render | 모니터 형태 (사각형 + 받침대) | 격자+모니터 형태의 커스텀 SVG |
+| 상단 2 | History | 시계 반대 방향 회전 화살표 | 되돌리기 화살표 형태 |
+| 상단 3 | Account | 두 사람 실루엣 (원형 머리 + 어깨선) | 사용자 그룹 아이콘 |
+| 상단 4 | Tutorial | 재생 버튼이 있는 사각형 | 사각형 내부에 삼각형 재생 표시 |
+| 하단 1 | Support | 물음표가 들어있는 원 | 도움말 아이콘 |
+| 하단 2 | Settings | 톱니바퀴 | 6개 톱니가 있는 원형 기어 |
 
 ### 스타일 상세
 - 배경: `#0f0f1a`
@@ -147,13 +155,14 @@
 - 색상: `#111118`
 - 그리드 패턴: 미세한 점 또는 선 그리드, 색상 `#1a1a24`, 간격 20px
 - 캔버스는 무한 pan/zoom
+- **커스텀 Canvas 기반 노드 캔버스**로 구현 (외부 라이브러리 없이 `<canvas>` 또는 DOM 기반 직접 구현)
 
 ### 빈 캔버스 상태 (스크린샷 6)
 - 중앙에 수직 정렬:
   - 아이콘: 점선 사각형 + 이미지 + 커서 (SVG, 약 80×80px, 색상 `#555555`)
   - 텍스트: "Drag and drop an image to get started, or" (색상 `#888888`, 14px)
   - 버튼: [Browse] — `#00c9a7` 배경, `#ffffff` 텍스트, 둥근 모서리 6px, 패딩 8px 20px
-  - 아이콘 좌측에 작은 폴더 아이콘 (`FolderOpen` from lucide, 14px)
+  - 아이콘 좌측에 작은 폴더 아이콘 (인라인 SVG, 14px — 열린 폴더 형태)
 
 ### 노드 카드 디자인 (핵심)
 
@@ -281,7 +290,7 @@
 
 ### Enlarge 버튼
 - 위치: 우측 패널 최상단 우측
-- 아이콘: `Maximize2` (lucide) + "Enlarge" 텍스트
+- 아이콘: 확대 아이콘 (인라인 SVG — 대각선 양 끝에 화살표가 있는 사각형) + "Enlarge" 텍스트
 - 색상: `#888888`
 - 클릭 시: 결과 이미지를 중앙 캔버스 전체에 확대 표시
 
@@ -309,7 +318,7 @@
 - 미니 노드 하단에 라벨 (예: "Source", "1. Main renderer", "2. Details editor")
 
 ### Render Settings 섹션
-- 섹션 헤더: 좌측에 아이콘 (`Monitor` lucide, 16px), "Render settings" 텍스트, 우측에 접기 화살표 (`ChevronUp` lucide)
+- 섹션 헤더: 좌측에 아이콘 (인라인 SVG — 모니터 형태, 16px), "Render settings" 텍스트, 우측에 접기 화살표 (인라인 SVG — 위쪽 꺾쇠 `∧`)
 - 구분선: `1px solid #222233`
 
 **드롭다운 스타일:**
@@ -318,7 +327,7 @@
 - 테두리: `1px solid #333340`
 - 모서리: 6px
 - 높이: 36px
-- 화살표: `ChevronDown` (lucide, 14px)
+- 화살표: 인라인 SVG — 아래쪽 꺾쇠 `∨`, 14px
 - 열린 상태 (스크린샷 3): 아래로 펼쳐짐, 선택 항목 좌측에 `3px #00c9a7` 세로 바
 
 **드롭다운 항목 목록 (Render Mode):**
@@ -337,7 +346,7 @@
 - 활성 구간 (좌측~thumb): `#00c9a7`
 
 ### Prompt Presets 섹션
-- 섹션 헤더: 좌측 아이콘 (`FileText` or `ClipboardList` lucide, 16px), "Prompt Presets" 텍스트, 우측 접기 화살표
+- 섹션 헤더: 좌측 아이콘 (인라인 SVG — 클립보드/문서 형태, 16px), "Prompt Presets" 텍스트, 우측 접기 화살표
 - 3열 그리드, gap 8px
 
 **프리셋 카드 스타일:**
@@ -357,35 +366,35 @@
 
 **프리셋 아이콘 SVG 설명 (스크린샷에서 관찰):**
 
-| 프리셋 | SVG 설명 | 가까운 lucide 아이콘 (없으면 커스텀) |
-|---|---|---|
-| Screen to render | 점선 큐브 + 화살표 | 커스텀 SVG |
-| Image to sketch | 큐브 + 연필 효과 | 커스텀 SVG |
-| Top view | 위에서 본 큐브 + 화살표 | 커스텀 SVG |
-| Side view | 옆에서 본 큐브 + 화살표 | 커스텀 SVG |
-| Another view | 큐브 + 다른 방향 화살표 | 커스텀 SVG |
-| Enhance realism | 큐브 + 돋보기/반짝임 | 커스텀 SVG |
-| Volumetric rays | 빛 줄기 방사 형태 | `Sun` + 확장선 |
-| Make brighter | 슬라이더 + 밝기 바 | 커스텀 SVG |
-| Closeup | 돋보기 + 확대 뷰 | `Search` 변형 |
-| Axonometry | 축측투영 큐브 | 커스텀 SVG |
-| Winter | 눈꽃 결정 | `Snowflake` (lucide) |
-| Autumn | 나뭇잎 | `Leaf` (lucide) |
-| Technical drawings | 건축 도면 격자 | `Grid3x3` 변형 |
-| Logo | 체인링크/클립 형태 | `Link` 변형 |
-| Day to night | 해 + 달 (좌→우) | `SunMoon` (lucide) |
-| Night to day | 달 + 해 (좌→우) | `MoonStar` → `Sun` |
-| Add people | 사람 2명 실루엣 | `Users` (lucide) |
-| Add blurred people | 모션 블러 사람 | 커스텀 SVG |
-| Add blurred cars | 모션 블러 자동차 | 커스텀 SVG |
-| Add cars | 자동차 실루엣 | `Car` (lucide) |
-| Add flowers | 꽃 실루엣 | `Flower2` (lucide) |
-| Add grass | 풀잎 실루엣 | `Sprout` (lucide) |
-| Add trees | 나무 실루엣 | `TreePine` (lucide) |
-| Upscale | 돋보기 + 확대 | `SearchCode` 변형 |
-| Zoom in (video) | 카메라 + 줌인 | 커스텀 SVG (산 풍경 + 화살표) |
+| 프리셋 | SVG 설명 |
+|---|---|
+| Screen to render | 점선 큐브 + 화살표 (커스텀 SVG) |
+| Image to sketch | 큐브 + 연필 효과 (커스텀 SVG) |
+| Top view | 위에서 본 큐브 + 화살표 (커스텀 SVG) |
+| Side view | 옆에서 본 큐브 + 화살표 (커스텀 SVG) |
+| Another view | 큐브 + 다른 방향 화살표 (커스텀 SVG) |
+| Enhance realism | 큐브 + 돋보기/반짝임 (커스텀 SVG) |
+| Volumetric rays | 빛 줄기 방사 형태 (태양 + 확장 광선) |
+| Make brighter | 슬라이더 + 밝기 바 (커스텀 SVG) |
+| Closeup | 돋보기 + 확대 뷰 (돋보기 변형 SVG) |
+| Axonometry | 축측투영 큐브 (커스텀 SVG) |
+| Winter | 눈꽃 결정 (6갈래 눈송이 SVG) |
+| Autumn | 나뭇잎 (잎사귀 형태 SVG) |
+| Technical drawings | 건축 도면 격자 (3x3 격자 변형 SVG) |
+| Logo | 체인링크/클립 형태 (링크 형태 SVG) |
+| Day to night | 해 + 달 (좌→우, 반원 해+달 조합 SVG) |
+| Night to day | 달 + 해 (좌→우, 달→해 전환 SVG) |
+| Add people | 사람 2명 실루엣 (원형 머리 + 어깨선 SVG) |
+| Add blurred people | 모션 블러 사람 (커스텀 SVG) |
+| Add blurred cars | 모션 블러 자동차 (커스텀 SVG) |
+| Add cars | 자동차 실루엣 (자동차 측면 SVG) |
+| Add flowers | 꽃 실루엣 (꽃잎 5개 형태 SVG) |
+| Add grass | 풀잎 실루엣 (새싹/풀잎 형태 SVG) |
+| Add trees | 나무 실루엣 (삼각형 침엽수 SVG) |
+| Upscale | 돋보기 + 확대 (돋보기 내부 격자 SVG) |
+| Zoom in (video) | 카메라 + 줌인 (산 풍경 + 화살표 커스텀 SVG) |
 
-**중요: lucide에 없는 프리셋 아이콘은 아래 규칙으로 커스텀 SVG를 생성하라:**
+**중요: 모든 프리셋 아이콘은 아래 규칙으로 커스텀 인라인 SVG를 생성하라:**
 - viewBox: `0 0 40 40`
 - 선 색상: `currentColor` (CSS로 `#aaaaaa` / `#ffffff` 전환)
 - 선 두께: `stroke-width="1.5"`
@@ -417,12 +426,12 @@
 - 높이: 36px
 - 텍스트: `#ffffff`, 14px
 - placeholder: "Enter your image prompt here..." — `#555555`
-- 우측에 [×] 클리어 버튼: `X` (lucide, 14px), `#666666`, hover 시 `#ffffff`
+- 우측에 [×] 클리어 버튼: 인라인 SVG X자 형태, 14px, `#666666`, hover 시 `#ffffff`
 
 **Make 버튼:**
 - 배경: `#00c9a7`
 - 텍스트: `#ffffff`, 14px, bold
-- 좌측 아이콘: `Check` (lucide, 14px) — 체크마크
+- 좌측 아이콘: 인라인 SVG 체크마크 (✓ polyline 형태), 14px
 - 모서리: 6px
 - 크기: ~100px × 36px
 - hover: `#00ddb8` (약간 밝게)
@@ -449,12 +458,12 @@ Draw 탭 활성 시 중앙 캔버스 대신 드로잉 캔버스가 표시된다.
 [✏] [◯] [▷] [🗑] | Size: [●━━━━━━━] | [Green ▼]
 ```
 
-| 도구 | lucide 아이콘 | 설명 |
+| 도구 | SVG 설명 | 기능 |
 |---|---|---|
-| Pen | `Pen` | 기본 드로잉 (활성: `#00c9a7` 배경) |
-| Eraser | `Eraser` | 지우기 |
-| Move/Select | `MousePointer` | 오브젝트 이동 |
-| Delete | `Trash2` | 전체 삭제 |
+| Pen | 펜촉 형태 SVG | 기본 드로잉 (활성: `#00c9a7` 배경) |
+| Eraser | 지우개 형태 SVG | 지우기 |
+| Move/Select | 마우스 커서 형태 SVG | 오브젝트 이동 |
+| Delete | 쓰레기통 형태 SVG | 전체 삭제 |
 
 - 도구 버튼: 32×32px, 활성 시 `#00c9a7` 배경 + 흰색 아이콘
 - Size 슬라이더: 트랙 `#333340`, thumb `#00c9a7`
@@ -483,11 +492,11 @@ Preview 탭에서 Video 노드 결과 표시 시:
 └────────────────────────────────────┘
 ```
 
-- 재생/일시정지: `Play` / `Pause` (lucide)
-- 정지: `Square` (lucide)
+- 재생/일시정지: 인라인 SVG — 삼각형(재생) / 두 세로 막대(일시정지)
+- 정지: 인라인 SVG — 사각형
 - 타임라인: 슬라이더, thumb `#00c9a7`
 - 시간: "00:02 / 00:05" — `#888888`
-- 전체화면: `Maximize` (lucide)
+- 전체화면: 인라인 SVG — 네 모서리 확장 화살표
 
 ---
 
@@ -524,9 +533,9 @@ Preview 탭에서 Video 노드 결과 표시 시:
 - 이미지 그리드: 6열, gap 4px
 - 카드 크기: 약 200×160px
 - hover 시: Use / Save 버튼이 카드 상단에 오버레이 표시
-  - Use 버튼: `#1a1a24` 배경, `#ffffff` 텍스트, 좌측 `ArrowDownToLine` 아이콘 (lucide)
-  - Save 버튼: `#1a1a24` 배경, `#ffffff` 텍스트, 좌측 `Download` 아이콘 (lucide)
-- 타임스탬프: 카드 하단, `Clock` 아이콘 (lucide, 10px) + "N minutes ago" — `#888888`, 11px
+  - Use 버튼: `#1a1a24` 배경, `#ffffff` 텍스트, 좌측 인라인 SVG — 아래쪽 화살표+가로선 형태
+  - Save 버튼: `#1a1a24` 배경, `#ffffff` 텍스트, 좌측 인라인 SVG — 다운로드 화살표 형태
+- 타임스탬프: 카드 하단, 인라인 SVG 시계 아이콘 10px + "N minutes ago" — `#888888`, 11px
 - [Load More] 버튼: 하단 중앙, `#333340` 배경, `#cccccc` 텍스트, 모서리 6px
 
 ---
@@ -539,28 +548,17 @@ Preview 탭에서 Video 노드 결과 표시 시:
 
 ---
 
-## 11. 구현 시 필수 설치 패키지
+## 11. 빌드 도구 및 스타일
 
-```bash
-npm install lucide-react
-```
+빌드 도구 없음. 모든 코드는 `<script src>` 태그로 로드한다.
 
-아이콘 import 예시:
-```typescript
-import {
-  Monitor, RotateCcw, Users, PlaySquare,
-  HelpCircle, Settings, ChevronDown, ChevronUp,
-  Check, X, Maximize2, Search, Pen, Eraser,
-  MousePointer, Trash2, Play, Pause, Square,
-  Maximize, Clock, Download, ArrowDownToLine,
-  FolderOpen, Snowflake, Leaf, Car, Flower2,
-  Sprout, TreePine, Sun, Moon, Link
-} from 'lucide-react'
-```
+스타일은 plain CSS (`main-node-editor.css`)로 작성한다. 외부 CSS 프레임워크를 사용하지 않는다.
 
 ---
 
 ## 12. 반응형/크기 제약
+
+이 UI는 SketchUp HtmlDialog 내부에서 실행된다 (독립 브라우저가 아님).
 
 - 최소 창 너비: 1200px
 - 최소 창 높이: 700px

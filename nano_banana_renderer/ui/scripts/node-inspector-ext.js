@@ -38,6 +38,8 @@
           '<input type="range" class="ext-slider" data-upscale-param="detailStrength" min="0" max="100" value="50"></div>' +
         '<div class="control-section"><span class="section-label">Similarity</span>' +
           '<input type="range" class="ext-slider" data-upscale-param="similarity" min="0" max="100" value="50"></div>' +
+        '<div class="control-section"><span class="section-label">Prompt strength</span>' +
+          '<input type="range" class="ext-slider" data-upscale-param="promptStrength" min="0" max="100" value="50"></div>' +
       '</div>' +
     '</div>';
   }
@@ -154,7 +156,7 @@
       if (el) el.classList.add('hidden');
     });
 
-    var node = this.nodes.find(function(n) { return n.id === nodeEditor.selectedNode; });
+    var node = nodeEditor.nodes.find(function(n) { return n.id === nodeEditor.selectedNode; });
     if (node && extPanels.indexOf('inspector-' + node.type) >= 0) {
       // 기존 패널 숨기기
       var emptyEl = document.getElementById('node-inspector-empty');
@@ -164,11 +166,19 @@
       sourceEl.classList.add('hidden');
       rendererEl.classList.add('hidden');
 
-      // Preview 이미지 업데이트
+      // Preview 업데이트 (Video 노드는 비디오 플레이어 표시)
       var previewEl = document.getElementById('node-preview-image');
-      if (node.data.image) {
+      if (node.type === 'video' && node.data.videoUrl) {
+        previewEl.innerHTML = '<div class="video-player-container">' +
+          '<video class="video-player" controls autoplay loop muted><source src="' + node.data.videoUrl + '" type="video/mp4"></video>' +
+          '</div>';
+      } else if (node.data.image) {
         var imgSrc = node.data.image.startsWith('data:') ? node.data.image : 'data:image/png;base64,' + node.data.image;
         previewEl.innerHTML = '<img src="' + imgSrc + '" alt="Preview">';
+        // Video 노드에 이미지만 있으면 재생 아이콘 오버레이
+        if (node.type === 'video') {
+          previewEl.innerHTML += '<div class="node-video-overlay"><svg viewBox="0 0 24 24" fill="white" style="width:32px;height:32px;"><polygon points="5,3 19,12 5,21"/></svg></div>';
+        }
       } else {
         previewEl.innerHTML = '<span class="node-inspector-preview-empty">No preview</span>';
       }
@@ -177,13 +187,13 @@
       var panel = document.getElementById('inspector-' + node.type);
       if (panel) {
         panel.classList.remove('hidden');
-        this._syncExtInspector(node);
+        nodeEditor._syncExtInspector(node);
       }
 
       // 하단 프롬프트 바 동기화
       var bottomPrompt = document.getElementById('node-prompt-input');
       var bottomNegative = document.getElementById('node-prompt-negative-input');
-      var negativeRow = document.querySelector('.node-prompt-negative-row');
+      var promptTabs = document.querySelectorAll('.node-prompt-tab');
       var autoBtn = document.getElementById('node-prompt-auto-btn');
 
       if (node.type === 'compare') {
@@ -191,18 +201,18 @@
         bottomPrompt.disabled = true;
         bottomPrompt.placeholder = 'Compare node has no prompt';
         bottomNegative.value = '';
-        negativeRow.classList.remove('visible');
+        promptTabs.forEach(function(t) { t.disabled = true; });
         autoBtn.disabled = true;
       } else {
         bottomPrompt.value = node.data.customPrompt || node.data.prompt || '';
         bottomPrompt.disabled = false;
         bottomPrompt.placeholder = 'Enter prompt...';
         bottomNegative.value = node.data.negativePrompt || '';
-        negativeRow.classList.add('visible');
+        promptTabs.forEach(function(t) { t.disabled = false; });
         autoBtn.disabled = false;
       }
     } else {
-      origUpdateInspector.call(this);
+      origUpdateInspector.apply(nodeEditor, arguments);
     }
   };
 
@@ -308,5 +318,110 @@
       header.parentElement.classList.toggle('open');
     });
   });
+
+  // Draw 탭 연동: 탭 전환 시 drawTab에 현재 노드 로드
+  document.querySelectorAll('.node-inspector-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      if (tab.dataset.tab === 'draw' && window.drawTab && nodeEditor.selectedNode) {
+        var node = nodeEditor.nodes.find(function(n) { return n.id === nodeEditor.selectedNode; });
+        if (node && node.type === 'modifier') {
+          drawTab.loadFromNode(node.id);
+        }
+      }
+      if (tab.dataset.tab === 'compare' && nodeEditor.selectedNode) {
+        _renderCompareView();
+      }
+    });
+  });
+
+  // ============= Compare Viewer =============
+
+  function _getCompareImages(node) {
+    // compare 노드: 연결된 입력 노드 또는 우클릭으로 지정한 Compare A/B 사용
+    if (!node) return { a: null, b: null };
+
+    // 우클릭 Compare A/B가 지정되어 있으면 우선
+    var imgA = null, imgB = null;
+    if (nodeEditor._compareA) {
+      var aNode = nodeEditor.nodes.find(function(n) { return n.id === nodeEditor._compareA; });
+      if (aNode && aNode.data && aNode.data.image) {
+        imgA = aNode.data.image;
+        if (!imgA.startsWith('data:')) imgA = 'data:image/png;base64,' + imgA;
+      }
+    }
+    if (nodeEditor._compareB) {
+      var bNode = nodeEditor.nodes.find(function(n) { return n.id === nodeEditor._compareB; });
+      if (bNode && bNode.data && bNode.data.image) {
+        imgB = bNode.data.image;
+        if (!imgB.startsWith('data:')) imgB = 'data:image/png;base64,' + imgB;
+      }
+    }
+    if (imgA || imgB) return { a: imgA, b: imgB };
+
+    // fallback: 연결된 입력 노드
+    var conns = nodeEditor.connections.filter(function(c) { return c.to === node.id; });
+    var images = [];
+    for (var i = 0; i < conns.length && i < 2; i++) {
+      var inputNode = nodeEditor.nodes.find(function(n) { return n.id === conns[i].from; });
+      if (inputNode && inputNode.data && inputNode.data.image) {
+        var src = inputNode.data.image;
+        if (!src.startsWith('data:')) src = 'data:image/png;base64,' + src;
+        images.push(src);
+      }
+    }
+    return { a: images[0] || null, b: images[1] || null };
+  }
+
+  function _renderCompareView() {
+    var node = nodeEditor.nodes.find(function(n) { return n.id === nodeEditor.selectedNode; });
+    if (!node || node.type !== 'compare') return;
+
+    var compareContent = document.querySelector('.node-preview-tab-content[data-content="compare"]');
+    if (!compareContent) return;
+
+    var imgs = _getCompareImages(node);
+    var mode = node.data.mode || 'slider';
+
+    if (!imgs.a && !imgs.b) {
+      compareContent.innerHTML = '<div class="node-inspector-preview-image"><span class="node-inspector-preview-empty">Connect 2 nodes to compare</span></div>';
+      return;
+    }
+
+    if (mode === 'side_by_side') {
+      compareContent.innerHTML =
+        '<div class="compare-side-by-side">' +
+          '<div class="compare-side">' + (imgs.a ? '<img src="' + imgs.a + '" alt="A">' : '<span class="node-inspector-preview-empty">No image A</span>') + '<div class="compare-label">A</div></div>' +
+          '<div class="compare-side">' + (imgs.b ? '<img src="' + imgs.b + '" alt="B">' : '<span class="node-inspector-preview-empty">No image B</span>') + '<div class="compare-label">B</div></div>' +
+        '</div>';
+    } else {
+      // Slider mode
+      compareContent.innerHTML =
+        '<div class="compare-slider-container">' +
+          '<div class="compare-slider-img-a">' + (imgs.a ? '<img src="' + imgs.a + '" alt="A">' : '') + '</div>' +
+          '<div class="compare-slider-img-b">' + (imgs.b ? '<img src="' + imgs.b + '" alt="B">' : '') + '</div>' +
+          '<div class="compare-slider-divider" id="compare-divider"><div class="compare-slider-handle"></div></div>' +
+          '<div class="compare-label" style="left:8px;">A</div>' +
+          '<div class="compare-label" style="right:8px;">B</div>' +
+        '</div>';
+
+      // 슬라이더 드래그 이벤트
+      var container = compareContent.querySelector('.compare-slider-container');
+      var divider = document.getElementById('compare-divider');
+      var imgB = compareContent.querySelector('.compare-slider-img-b');
+      if (container && divider && imgB) {
+        var isDragging = false;
+        divider.addEventListener('mousedown', function() { isDragging = true; });
+        document.addEventListener('mousemove', function(e) {
+          if (!isDragging) return;
+          var rect = container.getBoundingClientRect();
+          var x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+          var pct = (x / rect.width) * 100;
+          divider.style.left = pct + '%';
+          imgB.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
+        });
+        document.addEventListener('mouseup', function() { isDragging = false; });
+      }
+    }
+  }
 
 })();

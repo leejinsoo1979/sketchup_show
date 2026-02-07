@@ -15,12 +15,13 @@
 │   - Camera/Scene Meta   │
 │   - Result Import       │
 └────────┬────────────────┘
-         │ REST (image + JSON meta)
+         │ sketchup.callback() / execute_script()
          ▼
 ┌─────────────────────────────────┐
-│   Node Graph Editor (React)     │
+│   Node Graph Editor             │
+│   (Vanilla JS, HtmlDialog)     │
 │                                 │
-│   - NodeCanvas (pan/zoom/drag)  │
+│   - NodeCanvas (drag/pan)       │
 │   - Inspector Panel (right)     │
 │   - Preview/Compare/Draw tabs   │
 │   - Prompt bar (bottom)         │
@@ -36,7 +37,7 @@
 │   - Status Propagation          │
 │   - Cache (hash-based)          │
 └────────┬────────────────────────┘
-         │ API calls
+         │ API calls (via Ruby bridge)
          ▼
 ┌─────────────────────────────────┐
 │   AI Renderer / Processor APIs  │
@@ -52,9 +53,10 @@
 ### 1.2 핵심 원칙
 
 - SketchUp Ruby 플러그인은 이미 구현되어 있다. Source 공급자이자 결과 소비자 역할만 한다.
-- 본 시스템은 기존 렌더링 UI 위에 Node Graph를 추가하는 구조이다.
+- 본 시스템은 기존 렌더링 UI 위에 Node Graph를 추가하는 구조이다. SketchUp의 HtmlDialog 내부에서 동작한다.
 - 모든 AI 실행은 Make 버튼 클릭 시에만 발생한다. 노드 연결/수정 시 자동 실행은 없다.
 - 노드 그래프는 DAG(Directed Acyclic Graph)이다. 순환 연결은 금지한다.
+- HtmlDialog의 Chromium 88 CEF 엔진 제약에 따라 ES5 호환 문법(`var`, `function`)을 기본으로 사용한다. ES6 화살표 함수, `Promise`, `async/await`는 Chromium 88에서 지원되므로 사용 가능하다. `const`/`let`은 교차 파일 스코프 문제로 `var`를 사용한다.
 
 ### 1.3 Render Mode 매핑 (Vizmaker 기준)
 
@@ -71,109 +73,75 @@ Vizmaker의 Render Mode 드롭다운에 나타나는 모드는 다음과 같다.
 
 ---
 
-## 2. React 기준 컴포넌트 구조
+## 2. 스크립트 모듈 구조
 
 ### 2.1 디렉토리 구조
 
 ```
-/src
- ├─ app/
- │   ├─ App.tsx                    // 루트 컴포넌트
- │   ├─ Router.tsx                 // 라우팅
- │   └─ store.ts                   // Zustand 루트 스토어
- │
- ├─ editor/
- │   ├─ NodeEditor.tsx             // 전체 에디터 레이아웃 (좌측 사이드바 + 캔버스 + 우측 패널)
- │   │
- │   ├─ canvas/
- │   │   ├─ NodeCanvas.tsx         // React Flow 기반 캔버스 (pan, zoom, grid)
- │   │   ├─ ConnectionLayer.tsx    // 노드 간 연결선 렌더링
- │   │   └─ CanvasContextMenu.tsx  // 캔버스 우클릭 메뉴 (Load image / Clear all / Rearrange nodes)
- │   │
- │   ├─ nodes/
- │   │   ├─ BaseNode.tsx           // 공통 노드 셸 (썸네일 + 라벨 + 포트 + 상태 표시)
- │   │   ├─ SourceNode.tsx         // Source 이미지 노드
- │   │   ├─ RenderNode.tsx         // Main renderer / Experimental renderer
- │   │   ├─ ModifierNode.tsx       // Details editor (프롬프트 기반 수정)
- │   │   ├─ UpscaleNode.tsx        // Creative upscaler
- │   │   ├─ VideoNode.tsx          // Image to video
- │   │   └─ CompareNode.tsx        // A/B 비교 (비실행 노드)
- │   │
- │   ├─ panels/
- │   │   ├─ InspectorPanel.tsx     // 우측 통합 패널 (Preview + Render settings + Prompt Presets)
- │   │   ├─ PreviewTab.tsx         // Preview 탭: 선택 노드 결과 이미지 표시 + 확대
- │   │   ├─ CompareTab.tsx         // Compare 탭: A/B 슬라이더 비교
- │   │   ├─ DrawTab.tsx            // Draw 탭: 이미지 위 드로잉 + 마스킹
- │   │   ├─ RenderSettings.tsx     // Render Mode 드롭다운 + 엔진별 파라미터
- │   │   ├─ PromptPresets.tsx      // 프리셋 아이콘 그리드
- │   │   └─ UpscaleSettings.tsx    // Upscale 전용 설정 (배율, Creativity, Detail strength 등)
- │   │
- │   ├─ sidebar/
- │   │   ├─ LeftSidebar.tsx        // 좌측 아이콘 사이드바
- │   │   ├─ RenderButton.tsx       // 노드 그래프 뷰 진입 아이콘
- │   │   ├─ HistoryButton.tsx      // History 페이지 진입
- │   │   ├─ AccountButton.tsx      // Account 설정
- │   │   ├─ TutorialButton.tsx     // Tutorial
- │   │   ├─ SupportButton.tsx      // Support 링크
- │   │   └─ SettingsButton.tsx     // Settings
- │   │
- │   ├─ toolbar/
- │   │   ├─ PromptBar.tsx          // 하단 프롬프트 입력 바
- │   │   ├─ MakeButton.tsx         // Make 실행 버튼 + 크레딧 표시
- │   │   └─ EnlargeButton.tsx      // 우측 상단 Enlarge 버튼
- │   │
- │   └─ history/
- │       ├─ HistoryPage.tsx        // 히스토리 전체 페이지
- │       └─ HistoryCard.tsx        // 개별 히스토리 카드 (Use / Save 버튼)
- │
- ├─ drawing/
- │   ├─ DrawCanvas.tsx             // 드로잉 캔버스 (pen, eraser, move)
- │   ├─ DrawToolbar.tsx            // 드로잉 도구 (펜/지우개/커서/삭제 + 브러시 크기 + 색상)
- │   └─ PasteHandler.tsx           // Ctrl+V 이미지 붙여넣기 처리
- │
- ├─ state/
- │   ├─ graphStore.ts              // 노드/엣지 상태 (nodes[], edges[], selectedNodeId)
- │   ├─ executionStore.ts          // 실행 상태 (queue, running, results)
- │   ├─ historyStore.ts            // 히스토리 스냅샷 관리
- │   ├─ uiStore.ts                 // UI 상태 (activeTab, zoom, pan)
- │   └─ creditStore.ts             // 크레딧 잔액 및 비용 계산
- │
- ├─ engine/
- │   ├─ pipelineExecutor.ts        // DAG 정렬 + 순차/병렬 실행
- │   ├─ renderQueue.ts             // 실행 큐 관리
- │   ├─ cacheManager.ts            // 파라미터 해시 기반 캐시
- │   └─ adapters/
- │       ├─ mainRenderer.ts        // 1. Main renderer API 어댑터
- │       ├─ detailsEditor.ts       // 2. Details editor API 어댑터
- │       ├─ creativeUpscaler.ts    // 3. Creative upscaler API 어댑터
- │       ├─ imageToVideo.ts        // 4. Image to video API 어댑터
- │       └─ experimentalRenderer.ts // Experimental 엔진 어댑터
- │
- ├─ api/
- │   ├─ sketchupBridge.ts          // SketchUp ↔ Web 통신
- │   ├─ renderApi.ts               // AI 렌더 API 호출
- │   └─ historyApi.ts              // 히스토리 저장/조회
- │
- └─ types/
-     ├─ node.ts                    // 노드 타입 정의
-     ├─ engine.ts                  // 엔진 인터페이스
-     ├─ preset.ts                  // 프리셋 타입
-     └─ graph.ts                   // 그래프 전체 타입
+nano_banana_renderer/
+├── main.rb                          # Ruby 진입점, 메뉴 등록, HtmlDialog 생성
+├── services/
+│   ├── scene_exporter.rb            # SketchUp → PNG
+│   ├── api_client.rb                # Gemini API 통신
+│   └── ...                          # 기타 Ruby 서비스 모듈
+├── ui/
+│   ├── main_dialog.html             # 메인 HTML (모든 모드 포함)
+│   ├── scripts/
+│   │   ├── core.js                  # 공유 상태(state), DOM 캐시(el), Ruby 브릿지(callRuby/sketchup)
+│   │   ├── node-presets.js          # 프리셋 데이터 (nodePresets 전역 객체)
+│   │   ├── node-editor.js           # 메인 노드 에디터 (nodeEditor 전역 객체)
+│   │   ├── render-mode.js           # 렌더 모드 로직 (캡처, 렌더링, 설정, 카메라, 씬)
+│   │   ├── mix-mode.js              # 믹스 모드 로직 (인페인팅, 오브젝트 배치 등)
+│   │   ├── node-types-ext.js        # 확장 노드 타입 등록 (modifier, upscale, video, compare)
+│   │   └── node-inspector-ext.js    # 확장 노드 타입 Inspector UI
+│   └── styles/
+│       └── *.css                    # 일반 CSS (빌드 없음, 직접 link 태그)
+└── assets/
+    └── object_library/              # 기본 오브젝트 PNG
 ```
 
-### 2.2 컴포넌트 책임 분리
+### 2.2 스크립트 로딩 순서
 
-**NodeEditor.tsx** — 전체 에디터 레이아웃을 구성한다. 좌측 LeftSidebar, 중앙 NodeCanvas, 우측 InspectorPanel, 하단 PromptBar + MakeButton을 배치한다.
+HTML에서 `<script src>` 태그로 순서대로 로드한다. 빌드 도구 없음.
 
-**NodeCanvas.tsx** — React Flow 기반. 노드 배치, 드래그 이동, 엣지 연결, pan/zoom을 처리한다. 노드 클릭 시 `graphStore.selectedNodeId`를 갱신한다. 노드 더블클릭 시 해당 결과 이미지를 PreviewTab에서 100% 확대 표시한다.
+```html
+<script src="scripts/core.js"></script>
+<script src="scripts/node-presets.js"></script>
+<script src="scripts/node-editor.js"></script>
+<script src="scripts/render-mode.js"></script>
+<script src="scripts/mix-mode.js"></script>
+<script src="scripts/node-types-ext.js"></script>
+<script src="scripts/node-inspector-ext.js"></script>
+```
 
-**BaseNode.tsx** — 모든 노드의 공통 셸. 썸네일 이미지, 노드 라벨(Render Mode 이름 + 프롬프트 요약), 입출력 포트(원형 커넥터), 실행 상태 인디케이터(idle/running/done/error)를 렌더링한다. Vizmaker 스크린샷 기준으로 노드는 직사각형 카드이며 내부에 결과 이미지 썸네일이 표시된다.
+### 2.3 모듈 책임 분리
 
-**InspectorPanel.tsx** — 우측 패널. 상단에 Enlarge 버튼, 그 아래에 Preview/Compare/Draw 탭 전환, 그 아래에 노드 그래프 미니맵(선택 노드 하이라이트), 그 아래에 Render Settings 섹션, 최하단에 Prompt Presets 그리드를 표시한다. 노드 미선택 시 빈 상태로 표시한다.
+**core.js** — 공유 상태(`var state`), DOM 요소 캐시(`var el`), SketchUp Ruby 브릿지(`callRuby` 함수, `var sketchup` 객체)를 정의한다. 씬별 상태 저장/복원, 프롬프트 탭 전환 처리. 모든 후속 스크립트가 참조하는 기반 모듈이다.
 
-**PromptBar.tsx** — 하단 전체 너비 텍스트 입력. 프롬프트를 직접 입력하거나 프리셋 클릭 시 자동 채워진다. Vizmaker 기준 플레이스홀더: "Enter your image prompt here..."
+**node-presets.js** — 프리셋 데이터(`var nodePresets`)를 전역 객체로 정의한다. `render`, `modifier`, `upscale`, `video` 카테고리별 프리셋 배열을 포함한다. 코드 로직 없이 데이터만 포함한다.
 
-**MakeButton.tsx** — 하단 우측. 클릭 시 현재 선택된 노드를 기준으로 상위 DAG를 실행한다. 버튼 하단에 소모 크레딧을 표시한다 (예: "Credits: 1").
+**node-editor.js** — 메인 노드 에디터 로직(`var nodeEditor`). 노드 추가/삭제/선택, 드래그 이동, 포트 연결, Canvas 기반 연결선 렌더링, Inspector 패널 업데이트, Make 실행(DAG 순서), topologicalSort를 구현한다. 노드 클릭 시 `nodeEditor.selectedNode`를 갱신한다. 노드 썸네일, 상태 인디케이터, 인라인 SVG 아이콘을 렌더링한다.
+
+**render-mode.js** — 렌더 모드 전용 로직. SketchUp 캡처 콜백(`onCaptureComplete`), 렌더 시작/완료/에러 콜백, Auto 프롬프트, 히스토리, 설정 패널, 카메라 컨트롤(WASD), 씬 탭, 그리드 가이드, 모드 전환(`switchToRenderMode`, `switchToMixMode`, `switchToNodeMode`)을 처리한다.
+
+**mix-mode.js** — 믹스 모드 전용 로직(`var mixState`). 인페인팅 마스크 캔버스, 핫스팟 배치, 재질 교체, 도면 3D 변환 서브모드를 처리한다.
+
+**node-types-ext.js** — 확장 노드 타입(modifier, upscale, video, compare)을 nodeEditor 레지스트리에 등록한다. 아이콘(`_icons`), 타이틀(`_titles`), 포트 제약(`_noOutputTypes`, `_noInputTypes`), 기본 데이터(`getDefaultData` 확장), 실행 로직(`execute` 확장), 순환 검사(`connect` 확장)를 추가한다. IIFE로 감싸서 내부 변수 오염을 방지한다.
+
+**node-inspector-ext.js** — 확장 노드 타입의 Inspector UI를 동적으로 생성한다. modifier/upscale/video/compare 패널 HTML 빌드, `updateInspector` 확장, 슬라이더/버튼 이벤트 바인딩을 처리한다. IIFE로 감싼다.
+
+### 2.4 크로스 파일 통신 패턴
+
+모든 크로스 파일 공유는 `var`로 선언된 전역 변수를 통해 이루어진다.
+
+| 전역 변수 | 정의 위치 | 참조 위치 | 설명 |
+|---|---|---|---|
+| `state` | core.js | render-mode.js, mix-mode.js | 앱 전체 상태 |
+| `el` | core.js | render-mode.js | DOM 요소 캐시 |
+| `sketchup` | core.js | node-editor.js, render-mode.js | Ruby 콜백 래퍼 |
+| `callRuby` | core.js | mix-mode.js | Ruby 호출 함수 |
+| `nodeEditor` | node-editor.js | node-types-ext.js, node-inspector-ext.js, render-mode.js | 노드 에디터 |
+| `nodePresets` | node-presets.js | node-inspector-ext.js | 프리셋 데이터 |
 
 ---
 
@@ -193,10 +161,21 @@ Vizmaker의 Render Mode 드롭다운에 나타나는 모드는 다음과 같다.
 
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
-| `origin` | `"sketchup" \| "upload" \| "paste"` | `"upload"` | 이미지 소스 |
+| `origin` | `"sketchup"` / `"upload"` / `"paste"` | `"upload"` | 이미지 소스 |
 | `image` | `string` | `""` | 이미지 URL 또는 base64 |
 | `cameraLocked` | `boolean` | `false` | SketchUp 카메라 고정 여부 |
-| `sceneMeta` | `SceneMeta \| null` | `null` | SketchUp 씬 메타데이터 |
+| `sceneMeta` | `object` / `null` | `null` | SketchUp 씬 메타데이터 |
+
+**JS 기본 데이터 구조:**
+
+```javascript
+// core.js 또는 node-editor.js 내 getDefaultData
+var defaultSourceData = {
+  time: 'day',
+  light: 'on',
+  image: null
+};
+```
 
 **동작:** 이미지를 드래그 앤 드롭하거나 Browse 버튼으로 업로드하면 Source 노드가 자동 생성된다. SketchUp에서 전송 시 `origin: "sketchup"`으로 자동 생성된다. DAG의 루트이다.
 
@@ -216,11 +195,24 @@ Vizmaker의 Render Mode 드롭다운에 나타나는 모드는 다음과 같다.
 
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
-| `engine` | `"main" \| "experimental-exterior" \| "experimental-interior"` | `"main"` | 렌더 엔진 |
+| `engine` | `"main"` / `"experimental-exterior"` / `"experimental-interior"` | `"main"` | 렌더 엔진 |
 | `prompt` | `string` | `"Create photorealistic image"` | 사용자 프롬프트 |
-| `presetId` | `string \| null` | `null` | 적용된 Prompt Preset ID |
-| `seed` | `number \| null` | `null` | null이면 랜덤 |
+| `presetId` | `string` / `null` | `null` | 적용된 Prompt Preset ID |
+| `seed` | `number` / `null` | `null` | null이면 랜덤 |
 | `resolution` | `string` | `"1200x1200"` | 출력 해상도 |
+
+**JS 기본 데이터 구조:**
+
+```javascript
+var defaultRendererData = {
+  mode: 'nanobanana-pro',
+  resolution: '2048',
+  aspect: 'original',
+  presets: [],
+  customPrompt: '',
+  negativePrompt: ''
+};
+```
 
 **동작:** 입력 이미지에 프롬프트를 적용하여 AI 렌더링을 수행한다. Vizmaker에서 "1. Main renderer" 또는 "(experimental)" 모드에 해당한다.
 
@@ -241,18 +233,36 @@ Vizmaker의 Render Mode 드롭다운에 나타나는 모드는 다음과 같다.
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
 | `prompt` | `string` | `""` | 수정 지시 프롬프트 |
-| `presetId` | `string \| null` | `null` | 적용된 Prompt Preset ID |
-| `mask` | `string \| null` | `null` | Draw 탭에서 생성된 마스크 이미지 (base64) |
-| `maskLayers` | `MaskLayer[]` | `[]` | 색상별 마스크 레이어 목록 |
+| `presetId` | `string` / `null` | `null` | 적용된 Prompt Preset ID |
+| `mask` | `string` / `null` | `null` | Draw 탭에서 생성된 마스크 이미지 (base64) |
+| `maskLayers` | `array` | `[]` | 색상별 마스크 레이어 목록 |
 
 **MaskLayer 구조:**
 
-```typescript
-interface MaskLayer {
-  color: "red" | "green" | "blue" | "yellow"
-  action: "add" | "remove" | "replace"
-  description: string
-}
+```javascript
+/**
+ * @typedef {Object} MaskLayer
+ * @property {string} color - "red" | "green" | "blue" | "yellow"
+ * @property {string} action - "add" | "remove" | "replace"
+ * @property {string} description - 레이어 설명
+ */
+var exampleMaskLayer = {
+  color: "red",
+  action: "add",
+  description: "add dog"
+};
+```
+
+**JS 기본 데이터 구조:**
+
+```javascript
+var defaultModifierData = {
+  prompt: '',
+  presetId: null,
+  negativePrompt: '',
+  mask: null,
+  customPrompt: ''
+};
 ```
 
 **동작:** 이미 렌더된 이미지에 프롬프트 기반 세부 수정을 수행한다. Vizmaker에서 "2. Details editor" 모드에 해당한다. Prompt Preset (Enhance realism, Add people, Day to night 등)은 이 노드에서 사용된다. Draw 탭에서 마스크를 생성하면 마스킹 영역 + 프롬프트를 결합하여 인페인팅을 수행한다.
@@ -279,13 +289,28 @@ interface MaskLayer {
 
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
-| `scale` | `2 \| 4` | `2` | 확대 배율 |
-| `optimizedFor` | `"standard" \| "detail" \| "smooth"` | `"standard"` | 최적화 모드 |
-| `creativity` | `number` | `0.0` | 0.0~1.0 범위 |
-| `detailStrength` | `number` | `0.0` | HDR 디테일 강도 0.0~1.0 |
-| `similarity` | `number` | `0.0` | 원본 유사도 0.0~1.0 |
+| `scale` | `2` / `4` | `2` | 확대 배율 |
+| `optimizedFor` | `"standard"` / `"detail"` / `"smooth"` | `"standard"` | 최적화 모드 |
+| `creativity` | `number` | `0.5` | 0.0~1.0 범위 |
+| `detailStrength` | `number` | `0.5` | HDR 디테일 강도 0.0~1.0 |
+| `similarity` | `number` | `0.5` | 원본 유사도 0.0~1.0 |
 | `promptStrength` | `number` | `0.0` | 프롬프트 영향도 0.0~1.0 |
 | `prompt` | `string` | `"Upscale"` | 업스케일 프롬프트 |
+
+**JS 기본 데이터 구조:**
+
+```javascript
+var defaultUpscaleData = {
+  scale: 2,
+  optimizedFor: 'standard',
+  creativity: 0.5,
+  detailStrength: 0.5,
+  similarity: 0.5,
+  promptStrength: 0.5,
+  prompt: 'Upscale',
+  customPrompt: ''
+};
+```
 
 **동작:** Vizmaker에서 "3. Creative upscaler" 모드에 해당한다. 저해상도 AI 이미지(1200px)를 2x/4x 확대하며 디테일을 보강한다.
 
@@ -305,10 +330,22 @@ interface MaskLayer {
 
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
-| `engine` | `"kling" \| "seedance"` | `"kling"` | 비디오 생성 엔진 |
-| `duration` | `5 \| 10` | `5` | 영상 길이(초) |
+| `engine` | `"kling"` / `"seedance"` | `"kling"` | 비디오 생성 엔진 |
+| `duration` | `5` / `10` | `5` | 영상 길이(초) |
 | `prompt` | `string` | `"Move forward"` | 카메라 모션 프롬프트 |
-| `endFrameImage` | `string \| null` | `null` | 종료 프레임 이미지 (2프레임 전환용) |
+| `endFrameImage` | `string` / `null` | `null` | 종료 프레임 이미지 (2프레임 전환용) |
+
+**JS 기본 데이터 구조:**
+
+```javascript
+var defaultVideoData = {
+  engine: 'kling',
+  duration: 5,
+  prompt: 'Move forward',
+  endFrameImage: null,
+  customPrompt: ''
+};
+```
 
 **동작:** Vizmaker에서 "4. Image to video" 모드에 해당한다. 단일 이미지에서 카메라 모션 영상을 생성하거나, 시작/종료 프레임 2장을 지정하여 전환 애니메이션을 생성한다. 결과는 노드 내에서 자동 재생된다.
 
@@ -337,7 +374,17 @@ interface MaskLayer {
 
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
-| `mode` | `"slider" \| "side_by_side"` | `"slider"` | 비교 모드 |
+| `mode` | `"slider"` / `"side_by_side"` | `"slider"` | 비교 모드 |
+
+**JS 기본 데이터 구조:**
+
+```javascript
+var defaultCompareData = {
+  mode: 'slider',
+  imageA: null,
+  imageB: null
+};
+```
 
 **동작:** 두 이미지를 슬라이더 또는 나란히 비교한다. 노드 우클릭 → "Compare A" / "Compare B"로 슬롯에 할당한다. AI 실행을 수행하지 않으며 크레딧을 소모하지 않는다.
 
@@ -347,90 +394,94 @@ interface MaskLayer {
 
 ### 4.1 전체 그래프 스키마
 
-```typescript
-interface Graph {
-  graphId: string                    // UUID
-  nodes: NodeData[]
-  edges: EdgeData[]
-  meta: {
-    createdAt: string               // ISO 8601
-    updatedAt: string
-    source: "sketchup" | "web" | "api"
-    appVersion: string
-  }
-  ui: {
-    zoom: number                    // 기본 1.0
-    pan: { x: number; y: number }
-  }
-}
+```javascript
+/**
+ * @typedef {Object} Graph
+ * @property {string} graphId - UUID
+ * @property {NodeData[]} nodes
+ * @property {EdgeData[]} edges
+ * @property {Object} meta
+ * @property {string} meta.createdAt - ISO 8601
+ * @property {string} meta.updatedAt
+ * @property {string} meta.source - "sketchup" | "web" | "api"
+ * @property {string} meta.appVersion
+ * @property {Object} ui
+ * @property {number} ui.zoom - 기본 1.0
+ * @property {Object} ui.pan - { x: number, y: number }
+ */
 
-interface EdgeData {
-  id: string                        // UUID
-  from: string                      // sourceNodeId
-  fromPort: string                  // 출력 포트명 ("image" | "video")
-  to: string                       // targetNodeId
-  toPort: string                    // 입력 포트명 ("image" | "endFrame" | "imageA" | "imageB")
-}
+/**
+ * @typedef {Object} EdgeData
+ * @property {string} id - UUID
+ * @property {string} from - sourceNodeId
+ * @property {string} fromPort - 출력 포트명 ("image" | "video")
+ * @property {string} to - targetNodeId
+ * @property {string} toPort - 입력 포트명 ("image" | "endFrame" | "imageA" | "imageB")
+ */
 ```
+
+**현재 구현에서의 연결 데이터:** `nodeEditor.connections` 배열은 단순 `{ from: nodeId, to: nodeId }` 형태를 사용한다. 포트명은 노드 타입에서 자동 추론한다.
 
 ### 4.2 공통 노드 구조
 
-```typescript
-interface NodeData {
-  id: string                        // UUID
-  type: NodeType
-  position: { x: number; y: number }
-  status: NodeStatus
-  params: Record<string, any>       // 노드 타입별 파라미터
-  result: NodeResult | null
-  cost: number                      // 예상 크레딧 소모량
-  version: string                   // 노드 스키마 버전 ("1.0.0")
-}
+```javascript
+/**
+ * @typedef {Object} NodeData
+ * @property {number} id - 노드 고유 ID (nodeEditor.nextNodeId로 자동 증가)
+ * @property {string} type - 노드 타입
+ * @property {number} x - X 좌표
+ * @property {number} y - Y 좌표
+ * @property {boolean} dirty - 변경 여부 (재실행 필요 표시)
+ * @property {Object} data - 노드 타입별 파라미터
+ * @property {string|null} thumbnail - 결과 이미지 base64
+ */
 
-type NodeType = "SOURCE" | "RENDER" | "MODIFIER" | "UPSCALE" | "VIDEO" | "COMPARE"
+// 노드 타입 상수
+// "source" | "renderer" | "modifier" | "upscale" | "video" | "compare"
 
-type NodeStatus = "idle" | "queued" | "running" | "done" | "error" | "cancelled" | "blocked"
+// 노드 상태 (CSS 클래스로 표현)
+// idle: 기본
+// processing: .processing 클래스 추가
+// done: dirty = false
+// error: 에러 시 콘솔 출력
+```
 
-interface NodeResult {
-  image?: string                    // 결과 이미지 URL
-  video?: string                    // 결과 비디오 URL
-  resolution?: string              // "1200x1200"
-  timestamp: string                // ISO 8601
-  cacheKey: string                 // 파라미터 해시
-}
+**현재 구현에서의 노드 객체 예시:**
+
+```javascript
+var exampleNode = {
+  id: 1,
+  type: 'renderer',
+  x: 480,
+  y: 120,
+  dirty: true,
+  data: {
+    mode: 'nanobanana-pro',
+    resolution: '2048',
+    aspect: 'original',
+    presets: ['enhance-realism'],
+    customPrompt: 'Create photorealistic interior',
+    negativePrompt: 'cartoon, sketch'
+  },
+  thumbnail: null  // base64 string when result exists
+};
 ```
 
 ### 4.3 Source Node 스키마
 
 ```json
 {
-  "id": "node-001",
-  "type": "SOURCE",
-  "position": { "x": 100, "y": 200 },
-  "status": "done",
-  "params": {
-    "origin": "sketchup",
-    "image": "https://storage.example.com/scene_capture.png",
-    "cameraLocked": true,
-    "sceneMeta": {
-      "modelName": "Interior_v5",
-      "fov": 35,
-      "eye": [10.5, 3.2, -5.1],
-      "target": [0, 1.5, 0],
-      "up": [0, 1, 0],
-      "shadow": true,
-      "style": "Default",
-      "sceneId": "Scene_03"
-    }
+  "id": 1,
+  "type": "source",
+  "x": 80,
+  "y": 120,
+  "dirty": true,
+  "data": {
+    "time": "day",
+    "light": "on",
+    "image": null
   },
-  "result": {
-    "image": "https://storage.example.com/scene_capture.png",
-    "resolution": "1920x1080",
-    "timestamp": "2025-01-15T10:30:00Z",
-    "cacheKey": "abc123"
-  },
-  "cost": 0,
-  "version": "1.0.0"
+  "thumbnail": null
 }
 ```
 
@@ -438,20 +489,20 @@ interface NodeResult {
 
 ```json
 {
-  "id": "node-002",
-  "type": "RENDER",
-  "position": { "x": 350, "y": 200 },
-  "status": "idle",
-  "params": {
-    "engine": "main",
-    "prompt": "Create photorealistic image",
-    "presetId": "screen-to-render",
-    "seed": null,
-    "resolution": "1200x1200"
+  "id": 2,
+  "type": "renderer",
+  "x": 480,
+  "y": 120,
+  "dirty": true,
+  "data": {
+    "mode": "nanobanana-pro",
+    "resolution": "2048",
+    "aspect": "original",
+    "presets": ["screen-to-render"],
+    "customPrompt": "Create photorealistic image",
+    "negativePrompt": "cartoon, illustration, sketch, low quality, blurry"
   },
-  "result": null,
-  "cost": 1,
-  "version": "1.0.0"
+  "thumbnail": null
 }
 ```
 
@@ -459,22 +510,19 @@ interface NodeResult {
 
 ```json
 {
-  "id": "node-003",
-  "type": "MODIFIER",
-  "position": { "x": 600, "y": 150 },
-  "status": "idle",
-  "params": {
-    "prompt": "Add a dog in the red area, and remove the object highlighted in green",
+  "id": 3,
+  "type": "modifier",
+  "x": 880,
+  "y": 120,
+  "dirty": true,
+  "data": {
+    "prompt": "Add a dog in the red area",
     "presetId": null,
+    "negativePrompt": "",
     "mask": "data:image/png;base64,...",
-    "maskLayers": [
-      { "color": "red", "action": "add", "description": "add dog" },
-      { "color": "green", "action": "remove", "description": "remove mirror" }
-    ]
+    "customPrompt": "Add a dog in the red area"
   },
-  "result": null,
-  "cost": 1,
-  "version": "1.0.0"
+  "thumbnail": null
 }
 ```
 
@@ -482,22 +530,22 @@ interface NodeResult {
 
 ```json
 {
-  "id": "node-004",
-  "type": "UPSCALE",
-  "position": { "x": 850, "y": 200 },
-  "status": "idle",
-  "params": {
+  "id": 4,
+  "type": "upscale",
+  "x": 880,
+  "y": 380,
+  "dirty": true,
+  "data": {
     "scale": 2,
     "optimizedFor": "standard",
-    "creativity": 0.0,
-    "detailStrength": 0.0,
-    "similarity": 0.0,
-    "promptStrength": 0.0,
-    "prompt": "Upscale"
+    "creativity": 0.5,
+    "detailStrength": 0.5,
+    "similarity": 0.5,
+    "promptStrength": 0.5,
+    "prompt": "Upscale",
+    "customPrompt": ""
   },
-  "result": null,
-  "cost": 2,
-  "version": "1.0.0"
+  "thumbnail": null
 }
 ```
 
@@ -505,42 +553,44 @@ interface NodeResult {
 
 ```json
 {
-  "id": "node-005",
-  "type": "VIDEO",
-  "position": { "x": 850, "y": 400 },
-  "status": "idle",
-  "params": {
+  "id": 5,
+  "type": "video",
+  "x": 880,
+  "y": 640,
+  "dirty": true,
+  "data": {
     "engine": "kling",
     "duration": 5,
     "prompt": "Move forward",
-    "endFrameImage": null
+    "endFrameImage": null,
+    "customPrompt": ""
   },
-  "result": null,
-  "cost": 5,
-  "version": "1.0.0"
+  "thumbnail": null
 }
 ```
 
 ### 4.8 캐시 키 생성 규칙
 
-```typescript
-function generateCacheKey(node: NodeData, inputImageHash: string): string {
-  const payload = JSON.stringify({
+```javascript
+function generateCacheKey(node, inputImageHash) {
+  var payload = JSON.stringify({
     type: node.type,
-    params: node.params,
+    params: node.data,
     inputImageHash: inputImageHash
-  })
-  return sha256(payload)
+  });
+  return sha256(payload);
 }
 ```
 
-동일한 cacheKey를 가진 노드는 재실행하지 않고 기존 result를 재사용한다.
+동일한 cacheKey를 가진 노드는 재실행하지 않고 기존 result를 재사용한다. 현재 구현에서는 `node.dirty` 플래그로 간이 캐시를 구현한다. `dirty = false`인 노드는 Make 실행 시 스킵된다.
 
 ### 4.9 노드 라벨 표시 규칙
 
 각 노드는 캔버스에서 다음 형식으로 라벨을 표시한다:
-- 첫 줄: Render Mode 번호 + 이름 (예: "1. Main renderer", "2. Details editor")
-- 둘째 줄: 프롬프트 요약 (최대 40자, 말줄임표 처리)
+- 첫 줄: 노드 타입 이름 (예: "Source", "Renderer", "Modifier")
+- 프롬프트 요약은 Inspector에서 확인
+
+라벨은 노드 카드 하단 외부에 `.node-label-outside` > `.node-title`로 렌더링된다. `nodeEditor._titles` 레지스트리에서 타입별 표시 이름을 관리한다.
 
 ---
 
@@ -548,19 +598,40 @@ function generateCacheKey(node: NodeData, inputImageHash: string): string {
 
 ### 5.1 Preset 구조
 
-```typescript
-interface PromptPreset {
-  id: string
-  name: string
-  icon: string                      // 아이콘 경로
-  category: "render" | "modifier" | "upscale" | "video"
-  applicableNodeTypes: NodeType[]   // 이 프리셋을 사용할 수 있는 노드 타입
-  basePrompt: string               // 프롬프트 본문
-  negativePrompt: string           // 네거티브 프롬프트
-  visualConstraints: string        // 시각적 제약 조건 (AI에게 전달)
-  forbiddenChanges: string         // 금지 변경 사항
-  mergeMode: "replace" | "append"  // 사용자 프롬프트와 병합 방식
-}
+```javascript
+/**
+ * @typedef {Object} PromptPreset
+ * @property {string} id
+ * @property {string} name
+ * @property {string} prompt - 프롬프트 본문
+ * @property {string} negative - 네거티브 프롬프트
+ */
+
+// nodePresets 전역 객체 (node-presets.js에서 정의)
+var nodePresets = {
+  render: [ /* ... */ ],
+  modifier: [ /* ... */ ],
+  upscale: [ /* ... */ ],
+  video: [ /* ... */ ]
+};
+```
+
+**확장 프리셋 필드 (향후 추가 가능):**
+
+```javascript
+/**
+ * @typedef {Object} PromptPresetFull
+ * @property {string} id
+ * @property {string} name
+ * @property {string} icon - 아이콘 경로
+ * @property {string} category - "render" | "modifier" | "upscale" | "video"
+ * @property {string[]} applicableNodeTypes - 이 프리셋을 사용할 수 있는 노드 타입
+ * @property {string} basePrompt - 프롬프트 본문
+ * @property {string} negativePrompt - 네거티브 프롬프트
+ * @property {string} visualConstraints - 시각적 제약 조건 (AI에게 전달)
+ * @property {string} forbiddenChanges - 금지 변경 사항
+ * @property {string} mergeMode - "replace" | "append" 사용자 프롬프트와 병합 방식
+ */
 ```
 
 ### 5.2 프리셋 적용 규칙
@@ -570,6 +641,8 @@ interface PromptPreset {
 - `mergeMode: "append"` → 기존 프롬프트 뒤에 프리셋 텍스트를 추가한다.
 - 프리셋은 Modifier Node (Details editor)에서만 표시된다. Render Node에서는 별도의 Render Preset (Screen to render, Image to sketch 등)을 표시한다.
 - 프리셋 적용 후 사용자가 프롬프트를 수정할 수 있다.
+
+**현재 구현:** node-inspector-ext.js에서 프리셋 클릭 이벤트를 처리한다. `node.data.customPrompt`와 하단 프롬프트 바(`node-prompt-input`)를 동시에 갱신한다.
 
 ### 5.3 Render Node 전용 Prompt Presets
 
@@ -885,31 +958,49 @@ forbiddenChanges: "Do NOT change scene content."
 
 ### 5.7 프롬프트 최종 조립 함수
 
-```typescript
-function assemblePrompt(node: NodeData, preset: PromptPreset | null): string {
+```javascript
+/**
+ * 프롬프트 최종 조립
+ * @param {Object} node - 노드 데이터
+ * @param {Object|null} preset - 프리셋 객체
+ * @returns {string} 최종 프롬프트
+ */
+function assemblePrompt(node, preset) {
   if (!preset) {
-    return node.params.prompt
+    return node.data.customPrompt || node.data.prompt || '';
   }
 
-  let finalPrompt: string
+  var finalPrompt;
   if (preset.mergeMode === "replace") {
-    finalPrompt = preset.basePrompt
+    finalPrompt = preset.prompt;
   } else {
-    finalPrompt = `${node.params.prompt}\n${preset.basePrompt}`
+    finalPrompt = (node.data.customPrompt || '') + '\n' + preset.prompt;
   }
 
   // visualConstraints와 forbiddenChanges는 API 호출 시 system prompt로 전달
-  return finalPrompt
+  return finalPrompt;
 }
 
-function assembleSystemPrompt(preset: PromptPreset): string {
-  return `${preset.visualConstraints}\n${preset.forbiddenChanges}`
+/**
+ * 시스템 프롬프트 조립 (확장 프리셋 필드 사용 시)
+ * @param {Object} preset - 확장 프리셋 객체
+ * @returns {string}
+ */
+function assembleSystemPrompt(preset) {
+  return (preset.visualConstraints || '') + '\n' + (preset.forbiddenChanges || '');
 }
 
-function assembleNegativePrompt(preset: PromptPreset): string {
-  return preset.negativePrompt
+/**
+ * 네거티브 프롬프트 조립
+ * @param {Object} preset - 프리셋 객체
+ * @returns {string}
+ */
+function assembleNegativePrompt(preset) {
+  return preset.negative || preset.negativePrompt || '';
 }
 ```
+
+**현재 구현:** node-editor.js의 `executeRendererNode`에서 프롬프트를 조합한다. 프리셋은 `node.data.presets` 배열로 스타일 키워드를 결합하고, `node.data.customPrompt`는 사용자 입력 프롬프트이다.
 
 ---
 
@@ -917,229 +1008,268 @@ function assembleNegativePrompt(preset: PromptPreset): string {
 
 ### 6.1 Make 버튼 클릭 시 전체 흐름
 
-```typescript
-async function onMakeClick(selectedNodeId: string): Promise<void> {
-  const graph = graphStore.getState()
+```javascript
+/**
+ * Make 버튼 클릭 시 DAG 실행
+ * node-types-ext.js에서 nodeEditor.execute를 오버라이드하여 구현
+ */
+nodeEditor.execute = function() {
+  if (!nodeEditor.dirty) return;
 
-  // 1. 선택 노드 기준 상위 서브그래프 추출
-  const subgraph = resolveUpstreamSubgraph(selectedNodeId, graph)
+  var makeBtn = document.getElementById('node-make-btn');
+  makeBtn.disabled = true;
+  makeBtn.innerHTML = '... Processing...';
 
-  // 2. DAG 검증
-  if (hasCycle(subgraph)) {
-    throw new Error("Cycle detected in graph")
-  }
+  // 1. 토폴로지컬 정렬
+  var sortedIds = nodeEditor.topologicalSort();
 
-  // 3. 비용 사전 계산
-  const totalCost = subgraph
-    .filter(node => node.status !== "done")
-    .reduce((sum, node) => sum + node.cost, 0)
-
-  if (creditStore.getState().balance < totalCost) {
-    throw new Error("Not enough credits")
-  }
-
-  // 4. 캐시 확인 — 변경 없는 노드 스킵
-  for (const node of subgraph) {
-    const inputHash = getInputHash(node, graph)
-    const cacheKey = generateCacheKey(node, inputHash)
-    if (node.result?.cacheKey === cacheKey) {
-      node.status = "done"  // 캐시 히트 → 스킵
+  // 2. 순차 실행 (async/await 사용, Chromium 88 지원)
+  (function executeNext(index) {
+    if (index >= sortedIds.length) {
+      // 모든 노드 실행 완료
+      nodeEditor.dirty = false;
+      makeBtn.disabled = false;
+      makeBtn.innerHTML = 'Make';
+      return;
     }
-  }
 
-  // 5. 토폴로지컬 정렬
-  const executionOrder = topologicalSort(subgraph)
+    var nodeId = sortedIds[index];
+    var node = nodeEditor.nodes.find(function(n) { return n.id === nodeId; });
+    if (!node || !node.dirty) {
+      executeNext(index + 1);
+      return;
+    }
 
-  // 6. 순차 실행 (병렬 가능한 노드는 Promise.all)
-  await executeInOrder(executionOrder, graph)
+    var el = document.getElementById('node-' + node.id);
+    if (el) el.classList.add('processing');
 
-  // 7. 히스토리 저장
-  historyStore.getState().saveSnapshot(graph)
-}
+    // 노드 타입별 실행
+    var executePromise;
+    if (node.type === 'source') {
+      executePromise = nodeEditor.executeSourceNode(node);
+    } else if (node.type === 'renderer' || node.type === 'modifier') {
+      executePromise = nodeEditor.executeRendererNode(node);
+    } else if (node.type === 'upscale') {
+      executePromise = executeUpscaleNode(node);
+    } else if (node.type === 'video') {
+      executePromise = executeVideoNode(node);
+    } else {
+      executePromise = Promise.resolve();
+    }
+
+    executePromise.then(function() {
+      node.dirty = false;
+      if (el) el.classList.remove('processing');
+      nodeEditor.renderNode(node);
+      executeNext(index + 1);
+    });
+  })(0);
+};
 ```
 
 ### 6.2 토폴로지컬 정렬
 
-```typescript
-function topologicalSort(nodes: NodeData[]): NodeData[][] {
-  // 반환값: 레벨별 노드 배열 (같은 레벨 = 병렬 실행 가능)
-  const inDegree = new Map<string, number>()
-  const adjacency = new Map<string, string[]>()
-
-  for (const node of nodes) {
-    inDegree.set(node.id, 0)
-    adjacency.set(node.id, [])
+```javascript
+/**
+ * 노드를 DAG 의존 순서로 정렬
+ * @returns {number[]} 정렬된 노드 ID 배열
+ */
+nodeEditor.topologicalSort = function() {
+  var result = [];
+  var visited = {};
+  var nodeMap = {};
+  for (var i = 0; i < nodeEditor.nodes.length; i++) {
+    nodeMap[nodeEditor.nodes[i].id] = nodeEditor.nodes[i];
   }
 
-  for (const edge of edges) {
-    const current = inDegree.get(edge.to) || 0
-    inDegree.set(edge.to, current + 1)
-    adjacency.get(edge.from)!.push(edge.to)
-  }
+  function visit(nodeId) {
+    if (visited[nodeId]) return;
+    visited[nodeId] = true;
 
-  const levels: NodeData[][] = []
-  let queue = nodes.filter(n => inDegree.get(n.id) === 0)
-
-  while (queue.length > 0) {
-    levels.push([...queue])
-    const nextQueue: NodeData[] = []
-
-    for (const node of queue) {
-      for (const neighborId of adjacency.get(node.id)!) {
-        const deg = inDegree.get(neighborId)! - 1
-        inDegree.set(neighborId, deg)
-        if (deg === 0) {
-          const neighbor = nodes.find(n => n.id === neighborId)!
-          nextQueue.push(neighbor)
-        }
+    // 입력 노드들 먼저 방문
+    for (var j = 0; j < nodeEditor.connections.length; j++) {
+      var c = nodeEditor.connections[j];
+      if (c.to === nodeId) {
+        visit(c.from);
       }
     }
 
-    queue = nextQueue
+    result.push(nodeId);
   }
 
-  return levels
-}
-```
-
-### 6.3 레벨별 실행 (병렬)
-
-```typescript
-async function executeInOrder(
-  levels: NodeData[][],
-  graph: Graph
-): Promise<void> {
-  for (const level of levels) {
-    // 같은 레벨의 노드는 병렬 실행
-    const runnableNodes = level.filter(n => n.status !== "done")
-
-    await Promise.all(
-      runnableNodes.map(node => executeNode(node, graph))
-    )
+  for (var k = 0; k < nodeEditor.nodes.length; k++) {
+    visit(nodeEditor.nodes[k].id);
   }
-}
+  return result;
+};
 ```
 
-### 6.4 단일 노드 실행
+### 6.3 Source 노드 실행
 
-```typescript
-async function executeNode(node: NodeData, graph: Graph): Promise<void> {
-  // 상태 전환
-  node.status = "running"
-  graphStore.getState().updateNode(node.id, { status: "running" })
+```javascript
+/**
+ * Source 노드 실행 — SketchUp 캡처 콜백 기반
+ * @param {Object} node
+ * @returns {Promise}
+ */
+nodeEditor.executeSourceNode = function(node) {
+  return new Promise(function(resolve) {
+    // Ruby 캡처 콜백 등록
+    window._nodeSourceCallback = function(imageBase64) {
+      node.data.image = imageBase64;
+      node.thumbnail = imageBase64;
+      node.dirty = false;
+      nodeEditor.renderNode(node);
+      nodeEditor.updateInspector();
+      requestAnimationFrame(function() { nodeEditor.renderConnections(); });
+      resolve();
+    };
 
-  try {
-    // 입력 이미지 수집
-    const inputImages = getInputResults(node, graph)
+    // sketchup.callback() 방식으로 Ruby에 캡처 요청
+    sketchup.captureScene(state.imageSize);
 
-    // 프리셋 조립
-    const preset = node.params.presetId
-      ? presetRegistry[node.params.presetId]
-      : null
+    // 타임아웃 fallback (10초)
+    setTimeout(function() {
+      if (window._nodeSourceCallback) {
+        resolve();
+      }
+    }, 10000);
+  });
+};
+```
 
-    // 엔진 디스패치
-    let result: NodeResult
+### 6.4 Renderer 노드 실행 (병렬 지원)
 
-    switch (node.type) {
-      case "SOURCE":
-        result = { image: node.params.image, timestamp: now(), cacheKey: "" }
-        break
-
-      case "RENDER":
-        result = await renderAdapter.execute({
-          engine: node.params.engine,
-          image: inputImages[0].image,
-          prompt: assemblePrompt(node, preset),
-          systemPrompt: preset ? assembleSystemPrompt(preset) : "",
-          negativePrompt: preset ? assembleNegativePrompt(preset) : "",
-          seed: node.params.seed,
-          resolution: node.params.resolution
-        })
-        break
-
-      case "MODIFIER":
-        result = await detailsEditorAdapter.execute({
-          image: inputImages[0].image,
-          prompt: assemblePrompt(node, preset),
-          systemPrompt: preset ? assembleSystemPrompt(preset) : "",
-          negativePrompt: preset ? assembleNegativePrompt(preset) : "",
-          mask: node.params.mask,
-          maskLayers: node.params.maskLayers
-        })
-        break
-
-      case "UPSCALE":
-        result = await upscaleAdapter.execute({
-          image: inputImages[0].image,
-          scale: node.params.scale,
-          optimizedFor: node.params.optimizedFor,
-          creativity: node.params.creativity,
-          detailStrength: node.params.detailStrength,
-          similarity: node.params.similarity,
-          promptStrength: node.params.promptStrength,
-          prompt: node.params.prompt
-        })
-        break
-
-      case "VIDEO":
-        result = await videoAdapter.execute({
-          engine: node.params.engine,
-          image: inputImages[0].image,
-          endFrame: node.params.endFrameImage,
-          duration: node.params.duration,
-          prompt: assemblePrompt(node, preset)
-        })
-        break
-
-      case "COMPARE":
-        // Compare 노드는 실행하지 않음
-        result = { timestamp: now(), cacheKey: "" }
-        break
+```javascript
+/**
+ * Renderer 노드 실행 — Ruby를 통한 API 호출
+ * @param {Object} node
+ * @returns {Promise}
+ */
+nodeEditor.executeRendererNode = function(node) {
+  // 입력 연결 찾기
+  var inputConn = null;
+  for (var i = 0; i < nodeEditor.connections.length; i++) {
+    if (nodeEditor.connections[i].to === node.id) {
+      inputConn = nodeEditor.connections[i];
+      break;
     }
-
-    // 결과 저장
-    node.result = result
-    node.status = "done"
-    graphStore.getState().updateNode(node.id, { result, status: "done" })
-
-    // 크레딧 차감
-    creditStore.getState().deduct(node.cost)
-
-  } catch (error) {
-    node.status = "error"
-    graphStore.getState().updateNode(node.id, { status: "error" })
-
-    // 에러 전파: 하위 노드 blocked 처리
-    markDescendantsAsBlocked(node.id, graph)
   }
-}
+  if (!inputConn) return Promise.resolve();
+
+  var sourceNode = null;
+  for (var j = 0; j < nodeEditor.nodes.length; j++) {
+    if (nodeEditor.nodes[j].id === inputConn.from) {
+      sourceNode = nodeEditor.nodes[j];
+      break;
+    }
+  }
+  if (!sourceNode || !sourceNode.data.image) return Promise.resolve();
+
+  var renderId = 'node_' + node.id;
+
+  return new Promise(function(resolve) {
+    // 노드별 콜백 등록
+    window._nodeRendererCallbacks[renderId] = function(result) {
+      if (result.success) {
+        node.thumbnail = result.image;
+        node.data.image = result.image;
+        nodeEditor.renderNode(node);
+        if (nodeEditor.selectedNode === node.id) {
+          nodeEditor.updateInspector();
+        }
+        requestAnimationFrame(function() { nodeEditor.renderConnections(); });
+      } else {
+        console.error('[Node] Render failed:', renderId, result.error);
+      }
+      resolve();
+    };
+
+    // 프롬프트 조합
+    var prompt = node.data.customPrompt || 'Create photorealistic interior render';
+    if (node.data.presets && node.data.presets.length > 0) {
+      prompt += '. Style: ' + node.data.presets.join(', ');
+    }
+    var negPrompt = node.data.negativePrompt || '';
+
+    // Ruby에 렌더링 요청 (render_id 포함 -> Ruby Thread로 병렬 실행)
+    sketchup.startRender(
+      sourceNode.data.time,
+      sourceNode.data.light,
+      prompt,
+      negPrompt,
+      renderId
+    );
+
+    // 타임아웃 fallback (120초)
+    setTimeout(function() {
+      if (window._nodeRendererCallbacks[renderId]) {
+        console.warn('[Node] Render timeout:', renderId);
+        window._nodeRendererCallbacks[renderId]({ success: false, error: 'Timeout' });
+      }
+    }, 120000);
+  });
+};
 ```
 
 ### 6.5 에러 전파
 
-```typescript
-function markDescendantsAsBlocked(nodeId: string, graph: Graph): void {
-  const descendants = getDescendantNodes(nodeId, graph)
-  for (const desc of descendants) {
-    desc.status = "blocked"
-    graphStore.getState().updateNode(desc.id, { status: "blocked" })
+```javascript
+/**
+ * 에러 발생 시 하위 노드를 blocked 처리
+ * @param {number} nodeId - 에러 발생 노드 ID
+ */
+function markDescendantsAsBlocked(nodeId) {
+  var descendants = [];
+  var queue = [nodeId];
+  var visited = {};
+
+  while (queue.length > 0) {
+    var current = queue.shift();
+    for (var i = 0; i < nodeEditor.connections.length; i++) {
+      var c = nodeEditor.connections[i];
+      if (c.from === current && !visited[c.to]) {
+        visited[c.to] = true;
+        descendants.push(c.to);
+        queue.push(c.to);
+      }
+    }
+  }
+
+  for (var j = 0; j < descendants.length; j++) {
+    var el = document.getElementById('node-' + descendants[j]);
+    if (el) el.classList.add('blocked');
   }
 }
 ```
 
 ### 6.6 비용 사전 표시
 
-```typescript
-function calculateEstimatedCost(selectedNodeId: string, graph: Graph): number {
-  const subgraph = resolveUpstreamSubgraph(selectedNodeId, graph)
-  return subgraph
-    .filter(node => {
-      if (node.status === "done") return false
-      const inputHash = getInputHash(node, graph)
-      const cacheKey = generateCacheKey(node, inputHash)
-      return node.result?.cacheKey !== cacheKey  // 캐시 미스만 비용 산정
-    })
-    .reduce((sum, node) => sum + node.cost, 0)
+```javascript
+/**
+ * 선택된 노드 기준 예상 비용 계산
+ * @param {number} selectedNodeId
+ * @returns {number} 예상 크레딧
+ */
+function calculateEstimatedCost(selectedNodeId) {
+  // 현재 구현에서는 dirty 노드 수 기반 간이 계산
+  var count = 0;
+  for (var i = 0; i < nodeEditor.nodes.length; i++) {
+    var node = nodeEditor.nodes[i];
+    if (node.dirty && node.type !== 'source' && node.type !== 'compare') {
+      count += getCostForType(node.type, node.data);
+    }
+  }
+  return count;
+}
+
+function getCostForType(type, data) {
+  if (type === 'source' || type === 'compare') return 0;
+  if (type === 'renderer') return 1;
+  if (type === 'modifier') return 1;
+  if (type === 'upscale') return data.scale === 4 ? 4 : 2;
+  if (type === 'video') return data.duration === 10 ? 10 : 5;
+  return 1;
 }
 ```
 
@@ -1147,7 +1277,7 @@ Make 버튼 옆에 `Credits: {estimatedCost}`를 표시한다.
 
 ---
 
-## 7. SketchUp 전용 플러그인 명세
+## 7. SketchUp 플러그인 연동 명세
 
 ### 7.1 플러그인 역할
 
@@ -1155,21 +1285,59 @@ SketchUp Ruby 플러그인은 다음만 수행한다:
 - Viewport 이미지 캡처
 - Camera/Scene 메타데이터 수집
 - 결과 이미지 수신 및 적용
-- Vizmaker Web UI 호출
+- HtmlDialog 내부의 Node Editor UI 호스팅
+- AI API 호출 중개 (Ruby Thread 기반)
 
 다음은 수행하지 않는다:
-- 노드 실행
-- 프롬프트 처리
-- AI API 호출
-- DAG 관리
+- 노드 그래프 로직 (JS 담당)
+- 프롬프트 조합 로직 (JS 담당)
+- DAG 관리 (JS 담당)
 
-### 7.2 Viewport 캡처
+### 7.2 통신 방식: sketchup.callback() / execute_script()
+
+**JS → Ruby 방향:** `callRuby()` 함수 또는 `sketchup.*` 래퍼를 통해 `skp:` 프로토콜로 호출한다.
+
+```javascript
+// core.js에서 정의
+function callRuby(action) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  var param = args.length > 0 ? JSON.stringify(args) : '';
+  window.location = 'skp:' + action + '@' + encodeURIComponent(param);
+}
+
+var sketchup = {
+  captureScene: function(size) { callRuby('capture_scene', size); },
+  startRender: function(time, light, prompt, negativePrompt, renderId) {
+    callRuby('start_render', time, light, prompt, negativePrompt, renderId || '');
+  },
+  generateAutoPrompt: function(style, time, light) {
+    callRuby('generate_auto_prompt', style || '', time || 'day', light || 'on');
+  },
+  saveImage: function() { callRuby('save_image', ''); },
+  // ... 기타 콜백
+};
+```
+
+**Ruby → JS 방향:** `dialog.execute_script()` 메서드로 JS 함수를 호출한다. 대용량 데이터(이미지 base64)는 30KB 청크 폴링 방식을 사용한다.
 
 ```ruby
-module Vizmaker
+# Ruby에서 JS 함수 호출 예시
+dialog.execute_script("onCaptureComplete('#{base64_data}')")
+dialog.execute_script("onNodeRenderComplete('#{render_id}', '#{base64_data}')")
+```
+
+**주의 (HtmlDialog 크래시 방지):**
+- `execute_script()`로 500KB 이상 데이터를 한 번에 전송하면 안 된다.
+- Thread 내에서 직접 `execute_script()`를 호출하면 안 된다. `UI.start_timer` 사용.
+- 대용량 이미지는 청크 분할 전송 사용.
+
+### 7.3 Viewport 캡처
+
+```ruby
+module NanoBanana
   def self.capture_viewport(options = {})
     view = Sketchup.active_model.active_view
-    path = File.join(temp_dir, "vizmaker_capture_#{Time.now.to_i}.png")
+    path = File.join(temp_dir, "capture_#{Time.now.to_i}.png")
 
     view.write_image({
       filename: path,
@@ -1184,10 +1352,10 @@ module Vizmaker
 end
 ```
 
-### 7.3 Camera/Scene 메타데이터 수집
+### 7.4 Camera/Scene 메타데이터 수집
 
 ```ruby
-module Vizmaker
+module NanoBanana
   def self.collect_scene_meta
     model = Sketchup.active_model
     view = model.active_view
@@ -1216,78 +1384,68 @@ module Vizmaker
 end
 ```
 
-### 7.4 Vizmaker 전송 데이터 포맷
+### 7.5 병렬 렌더링 콜백 구조
 
 ```ruby
-module Vizmaker
-  def self.send_to_vizmaker
-    image_path = capture_viewport
-    meta = collect_scene_meta
+# main.rb - 병렬 렌더링 지원
+dialog.add_action_callback("start_render") do |_ctx, *args|
+  time, light, prompt, negative_prompt, render_id = parse_args(args)
 
-    payload = {
-      source: "sketchup",
-      image: Base64.strict_encode64(File.read(image_path)),
-      meta: meta,
-      timestamp: Time.now.iso8601
-    }
+  Thread.new do
+    begin
+      result_base64 = api_client.render(prompt, negative_prompt, source_image)
 
-    # REST API 전송
-    uri = URI("https://vizmaker.app/api/source")
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    request = Net::HTTP::Post.new(uri)
-    request.body = payload.to_json
-    request.content_type = "application/json"
-    http.request(request)
+      # UI 스레드에서 JS 콜백 호출
+      UI.start_timer(0, false) do
+        if render_id && !render_id.empty?
+          dialog.execute_script("onNodeRenderComplete('#{render_id}', '#{result_base64}')")
+        else
+          dialog.execute_script("onRenderComplete('#{result_base64}', '#{scene_name}')")
+        end
+      end
+    rescue => e
+      UI.start_timer(0, false) do
+        if render_id && !render_id.empty?
+          dialog.execute_script("onNodeRenderError('#{render_id}', '#{e.message}')")
+        else
+          dialog.execute_script("onRenderError('#{e.message}', '#{scene_name}')")
+        end
+      end
+    end
   end
 end
 ```
 
-### 7.5 결과 수신
+### 7.6 JS 콜백 등록 패턴
 
-```ruby
-module Vizmaker
-  def self.apply_result(image_url)
-    # 이미지 다운로드
-    image_data = Net::HTTP.get(URI(image_url))
-    result_path = File.join(temp_dir, "vizmaker_result.png")
-    File.write(result_path, image_data, mode: "wb")
+```javascript
+// render-mode.js - 병렬 렌더링 콜백 맵
+window._nodeRendererCallbacks = {};
 
-    # SketchUp에 Watermark로 적용 또는 로컬 저장
-    result_path
-  end
-end
-```
-
-### 7.6 SketchUp 플러그인 UI
-
-```ruby
-# 툴바 버튼
-cmd = UI::Command.new("Open Vizmaker") {
-  Vizmaker.send_to_vizmaker
-  UI.openURL("https://vizmaker.app/editor?source=sketchup")
+function onNodeRenderComplete(renderId, base64) {
+  var cb = window._nodeRendererCallbacks[renderId];
+  if (cb) {
+    cb({ success: true, image: base64 });
+    delete window._nodeRendererCallbacks[renderId];
+  }
 }
-cmd.tooltip = "Send to Vizmaker"
 
-toolbar = UI::Toolbar.new("Vizmaker")
-toolbar.add_item(cmd)
-toolbar.show
-```
-
-메뉴 등록:
-```ruby
-UI.menu("Extensions").add_item("Vizmaker") {
-  submenu = UI.menu("Extensions").add_submenu("Vizmaker")
-  submenu.add_item("Open Vizmaker") { Vizmaker.send_to_vizmaker }
-  submenu.add_item("Refresh Result") { Vizmaker.fetch_latest_result }
+function onNodeRenderError(renderId, errorMsg) {
+  var cb = window._nodeRendererCallbacks[renderId];
+  if (cb) {
+    cb({ success: false, error: errorMsg });
+    delete window._nodeRendererCallbacks[renderId];
+  }
 }
 ```
 
-### 7.7 전송 방식
+### 7.7 전송 방식 요약
 
-- 최초 이미지 전송: REST POST (이미지 크기가 크므로)
-- 실행 상태 모니터링: WebSocket (선택사항, MVP에서는 폴링으로 대체 가능)
-- 결과 수신: REST GET (결과 이미지 URL)
+| 방향 | 방법 | 용도 |
+|---|---|---|
+| JS → Ruby | `skp:` 프로토콜 (`callRuby()`) | 액션 요청 (캡처, 렌더, 저장) |
+| Ruby → JS | `execute_script()` | 결과 콜백 (이미지, 상태, 에러) |
+| Ruby → JS (대용량) | 청크 폴링 (30KB 분할) | 대용량 이미지 전송 |
 
 ---
 
@@ -1303,17 +1461,36 @@ UI.menu("Extensions").add_item("Vizmaker") {
 **노드 생성:**
 - Source 노드의 출력 포트에서 드래그 시작 → 연결 대상 없이 놓으면 Render Mode 선택 메뉴 표시 → 선택한 모드의 노드 자동 생성 및 연결
 - 기존 노드의 출력 포트에서 드래그 → 동일 방식
+- 상단 툴바의 Source/Renderer/Modifier/Upscale/Video 버튼 클릭으로도 생성 가능
+- 노드 카드의 미니 툴바(+Source, +Renderer, +Animation) 버튼 클릭 시 해당 노드 아래에 자동 배치 및 연결
 
 **노드 연결:**
-- 출력 포트 → 입력 포트 드래그로 연결
+- 출력 포트 → 입력 포트 드래그로 연결 (mousedown → mouseup)
 - 타입 호환: Image 출력 → Image 입력만 가능, Video 출력 → Video 입력만 가능
 - 하나의 출력 포트에서 여러 입력 포트로 분기 가능
-- 순환 연결 시도 시 연결 거부 (시각적 피드백: 빨간색 표시)
+- 하나의 입력 포트에는 하나의 연결만 허용 (기존 연결 자동 제거)
+- 순환 연결 시도 시 연결 거부 (node-types-ext.js의 `_hasCycle` 검사)
+- `_noOutputTypes` 레지스트리에 등록된 타입(compare, video)은 출력 연결 불가
+
+**연결선 렌더링:** Canvas API 기반. `<canvas id="node-connections">`에 베지어 곡선으로 그린다. SVG DOM 조작 대신 Canvas 직접 그리기를 사용하여 성능을 보장한다.
+
+```javascript
+// 연결선 그리기 (node-editor.js)
+ctx.strokeStyle = '#00d4aa';
+ctx.lineWidth = 2.5;
+ctx.lineCap = 'round';
+ctx.beginPath();
+ctx.moveTo(x1, y1);
+ctx.bezierCurveTo(x1 + dx, y1, x2 - dx, y2, x2, y2);
+ctx.stroke();
+```
 
 **노드 클릭:**
-- 단일 클릭: InspectorPanel에 해당 노드 설정 표시 + Preview 탭에 결과 이미지 표시
-- 더블 클릭: Preview를 캔버스 영역 전체로 확대 (65% → 100%)
-- 마우스 휠: Preview 이미지 확대/축소 가능
+- 단일 클릭: `nodeEditor.selectNode(nodeId)` 호출. InspectorPanel에 해당 노드 설정 표시 + Preview 탭에 결과 이미지 표시
+- 빈 캔버스 클릭: `nodeEditor.selectNode(null)` 호출. Inspector 빈 상태
+- 선택 상태는 CSS 클래스 `.selected` 토글로 표현 (innerHTML 재생성 안함)
+
+**노드 드래그:** `mousedown` → `mousemove` → `mouseup` 이벤트 체인. `requestAnimationFrame`으로 스로틀링. `transform: translate(x, y)`로 GPU 가속 이동. 드래그 중 연결선 실시간 업데이트.
 
 **캔버스 우클릭 메뉴 (빈 영역):**
 - Load image... → 파일 선택 → Source 노드 생성
@@ -1330,21 +1507,22 @@ UI.menu("Extensions").add_item("Vizmaker") {
 ### 8.2 Inspector Panel 동작
 
 **탭 구성 (상단):**
-- Preview: 선택 노드의 결과 이미지. 결과 없으면 빈 상태. 우측 상단에 해상도 표시 (예: "832 × 1048"). 좌측 상단에 확대율 표시 (예: "65%").
+- Preview: 선택 노드의 결과 이미지. 결과 없으면 빈 상태. 우측 상단에 해상도 표시 (예: "832 x 1048"). 좌측 상단에 확대율 표시 (예: "65%").
 - Compare: A/B 슬라이더 비교
 - Draw: 이미지 위 드로잉 + 마스킹
 
-**Enlarge 버튼:** Preview 이미지를 전체 캔버스 영역으로 확대한다.
+**Enlarge 버튼:** Preview 이미지를 전체 캔버스 영역으로 확대한다. `node-enlarged-preview` 요소를 활성화하고 `node-canvas-area`를 최소화한다. Escape 키로 해제 가능.
 
-**노드 그래프 미니맵:** Preview 탭 아래에 우측 패널 내 미니 노드 그래프를 표시한다. 현재 선택 노드를 하이라이트한다. 노드 썸네일이 포함된다.
+**노드 그래프 미니맵:** Enlarge 모드 활성 시 Inspector의 Preview 영역이 미니맵 모드(`.minimap-mode`)로 전환된다. 현재 선택 노드를 하이라이트한다.
 
-**Render Settings 섹션:**
+**Render Settings 섹션 (아코디언):**
 - Render Mode 드롭다운: 노드 타입에 따라 표시 항목이 변경된다.
-  - SOURCE 선택 시: 표시 없음
-  - RENDER 선택 시: "1. Main renderer" (기본), "(experimental) Exterior render", "(experimental) Interior render"
-  - MODIFIER 선택 시: "2. Details editor"
-  - UPSCALE 선택 시: "3. Creative upscaler" + Upscale/Optimized for/Creativity/Detail strength/Similarity/Prompt strength 슬라이더
-  - VIDEO 선택 시: "4. Image to video" + Engine/Video duration 드롭다운
+  - SOURCE 선택 시: Time(Day/Night/Sunset) + Light(On/Off) 버튼
+  - RENDER 선택 시: Resolution(1024/2048/4096) + Aspect Ratio + Preset 그리드
+  - MODIFIER 선택 시: Modifier Presets 그리드
+  - UPSCALE 선택 시: Scale(2x/4x) + Optimized for + Creativity/Detail strength/Similarity 슬라이더
+  - VIDEO 선택 시: Engine(Kling/Seedance) + Duration(5s/10s) + Motion Presets
+  - COMPARE 선택 시: Mode(Slider/Side by Side)
 
 **Prompt Presets 섹션:**
 - 노드 타입에 따라 표시되는 프리셋이 변경된다.
@@ -1354,7 +1532,7 @@ UI.menu("Extensions").add_item("Vizmaker") {
 - VIDEO → Zoom in (+ 기타 카메라 모션 프리셋)
 - 프리셋 클릭 → 하단 프롬프트 바에 해당 텍스트 채움
 
-**노드 미선택 시:** Render Settings와 Prompt Presets는 빈 상태로 "Drag and drop an image to get started" 메시지 표시.
+**노드 미선택 시:** Render Settings와 Prompt Presets는 빈 상태로 "Select a node" 메시지 표시.
 
 ### 8.3 Draw 탭 동작
 
@@ -1374,24 +1552,23 @@ UI.menu("Extensions").add_item("Vizmaker") {
 
 **이미지 붙여넣기:** Ctrl+V로 클립보드 이미지를 캔버스에 붙여넣기 가능. 붙여넣은 이미지는 드래그로 위치 조정 가능.
 
-**마스크 생성:** Draw 탭에서 그린 내용은 마스크 이미지(PNG, 투명 배경)로 변환되어 Modifier Node의 `mask` 파라미터에 저장된다.
+**마스크 생성:** Draw 탭에서 그린 내용은 마스크 이미지(PNG, 투명 배경)로 변환되어 Modifier Node의 `mask` 파라미터에 저장된다. Canvas API의 `toDataURL('image/png')`으로 추출.
 
 ### 8.4 Make 버튼 동작
 
-- 클릭 시 현재 선택된 노드 기준으로 상위 DAG 전체를 실행한다.
-- 이미 done 상태이고 파라미터 변경이 없는 노드는 스킵한다 (캐시).
+- 클릭 시 전체 DAG를 토폴로지컬 순서로 실행한다.
+- 이미 `dirty = false`이고 파라미터 변경이 없는 노드는 스킵한다.
 - 실행 중 Make 버튼은 비활성화된다 (로딩 스피너 표시).
 - 실행 완료 후 결과 이미지가 노드 썸네일에 표시된다.
 - 실행 완료 후 히스토리에 자동 저장된다.
 
 ### 8.5 History 동작
 
-- 좌측 사이드바 History 아이콘 클릭 → History 전체 페이지로 전환
+- 좌측 사이드바 History 아이콘 클릭 → History 갤러리 표시
 - 모든 실행 결과가 시간순으로 그리드 표시 (타임스탬프 포함)
-- 각 카드에 Use / Save 버튼
-  - Use: 해당 시점의 전체 그래프(노드 + 엣지 + 결과)를 현재 워크스페이스에 복원
-  - Save: 결과 이미지를 로컬에 다운로드
-- 카드 클릭 시 해당 결과의 프롬프트, 소스, 생성 파라미터 상세 표시
+- 카드 클릭 시 해당 결과 이미지를 렌더 뷰에 로드
+- 히스토리는 `~/.sketchupshow/history.json`에 최대 500개 저장
+- Ruby `callRuby('save_history', json)` / `callRuby('load_history')`로 관리
 
 ### 8.6 Undo/Redo
 
@@ -1405,7 +1582,7 @@ UI.menu("Extensions").add_item("Vizmaker") {
 - 우클릭 → Rearrange nodes 선택 시
 - 연결이 적은 노드(말단)가 하단에 배치된다
 - 연결이 많은 노드(허브)가 상단에 배치된다
-- 수평 간격: 250px, 수직 간격: 150px
+- 수평 간격: 250px, 수직 간격: 150px (현재 카드 간격: 260px)
 - Source 노드는 항상 좌측에 배치된다
 
 ### 8.8 크레딧 표시
@@ -1415,124 +1592,193 @@ UI.menu("Extensions").add_item("Vizmaker") {
 
 ### 8.9 노드 상태 시각 표시
 
-| 상태 | 시각적 표현 |
-|---|---|
-| idle | 회색 테두리 |
-| queued | 노란색 테두리 |
-| running | 청록색 테두리 + 로딩 스피너 |
-| done | 흰색 테두리 + 결과 썸네일 표시 |
-| error | 빨간색 테두리 + 에러 아이콘 |
-| blocked | 반투명 + 회색 오버레이 |
+| 상태 | 시각적 표현 | CSS 클래스 |
+|---|---|---|
+| idle | 회색 테두리 | (기본) |
+| dirty | 변경됨 표시 | `.dirty` |
+| processing | 청록색 테두리 + 로딩 스피너 | `.processing` |
+| done | 흰색 테두리 + 결과 썸네일 표시 | `dirty = false` |
+| error | 빨간색 테두리 + 에러 아이콘 | (에러 시) |
+| selected | 강조 테두리 | `.selected` |
+| dragging | 드래그 중 효과 | `.dragging` |
+
+노드 프로그레스 바: `.node-progress` > `.node-progress-bar` 요소로 실행 진행률 표시.
 
 ### 8.10 연결 규칙 요약
 
 | 출력 타입 | 허용 입력 타입 | 비고 |
 |---|---|---|
 | Image | Image | 모든 이미지 노드 간 연결 가능 |
-| Video | 없음 | Video는 말단 노드 |
+| Video | 없음 | Video는 말단 노드 (`_noOutputTypes.video = true`) |
 | 없음 (Source) | - | Source는 입력 없음 |
+| 없음 (Compare) | - | Compare는 출력 없음 (`_noOutputTypes.compare = true`) |
 
 - 하나의 출력 → 여러 입력: 허용 (분기)
 - 여러 출력 → 하나의 입력: 금지 (Compare Node 제외, 2개 입력)
-- 순환 연결: 금지
+- 순환 연결: 금지 (`_hasCycle` 검사)
+
+### 8.11 모드 전환
+
+좌측 아이콘 메뉴로 3가지 모드를 전환한다:
+
+| 모드 | 메뉴 ID | 함수 | 설명 |
+|---|---|---|---|
+| Render | `menu-render` | `switchToRenderMode()` | 기존 렌더 UI (Source/Result 패널) |
+| Node Editor | `menu-camera` | `switchToNodeMode()` | 노드 그래프 에디터 |
+| Mix | `menu-mix` | `switchToMixMode()` | 인페인팅/오브젝트 배치 |
+
+모드 전환 시 각 모드의 컨테이너 DOM 요소에 `.active` 클래스를 토글한다. Node 모드 진입 시 초기 노드가 없으면 Source + Renderer 쌍을 자동 생성하고 연결한다.
 
 ---
 
-## 부록 A. 상태 관리 스키마 (Zustand)
+## 부록 A. 상태 관리 구조 (전역 객체)
 
-```typescript
-// graphStore.ts
-interface GraphState {
-  nodes: NodeData[]
-  edges: EdgeData[]
-  selectedNodeId: string | null
+```javascript
+// ========================================
+// core.js - 앱 전체 상태
+// ========================================
+var state = {
+  originalImage: null,      // 원본 캡처 이미지 base64
+  renderImage: null,        // 렌더 결과 이미지 base64
+  isRendering: false,       // 렌더링 진행 중 여부
+  apiConnected: false,      // API 연결 상태
+  converted: false,         // Convert 완료 여부
+  timePreset: 'day',        // 시간 프리셋
+  lightSwitch: 'on',        // 조명 상태
+  imageSize: '1024',        // 이미지 크기
+  engine: 'replicate',      // 렌더 엔진
+  resultPanels: [{ id: 1, image: null }],  // 결과 패널 목록
+  nextResultId: 2,
+  currentScene: null,       // 현재 활성 씬 이름
+  history: [],              // 히스토리 배열
+  nextHistoryId: 1
+};
 
-  addNode: (node: NodeData) => void
-  removeNode: (nodeId: string) => void
-  updateNode: (nodeId: string, partial: Partial<NodeData>) => void
-  addEdge: (edge: EdgeData) => void
-  removeEdge: (edgeId: string) => void
-  selectNode: (nodeId: string | null) => void
-  clearAll: () => void
-  rearrangeNodes: () => void
-  getUpstreamNodes: (nodeId: string) => NodeData[]
-}
+// ========================================
+// node-editor.js - 노드 에디터 상태
+// ========================================
+var nodeEditor = {
+  // --- 노드/연결 데이터 ---
+  nodes: [],                // NodeData[] 배열
+  connections: [],          // { from: nodeId, to: nodeId }[] 배열
+  nextNodeId: 1,            // 다음 노드 ID
 
-// executionStore.ts
-interface ExecutionState {
-  isRunning: boolean
-  currentNodeId: string | null
-  queue: string[]
+  // --- UI 상태 ---
+  selectedNode: null,       // 현재 선택된 노드 ID (null이면 미선택)
+  draggingNode: null,       // 드래그 중인 노드 참조
+  dragOffset: { x: 0, y: 0 },
+  connecting: null,         // 연결 중인 노드 { fromId, fromPort }
+  dirty: false,             // 변경 여부 (Make 버튼 활성화)
 
-  executePipeline: (nodeId: string) => Promise<void>
-  cancelExecution: () => void
-}
+  // --- 확장 레지스트리 ---
+  _icons: {},               // 타입별 SVG 아이콘
+  _titles: {},              // 타입별 표시 이름
+  _noOutputTypes: {},       // 출력 포트 없는 타입
+  _noInputTypes: {},        // 입력 포트 없는 타입
 
-// historyStore.ts
-interface HistoryState {
-  snapshots: GraphSnapshot[]
+  // --- 메서드 ---
+  addNode: function(type, x, y) { /* ... */ },
+  addNodeBelow: function(clickedNode, newType) { /* ... */ },
+  deleteNode: function(nodeId) { /* ... */ },
+  selectNode: function(nodeId) { /* ... */ },
+  connect: function(fromId, toId) { /* ... */ },
+  renderNode: function(node, positionOnly) { /* ... */ },
+  renderConnections: function() { /* ... */ },
+  updateInspector: function() { /* ... */ },
+  execute: function() { /* ... */ },
+  executeSourceNode: function(node) { /* ... */ },
+  executeRendererNode: function(node) { /* ... */ },
+  topologicalSort: function() { /* ... */ },
+  markDirty: function() { /* ... */ },
+  getDefaultData: function(type) { /* ... */ },
+  updatePortStates: function() { /* ... */ }
+};
 
-  saveSnapshot: (graph: Graph) => void
-  restoreSnapshot: (snapshotId: string) => void
-  loadMore: () => void
-}
+// ========================================
+// mix-mode.js - 믹스 모드 상태
+// ========================================
+var mixState = {
+  mode: 'add-remove',       // 서브모드
+  baseImage: null,           // Image 객체
+  baseImageBase64: null,     // base64 문자열
+  objectImage: null,         // 오브젝트 이미지 base64
+  materialImage: null,       // 재질 이미지 base64
+  floorplanImage: null,      // 도면 이미지 base64
+  hotspots: [],              // 핫스팟 배열
+  selectedHotspot: null,     // 선택된 핫스팟 ID
+  brushSize: 30,
+  brushColor: 'rgba(255, 59, 48, 0.5)',
+  tool: 'brush',
+  isDrawing: false,
+  canvasScale: 1,
+  sceneContext: null         // SketchUp 씬 컨텍스트
+};
 
-interface GraphSnapshot {
-  id: string
-  graph: Graph
-  timestamp: string
-  creditUsed: number
-  thumbnails: string[]
-}
+// ========================================
+// node-presets.js - 프리셋 데이터 (읽기 전용)
+// ========================================
+var nodePresets = {
+  render: [ /* PromptPreset[] */ ],
+  modifier: [ /* PromptPreset[] */ ],
+  upscale: [ /* PromptPreset[] */ ],
+  video: [ /* PromptPreset[] */ ]
+};
 ```
 
-## 부록 B. 엔진 어댑터 인터페이스
+## 부록 B. 엔진 어댑터 구조
 
-```typescript
-interface EngineAdapter {
-  id: string
-  type: "image" | "video" | "upscale"
-  execute(input: EngineInput): Promise<NodeResult>
-}
+```javascript
+/**
+ * @typedef {Object} EngineAdapter
+ * @property {string} id
+ * @property {string} type - "image" | "video" | "upscale"
+ * @property {function} execute - 실행 함수 (Promise 반환)
+ */
 
-interface RenderInput {
-  engine: string
-  image: string
-  prompt: string
-  systemPrompt: string
-  negativePrompt: string
-  seed: number | null
-  resolution: string
-}
+/**
+ * @typedef {Object} RenderInput
+ * @property {string} engine
+ * @property {string} image - base64
+ * @property {string} prompt
+ * @property {string} systemPrompt
+ * @property {string} negativePrompt
+ * @property {number|null} seed
+ * @property {string} resolution
+ */
 
-interface ModifierInput {
-  image: string
-  prompt: string
-  systemPrompt: string
-  negativePrompt: string
-  mask: string | null
-  maskLayers: MaskLayer[]
-}
+/**
+ * @typedef {Object} ModifierInput
+ * @property {string} image - base64
+ * @property {string} prompt
+ * @property {string} systemPrompt
+ * @property {string} negativePrompt
+ * @property {string|null} mask - base64
+ * @property {Object[]} maskLayers
+ */
 
-interface UpscaleInput {
-  image: string
-  scale: number
-  optimizedFor: string
-  creativity: number
-  detailStrength: number
-  similarity: number
-  promptStrength: number
-  prompt: string
-}
+/**
+ * @typedef {Object} UpscaleInput
+ * @property {string} image - base64
+ * @property {number} scale
+ * @property {string} optimizedFor
+ * @property {number} creativity
+ * @property {number} detailStrength
+ * @property {number} similarity
+ * @property {number} promptStrength
+ * @property {string} prompt
+ */
 
-interface VideoInput {
-  engine: string
-  image: string
-  endFrame: string | null
-  duration: number
-  prompt: string
-}
+/**
+ * @typedef {Object} VideoInput
+ * @property {string} engine
+ * @property {string} image - base64
+ * @property {string|null} endFrame - base64
+ * @property {number} duration
+ * @property {string} prompt
+ */
 ```
+
+**현재 구현:** 엔진 어댑터 패턴은 아직 추상화되지 않았다. 모든 API 호출은 Ruby 브릿지(`sketchup.startRender`)를 통해 이루어진다. Ruby 측에서 엔진 디스패치를 처리하며, JS는 콜백만 수신한다.
 
 ## 부록 C. 비용 테이블
 
@@ -1552,15 +1798,18 @@ interface VideoInput {
 
 | 영역 | 기술 |
 |---|---|
-| 프론트엔드 | React + TypeScript |
-| 노드 그래프 | React Flow |
-| 상태 관리 | Zustand |
-| 드로잉 캔버스 | Fabric.js 또는 Konva |
+| 프론트엔드 | Vanilla JavaScript (ES5 호환, Chromium 88 CEF) |
+| UI 호스팅 | SketchUp HtmlDialog |
+| 노드 그래프 | 커스텀 구현 (Canvas API 연결선 + DOM 노드 카드) |
+| 상태 관리 | 전역 `var` 객체 (`state`, `nodeEditor`, `mixState`, `nodePresets`) |
+| 드로잉 캔버스 | Canvas API (네이티브) |
 | 비디오 재생 | HTML5 Video |
-| SketchUp 플러그인 | Ruby |
-| API 통신 | REST + WebSocket (선택) |
-| 스타일링 | Tailwind CSS |
+| SketchUp 플러그인 | Ruby (SketchUp Ruby API 2021+) |
+| JS ↔ Ruby 통신 | `skp:` 프로토콜 (JS→Ruby) + `execute_script()` (Ruby→JS) |
+| 스타일링 | 일반 CSS (빌드 없음, `<link>` 태그) |
+| 아이콘 | 인라인 SVG |
+| 빌드 도구 | 없음 (`<script src>` 직접 로드) |
 
 ---
 
-*이 문서는 Claude Code에게 직접 전달하여 추가 질문 없이 구현을 시작할 수 있는 수준으로 작성되었다.*
+*이 문서는 SketchUp HtmlDialog 환경에서의 Vanilla JS 노드 에디터 구현을 위한 전체 기획이다. 별도 빌드 도구나 npm 패키지 없이, plain `<script src>` 태그와 전역 `var` 객체 방식으로 구현된다.*

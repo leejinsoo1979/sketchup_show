@@ -4,25 +4,29 @@
 
 ## 공통 노드 인터페이스
 
-```typescript
-interface NodeData {
-  id: string                          // UUID v4
-  type: "SOURCE" | "RENDER" | "MODIFIER" | "UPSCALE" | "VIDEO" | "COMPARE"
-  position: { x: number; y: number }
-  status: "idle" | "queued" | "running" | "done" | "error" | "cancelled" | "blocked"
-  params: Record<string, any>
-  result: NodeResult | null
-  cost: number                        // 크레딧 소모량
-  version: string                     // "1.0.0"
-}
+```javascript
+/**
+ * 노드 데이터 구조
+ * @typedef {Object} NodeData
+ * @property {string} id - UUID v4
+ * @property {string} type - "SOURCE"|"RENDER"|"MODIFIER"|"UPSCALE"|"VIDEO"|"COMPARE"
+ * @property {{x: number, y: number}} position
+ * @property {string} status - "idle"|"queued"|"running"|"done"|"error"|"cancelled"|"blocked"
+ * @property {Object} params - 노드 타입별 파라미터
+ * @property {NodeResult|null} result
+ * @property {number} cost - 크레딧 소모량
+ * @property {string} version - "1.0.0"
+ */
 
-interface NodeResult {
-  image?: string                      // 결과 이미지 URL
-  video?: string                      // 결과 비디오 URL
-  resolution?: string                 // "1200x1200"
-  timestamp: string                   // ISO 8601
-  cacheKey: string                    // sha256(type + params + inputHash)
-}
+/**
+ * 노드 실행 결과
+ * @typedef {Object} NodeResult
+ * @property {string} [image] - 결과 이미지 URL
+ * @property {string} [video] - 결과 비디오 URL
+ * @property {string} [resolution] - "1200x1200"
+ * @property {string} timestamp - ISO 8601
+ * @property {string} cacheKey - sha256(type + params + inputHash)
+ */
 ```
 
 ---
@@ -40,22 +44,27 @@ Source 노드는 파이프라인의 시작점이다. 이미지를 제공한다.
 
 ### 파라미터
 
-```typescript
-interface SourceParams {
-  origin: "sketchup" | "upload" | "paste"
-  image: string                       // URL 또는 base64
-  cameraLocked: boolean               // SketchUp 카메라 고정
-  sceneMeta: {
-    modelName: string
-    fov: number
-    eye: [number, number, number]
-    target: [number, number, number]
-    up: [number, number, number]
-    shadow: boolean
-    style: string
-    sceneId: string
-  } | null
-}
+```javascript
+/**
+ * Source 노드 파라미터
+ * @typedef {Object} SourceParams
+ * @property {string} origin - "sketchup"|"upload"|"paste"
+ * @property {string} image - URL 또는 base64
+ * @property {boolean} cameraLocked - SketchUp 카메라 고정
+ * @property {SceneMeta|null} sceneMeta
+ */
+
+/**
+ * @typedef {Object} SceneMeta
+ * @property {string} modelName
+ * @property {number} fov
+ * @property {[number, number, number]} eye
+ * @property {[number, number, number]} target
+ * @property {[number, number, number]} up
+ * @property {boolean} shadow
+ * @property {string} style
+ * @property {string} sceneId
+ */
 ```
 
 ### 생성 트리거
@@ -83,14 +92,16 @@ Main renderer 또는 Experimental renderer. Source 이미지를 AI로 변환한�
 
 ### 파라미터
 
-```typescript
-interface RenderParams {
-  engine: "main" | "experimental-exterior" | "experimental-interior"
-  prompt: string                      // 기본값: "Create photorealistic image"
-  presetId: string | null             // Prompt Preset ID
-  seed: number | null                 // null = 랜덤
-  resolution: string                  // "1200x1200"
-}
+```javascript
+/**
+ * Render 노드 파라미터
+ * @typedef {Object} RenderParams
+ * @property {string} engine - "main"|"experimental-exterior"|"experimental-interior"
+ * @property {string} prompt - 기본값: "Create photorealistic image"
+ * @property {string|null} presetId - Prompt Preset ID
+ * @property {number|null} seed - null = 랜덤
+ * @property {string} resolution - "1200x1200"
+ */
 ```
 
 ### Inspector 표시 (Render Mode = "1. Main renderer")
@@ -117,19 +128,23 @@ Details editor. 렌더 결과에 프롬프트 기반 세부 수정을 수행한�
 
 ### 파라미터
 
-```typescript
-interface ModifierParams {
-  prompt: string
-  presetId: string | null
-  mask: string | null                 // Draw 탭에서 생성된 마스크 (base64 PNG)
-  maskLayers: MaskLayer[]
-}
+```javascript
+/**
+ * Modifier 노드 파라미터
+ * @typedef {Object} ModifierParams
+ * @property {string} prompt
+ * @property {string|null} presetId
+ * @property {string|null} mask - Draw 탭에서 생성된 마스크 (base64 PNG)
+ * @property {MaskLayer[]} maskLayers
+ */
 
-interface MaskLayer {
-  color: "red" | "green" | "blue" | "yellow"
-  action: "add" | "remove" | "replace" | "style"
-  description: string
-}
+/**
+ * 마스크 레이어
+ * @typedef {Object} MaskLayer
+ * @property {string} color - "red"|"green"|"blue"|"yellow"
+ * @property {string} action - "add"|"remove"|"replace"|"style"
+ * @property {string} description
+ */
 ```
 
 ### 색상별 마스크 의미
@@ -162,16 +177,18 @@ Creative upscaler. 저해상도 이미지를 확대한다.
 
 ### 파라미터
 
-```typescript
-interface UpscaleParams {
-  scale: 2 | 4
-  optimizedFor: "standard" | "detail" | "smooth"
-  creativity: number                  // 0.0 ~ 1.0
-  detailStrength: number              // 0.0 ~ 1.0 (HDR)
-  similarity: number                  // 0.0 ~ 1.0
-  promptStrength: number              // 0.0 ~ 1.0
-  prompt: string                      // 기본값: "Upscale"
-}
+```javascript
+/**
+ * Upscale 노드 파라미터
+ * @typedef {Object} UpscaleParams
+ * @property {number} scale - 2|4
+ * @property {string} optimizedFor - "standard"|"detail"|"smooth"
+ * @property {number} creativity - 0.0 ~ 1.0
+ * @property {number} detailStrength - 0.0 ~ 1.0 (HDR)
+ * @property {number} similarity - 0.0 ~ 1.0
+ * @property {number} promptStrength - 0.0 ~ 1.0
+ * @property {string} prompt - 기본값: "Upscale"
+ */
 ```
 
 ### Inspector 표시 (Render Mode = "3. Creative upscaler")
@@ -198,13 +215,15 @@ Image to video. 정지 이미지에서 영상을 생성한다.
 
 ### 파라미터
 
-```typescript
-interface VideoParams {
-  engine: "kling" | "seedance"
-  duration: 5 | 10
-  prompt: string                      // 기본값: "Move forward"
-  endFrameImage: string | null        // 종료 프레임 (2프레임 전환용)
-}
+```javascript
+/**
+ * Video 노드 파라미터
+ * @typedef {Object} VideoParams
+ * @property {string} engine - "kling"|"seedance"
+ * @property {number} duration - 5|10
+ * @property {string} prompt - 기본값: "Move forward"
+ * @property {string|null} endFrameImage - 종료 프레임 (2프레임 전환용)
+ */
 ```
 
 ### Inspector 표시 (Render Mode = "4. Image to video")
@@ -231,10 +250,12 @@ interface VideoParams {
 
 ### 파라미터
 
-```typescript
-interface CompareParams {
-  mode: "slider" | "side_by_side"
-}
+```javascript
+/**
+ * Compare 노드 파라미터
+ * @typedef {Object} CompareParams
+ * @property {string} mode - "slider"|"side_by_side"
+ */
 ```
 
 ### 동작
@@ -264,5 +285,5 @@ interface CompareParams {
 | queued | `#f0ad4e` | — |
 | running | `#00d4aa` | 로딩 스피너 |
 | done | `#fff` | 결과 썸네일 |
-| error | `#ff4444` | ⚠ 아이콘 |
+| error | `#ff4444` | SVG 아이콘 |
 | blocked | `#444` 반투명 | 회색 오버레이 |

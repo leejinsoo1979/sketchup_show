@@ -4,19 +4,21 @@
 
 ## 프리셋 구조
 
-```typescript
-interface PromptPreset {
-  id: string
-  name: string
-  icon: string                        // 아이콘 파일명 또는 이모지
-  category: "render" | "modifier" | "upscale" | "video"
-  applicableNodeTypes: NodeType[]
-  basePrompt: string
-  negativePrompt: string
-  visualConstraints: string           // AI system prompt에 포함
-  forbiddenChanges: string            // AI system prompt에 포함
-  mergeMode: "replace" | "append"
-}
+```javascript
+/**
+ * 프리셋 데이터 구조 (node-presets.js에 정의)
+ * @typedef {Object} PromptPreset
+ * @property {string} id
+ * @property {string} name
+ * @property {string} icon              - 인라인 SVG 아이콘 식별자
+ * @property {string} category          - "render" | "modifier" | "upscale" | "video"
+ * @property {string[]} applicableNodeTypes - 이 프리셋을 사용할 수 있는 노드 타입
+ * @property {string} basePrompt
+ * @property {string} negativePrompt
+ * @property {string} visualConstraints - AI system prompt에 포함
+ * @property {string} forbiddenChanges  - AI system prompt에 포함
+ * @property {string} mergeMode         - "replace" | "append"
+ */
 ```
 
 ## 프리셋 적용 규칙
@@ -29,29 +31,31 @@ interface PromptPreset {
 
 ## 프롬프트 조립 함수
 
-```typescript
-function assemblePrompt(node: NodeData, preset: PromptPreset | null): {
-  prompt: string
-  systemPrompt: string
-  negativePrompt: string
-} {
+```javascript
+/**
+ * 프롬프트 조립 함수 (node-editor.js 또는 pipeline 실행 시 사용)
+ * @param {Object} node - 노드 데이터
+ * @param {Object|null} preset - 프리셋 데이터
+ * @returns {{prompt: string, systemPrompt: string, negativePrompt: string}}
+ */
+function assemblePrompt(node, preset) {
   if (!preset) {
     return {
       prompt: node.params.prompt,
-      systemPrompt: "",
-      negativePrompt: ""
-    }
+      systemPrompt: '',
+      negativePrompt: ''
+    };
   }
 
-  const prompt = preset.mergeMode === "replace"
+  var prompt = preset.mergeMode === 'replace'
     ? preset.basePrompt
-    : `${node.params.prompt}\n${preset.basePrompt}`
+    : node.params.prompt + '\n' + preset.basePrompt;
 
   return {
-    prompt,
-    systemPrompt: `${preset.visualConstraints}\n${preset.forbiddenChanges}`,
+    prompt: prompt,
+    systemPrompt: preset.visualConstraints + '\n' + preset.forbiddenChanges,
     negativePrompt: preset.negativePrompt
-  }
+  };
 }
 ```
 

@@ -300,11 +300,13 @@
     window._nodeRendererCallbacks = {};
 
     function onNodeRenderComplete(renderId, base64) {
-      console.log('[Node] Render complete:', renderId);
+      console.log('[Node] Render complete:', renderId, 'size:', base64 ? base64.length : 0);
       const cb = window._nodeRendererCallbacks[renderId];
       if (cb) {
         cb({ success: true, image: base64 });
         delete window._nodeRendererCallbacks[renderId];
+      } else {
+        console.warn('[Node] No callback for:', renderId);
       }
     }
 
@@ -1295,8 +1297,10 @@
           nodeEditor.renderNode(sourceNode);
           requestAnimationFrame(() => nodeEditor.renderConnections());
         } else {
-          // WEBrick 서버에서 캡처 이미지 가져오기 (1초 타이머로 캡처 대기)
-          autoLoadSourceFromBridge(sourceNode);
+          // SketchUp 캡처 직접 실행
+          setTimeout(function() {
+            nodeEditor.executeSourceNode(sourceNode);
+          }, 300);
         }
       }
 

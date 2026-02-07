@@ -248,27 +248,21 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
       end
     end
 
-    # 노드 에디터 병렬 렌더링 (Thread 사용)
+    # 노드 에디터 렌더링 (동기 모드 — SketchUp Ruby Thread 문제 회피)
     def start_render_parallel(time_preset, light_switch, render_id, user_prompt = '', user_negative = '')
-      puts "[NanoBanana] ========== 병렬 렌더링 시작 (#{render_id}) =========="
+      puts "[NanoBanana] ========== 노드 렌더링 시작 (#{render_id}) =========="
 
       unless @api_client
-        UI.start_timer(0, false) {
-          @main_dialog&.execute_script("onNodeRenderError('#{render_id}', 'API Key가 설정되지 않았습니다.')")
-        }
+        @main_dialog&.execute_script("onNodeRenderError('#{render_id}', 'API Key가 설정되지 않았습니다.')")
         return
       end
 
       unless @current_image
-        UI.start_timer(0, false) {
-          @main_dialog&.execute_script("onNodeRenderError('#{render_id}', '먼저 씬을 캡처하세요.')")
-        }
+        @main_dialog&.execute_script("onNodeRenderError('#{render_id}', '먼저 씬을 캡처하세요.')")
         return
       end
 
-      # 렌더링에 필요한 데이터를 Thread 시작 전에 복사 (공유 상태 의존 없음)
       render_source_image = @current_image.dup
-      # 노드별 프롬프트 직접 사용 (공유 @converted_prompt 사용 안 함)
       prompt = if user_prompt && !user_prompt.empty?
         user_prompt
       else
@@ -279,51 +273,43 @@ Do NOT generate any rendering prompt. Output ONLY valid JSON.
       else
         'cartoon, anime, sketch, drawing, wireframe, outline, black lines, CGI, 3D render'
       end
-      api_client = @api_client
-      reference_image = @reference_image
-      current_api = @current_api
-      replicate_client = @replicate_client
-      dialog = @main_dialog
 
       puts "[NanoBanana] [#{render_id}] Prompt: #{prompt[0..150]}..."
+      puts "[NanoBanana] [#{render_id}] 이미지 크기: #{render_source_image.length} bytes"
+      puts "[NanoBanana] [#{render_id}] 동기 모드 렌더링 시작..."
 
-      Thread.new do
-        begin
-          render_start = Time.now
+      # Thread 없이 직접 실행 (SketchUp Ruby Thread 문제 회피 — start_render_with_preset과 동일 방식)
+      begin
+        render_start = Time.now
 
-          result = if current_api == 'replicate' && replicate_client
-            replicate_client.generate(render_source_image, prompt, negative)
-          elsif reference_image
-            api_client.generate_with_references(render_source_image, [reference_image], prompt)
-          else
-            api_client.generate(render_source_image, prompt)
-          end
-
-          render_elapsed = (Time.now - render_start).round(1)
-          puts "[NanoBanana] [#{render_id}] 렌더링 완료: #{render_elapsed}초"
-
-          if result && result[:image]
-            image_base64 = result[:image]
-            # UI.start_timer로 메인 스레드에서 execute_script 호출
-            UI.start_timer(0, false) {
-              dialog&.execute_script("onNodeRenderComplete('#{render_id}', '#{image_base64}')")
-            }
-          else
-            UI.start_timer(0, false) {
-              dialog&.execute_script("onNodeRenderError('#{render_id}', '렌더링 결과를 받지 못했습니다.')")
-            }
-          end
-        rescue StandardError => e
-          puts "[NanoBanana] [#{render_id}] Render Error: #{e.message}"
-          puts e.backtrace.first(5).join("\n")
-          err_msg = e.message.gsub("'", "\\'").gsub("\n", ' ')
-          UI.start_timer(0, false) {
-            dialog&.execute_script("onNodeRenderError('#{render_id}', '#{err_msg}')")
-          }
+        result = if @current_api == 'replicate' && @replicate_client
+          puts "[NanoBanana] [#{render_id}] Replicate API 사용"
+          @replicate_client.generate(render_source_image, prompt, negative)
+        elsif @reference_image
+          puts "[NanoBanana] [#{render_id}] Gemini API + 레퍼런스 이미지"
+          @api_client.generate_with_references(render_source_image, [@reference_image], prompt)
+        else
+          puts "[NanoBanana] [#{render_id}] Gemini API 사용"
+          @api_client.generate(render_source_image, prompt)
         end
-      end
 
-      puts "[NanoBanana] [#{render_id}] Thread 시작됨 (비동기)"
+        render_elapsed = (Time.now - render_start).round(1)
+        puts "[NanoBanana] [#{render_id}] 렌더링 완료: #{render_elapsed}초"
+
+        if result && result[:image]
+          image_base64 = result[:image]
+          puts "[NanoBanana] [#{render_id}] 결과 전송: #{image_base64.length} bytes"
+          @main_dialog&.execute_script("onNodeRenderComplete('#{render_id}', '#{image_base64}')")
+        else
+          puts "[NanoBanana] [#{render_id}] 결과 없음"
+          @main_dialog&.execute_script("onNodeRenderError('#{render_id}', '렌더링 결과를 받지 못했습니다.')")
+        end
+      rescue StandardError => e
+        puts "[NanoBanana] [#{render_id}] Render Error: #{e.message}"
+        puts e.backtrace.first(5).join("\n")
+        err_msg = e.message.gsub("'", "\\'").gsub("\n", ' ')
+        @main_dialog&.execute_script("onNodeRenderError('#{render_id}', '#{err_msg}')")
+      end
     end
   end
 end

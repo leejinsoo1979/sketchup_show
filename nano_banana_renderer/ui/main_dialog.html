@@ -780,8 +780,8 @@
        Node Editor Mode - VizMaker Style
        ======================================== -->
   <div class="node-editor-container" id="node-editor-container">
-    <!-- 캔버스 Wrapper (캔버스 + Inspector) -->
-    <div class="node-canvas-wrapper">
+    <!-- 좌측: 캔버스 + 하단 프롬프트 바 -->
+    <div class="node-main-column">
       <!-- 확대 프리뷰 오버레이 (Enlarge 모드) -->
       <div class="node-enlarged-preview" id="node-enlarged-preview">
         <div class="node-enlarged-topbar">
@@ -802,8 +802,8 @@
       <!-- 노드 캔버스 -->
       <div class="node-canvas-area" id="node-canvas-area">
         <div class="node-canvas-grid"></div>
-        <svg class="node-connections" id="node-connections"></svg>
         <div class="node-canvas" id="node-canvas">
+          <canvas class="node-connections" id="node-connections"></canvas>
           <!-- 노드들이 여기에 동적으로 추가됨 -->
         </div>
 
@@ -834,11 +834,47 @@
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
             </svg>
           </button>
+          <span class="node-zoom-label" id="node-zoom-label" title="Zoom level (scroll to zoom, double-click to reset)">100%</span>
         </div>
       </div>
 
-      <!-- 노드 Inspector 패널 - VizMaker Style -->
-      <aside class="node-inspector" id="node-inspector">
+      <!-- 하단 프롬프트 바 (node-main-column 안) -->
+      <div class="node-prompt-resize-handle" id="node-prompt-resize-handle">
+        <div class="node-prompt-resize-grip"></div>
+      </div>
+      <div class="node-bottom-bar">
+        <div class="node-bottom-prompt-area">
+          <div class="node-prompt-tabs">
+            <button class="node-prompt-tab active" data-prompt-tab="main">Prompt</button>
+            <button class="node-prompt-tab negative" data-prompt-tab="negative">Negative</button>
+            <button class="node-prompt-auto-btn" id="node-prompt-auto-btn" title="Auto Generate">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+              </svg>
+              Auto
+            </button>
+          </div>
+          <div class="node-prompt-content active" data-prompt-content="main">
+            <textarea class="node-prompt-input" id="node-prompt-input" rows="1" placeholder="Create photorealistic image"></textarea>
+          </div>
+          <div class="node-prompt-content" data-prompt-content="negative">
+            <textarea class="node-prompt-input node-prompt-negative" id="node-prompt-negative-input" rows="1" placeholder="Negative prompt (optional)"></textarea>
+          </div>
+        </div>
+        <div class="node-make-area">
+          <button class="node-make-btn" id="node-make-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Make
+          </button>
+          <div class="node-credits-display" id="node-credits-display">Credits: 100</div>
+        </div>
+      </div>
+    </div><!-- .node-main-column 끝 -->
+
+    <!-- 노드 Inspector 패널 - VizMaker Style -->
+    <aside class="node-inspector" id="node-inspector">
         <!-- Preview 영역 -->
         <div class="node-inspector-preview">
           <!-- Enlarge 버튼 -->
@@ -868,8 +904,30 @@
           </div>
           <!-- Draw 탭 컨텐츠 -->
           <div class="node-preview-tab-content" data-content="draw">
-            <div class="node-inspector-preview-image node-draw-view" id="node-draw-view">
-              <span class="node-inspector-preview-empty">Draw mode (coming soon)</span>
+            <div class="node-draw-container" id="node-draw-container">
+              <div class="draw-toolbar" id="draw-toolbar">
+                <button class="draw-tool-btn active" data-tool="pen" title="Pen">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                </button>
+                <button class="draw-tool-btn" data-tool="eraser" title="Eraser">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16c-.8-.8-.8-2 0-2.8L14.8 1.4c.8-.8 2-.8 2.8 0l5 5c.8.8.8 2 0 2.8L12 20"/><path d="M6 12l5.4-5.4"/></svg>
+                </button>
+                <div class="draw-toolbar-divider"></div>
+                <button class="draw-color-btn active" data-color="#ff0000" title="Red" style="background:#ff0000;"></button>
+                <button class="draw-color-btn" data-color="#00ff00" title="Green" style="background:#00ff00;"></button>
+                <button class="draw-color-btn" data-color="#0088ff" title="Blue" style="background:#0088ff;"></button>
+                <button class="draw-color-btn" data-color="#ffff00" title="Yellow" style="background:#ffff00;"></button>
+                <div class="draw-toolbar-divider"></div>
+                <input type="range" class="draw-size-slider" id="draw-brush-size" min="1" max="50" value="10" title="Brush Size">
+                <span class="draw-size-label" id="draw-size-label">10</span>
+                <div class="draw-toolbar-divider"></div>
+                <button class="draw-tool-btn" data-tool="clear" title="Clear">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              </div>
+              <div class="draw-canvas-wrapper" id="draw-canvas-wrapper">
+                <canvas id="draw-canvas" width="400" height="300"></canvas>
+              </div>
             </div>
           </div>
           <div class="node-inspector-preview-progress">
@@ -984,8 +1042,50 @@
               </div>
               <div class="node-inspector-accordion-body">
                 <div class="control-section">
-                  <span class="section-label">Render Mode</span>
-                  <div class="dropdown-selected" id="node-render-mode">Nanobanana Pro</div>
+                  <span class="section-label">AI Model</span>
+                  <div class="custom-dropdown node-model-dropdown" id="node-model-dropdown">
+                    <div class="dropdown-selected" id="node-model-selected">
+                      <span id="node-model-selected-text">Flash 2.0 (추천)</span>
+                      <span class="dropdown-arrow"></span>
+                    </div>
+                    <div class="dropdown-menu" id="node-model-menu">
+                      <div class="dropdown-group-label">Gemini</div>
+                      <div class="dropdown-item selected" data-value="gemini-2.0-flash-exp">
+                        Flash 2.0 (추천)
+                        <div class="dropdown-item-desc">20~40초, 고속</div>
+                      </div>
+                      <div class="dropdown-item" data-value="gemini-2.5-flash-image">
+                        Flash 2.5
+                        <div class="dropdown-item-desc">30~60초</div>
+                      </div>
+                      <div class="dropdown-item" data-value="gemini-3-pro-image">
+                        Gemini 3 Pro
+                        <div class="dropdown-item-desc">1~2분, 최고품질</div>
+                      </div>
+                      <div class="dropdown-group-label">Imagen</div>
+                      <div class="dropdown-item" data-value="imagen-4.0-fast-generate-001">
+                        Imagen 4 Fast
+                        <div class="dropdown-item-desc">20~40초, 고속</div>
+                      </div>
+                      <div class="dropdown-item" data-value="imagen-4.0-generate-001">
+                        Imagen 4
+                        <div class="dropdown-item-desc">1~2분, 고품질</div>
+                      </div>
+                      <div class="dropdown-group-label">Replicate (ControlNet)</div>
+                      <div class="dropdown-item" data-value="photorealistic-fx">
+                        PhotoFX
+                        <div class="dropdown-item-desc">10초, 구도 유지</div>
+                      </div>
+                      <div class="dropdown-item" data-value="sdxl-controlnet">
+                        SDXL ControlNet
+                        <div class="dropdown-item-desc">20초, 고품질</div>
+                      </div>
+                      <div class="dropdown-item" data-value="flux-canny">
+                        Flux Canny
+                        <div class="dropdown-item-desc">15초, 윤곽선 기반</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div class="control-section">
                   <span class="section-label">Resolution</span>
@@ -1114,40 +1214,29 @@
             </div>
           </div>
         </div>
-      </aside>
-    </div><!-- .node-canvas-wrapper -->
+    </aside>
+  </div><!-- .node-editor-container 끝 -->
 
-    <!-- 하단 프롬프트 바 -->
-    <div class="node-bottom-bar">
-      <div class="node-bottom-prompt-area">
-        <div class="node-prompt-row">
-          <textarea class="node-prompt-input" id="node-prompt-input" rows="2" placeholder="Select a Renderer node to enter prompt..."></textarea>
-          <button class="node-prompt-auto-btn" id="node-prompt-auto-btn" title="Auto Generate">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-            </svg>
-            Auto
-          </button>
-        </div>
-        <div class="node-prompt-row node-prompt-negative-row">
-          <textarea class="node-prompt-input node-prompt-negative" id="node-prompt-negative-input" rows="1" placeholder="Negative prompt (optional)"></textarea>
-        </div>
-      </div>
-      <button class="node-make-btn" id="node-make-btn">
-        <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;">
-          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-        </svg>
-        Make
+  <!-- History 페이지 (노드 모드 내 오버레이) -->
+  <div class="node-history-page hidden" id="node-history-page">
+    <div class="node-history-header">
+      <h3 class="node-history-title">History</h3>
+      <button class="node-history-close" id="node-history-close" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
+    </div>
+    <div class="node-history-grid" id="node-history-grid">
+      <div class="node-history-empty">No history yet. Render some images to see them here.</div>
     </div>
   </div>
 
   <script src="scripts/core.js"></script>
-  <script src="scripts/render-mode.js"></script>
-  <script src="scripts/mix-mode.js"></script>
   <script src="scripts/node-presets.js"></script>
   <script src="scripts/node-editor.js"></script>
+  <script src="scripts/render-mode.js"></script>
+  <script src="scripts/mix-mode.js"></script>
   <script src="scripts/node-types-ext.js"></script>
   <script src="scripts/node-inspector-ext.js"></script>
+  <script src="scripts/node-draw-tab.js"></script>
 </body>
 </html>
