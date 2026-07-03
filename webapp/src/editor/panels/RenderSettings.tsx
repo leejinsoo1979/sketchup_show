@@ -7,13 +7,13 @@ interface RenderSettingsProps {
   selectedNode: NodeData | null
 }
 
+// 실제 사용 모델을 라벨에 그대로 표기 (숨기지 말 것)
 const RENDER_MODE_OPTIONS = [
-  { value: 'RENDER:main', label: '1. Main renderer' },
+  { value: 'RENDER:main', label: '1. Main renderer — Nanobanana (gemini-2.5-flash-image)' },
+  { value: 'RENDER:experimental-exterior', label: '1P. Nanobanana Pro (gemini-3-pro-image)' },
   { value: 'MODIFIER', label: '2. Details editor' },
   { value: 'UPSCALE', label: '3. Creative upscaler' },
   { value: 'VIDEO', label: '4. Image to video' },
-  { value: 'RENDER:experimental-exterior', label: '(experimental) Exterior render' },
-  { value: 'RENDER:experimental-interior', label: '(experimental) Interior render' },
 ]
 
 function getCurrentRenderModeValue(node: NodeData): string {

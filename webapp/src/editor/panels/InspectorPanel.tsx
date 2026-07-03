@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Maximize2 } from 'lucide-react'
+import { ImageLightbox } from './ImageLightbox'
 import { useUIStore, type InspectorTab } from '../../state/uiStore'
 import { useGraphStore } from '../../state/graphStore'
 import { PreviewTab } from './PreviewTab'
@@ -17,6 +19,7 @@ const tabs: { id: InspectorTab; label: string }[] = [
 export function InspectorPanel() {
   const activeTab = useUIStore((s) => s.activeTab)
   const setActiveTab = useUIStore((s) => s.setActiveTab)
+  const [enlarged, setEnlarged] = useState(false)
 
   const selectedNodeId = useGraphStore((s) => s.selectedNodeId)
   const nodes = useGraphStore((s) => s.nodes)
@@ -44,6 +47,7 @@ export function InspectorPanel() {
           style={{ color: '#888888', fontSize: 12 }}
           onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
           onMouseLeave={(e) => (e.currentTarget.style.color = '#888888')}
+          onClick={() => setEnlarged(true)}
         >
           <Maximize2 size={14} />
           Enlarge
@@ -95,6 +99,15 @@ export function InspectorPanel() {
       <SketchUpScenesPanel selectedNode={selectedNode} />
 
       <RenderSettings selectedNode={selectedNode} />
+
+      {enlarged && (() => {
+        const img =
+          selectedNode?.result?.image ??
+          (selectedNode && 'image' in selectedNode.params
+            ? (selectedNode.params as { image: string }).image
+            : null)
+        return img ? <ImageLightbox image={img} onClose={() => setEnlarged(false)} /> : null
+      })()}
 
       {/* Prompt Presets Section */}
       <PromptPresets selectedNode={selectedNode} />
