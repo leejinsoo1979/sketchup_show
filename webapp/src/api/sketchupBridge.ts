@@ -61,6 +61,17 @@ interface DataResponse {
   timestamp: number // unix seconds
 }
 
+/** GET /api/scenes → { scenes: [{ name, active }], timestamp } */
+export interface SketchUpScene {
+  name: string
+  active: boolean
+}
+
+interface ScenesResponse {
+  scenes: SketchUpScene[]
+  timestamp: number
+}
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
@@ -151,6 +162,54 @@ async function fetchCapture(): Promise<string | null> {
   }
 }
 
+/** SketchUp의 저장된 씬 목록 조회. */
+export async function getScenes(): Promise<SketchUpScene[]> {
+  try {
+    const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/scenes`)
+    if (!res.ok) return []
+    const data: ScenesResponse = await res.json()
+    return data.scenes ?? []
+  } catch {
+    return []
+  }
+}
+
+/** 앱 → SketchUp 명령 전송 (씬 전환, 카메라, 즉시 캡처). */
+async function sendCommand(cmd: Record<string, unknown>): Promise<boolean> {
+  try {
+    const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/command`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cmd),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+/** SketchUp 씬 전환. 전환 직후 새 캡처가 폴링으로 들어온다. */
+export async function selectScene(name: string): Promise<boolean> {
+  const ok = await sendCommand({ type: 'select_scene', name })
+  if (ok) {
+    // 씬이 바뀌면 같은 이미지 dedup 캐시를 무효화해 즉시 갱신되게 한다
+    lastSourceHash = null
+    // 전환 렌더가 끝난 뒤 바로 한 번 폴링
+    setTimeout(pollOnce, 700)
+  }
+  return ok
+}
+
+/** 현재 뷰 즉시 재캡처 요청. */
+export async function requestCapture(): Promise<boolean> {
+  const ok = await sendCommand({ type: 'capture' })
+  if (ok) {
+    lastSourceHash = null
+    setTimeout(pollOnce, 700)
+  }
+  return ok
+}
+
 export async function pushResult(
   nodeId: string,
   imageBase64: string,
@@ -212,17 +271,21 @@ function injectCapture(imageBase64: string) {
 // ---------------------------------------------------------------------------
 
 async function pollOnce() {
-  const setStatus = useUIStore.getState().setSketchUpStatus
+  const ui = useUIStore.getState()
   const isConnected = await ping()
 
   if (isConnected) {
-    setStatus('connected')
+    ui.setSketchUpStatus('connected')
     const capture = await fetchCapture()
     if (capture) {
       injectCapture(capture)
     }
+    // 씬 목록 동기화 (인스펙터의 씬 전환 UI용)
+    const scenes = await getScenes()
+    ui.setSketchUpScenes(scenes)
   } else {
-    setStatus('disconnected')
+    ui.setSketchUpStatus('disconnected')
+    ui.setSketchUpScenes([])
   }
 }
 

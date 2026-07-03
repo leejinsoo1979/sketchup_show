@@ -4,6 +4,11 @@ export type SidebarItem = 'render' | 'history' | 'account' | 'tutorial' | 'suppo
 export type InspectorTab = 'preview' | 'compare' | 'draw'
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
+export interface SketchUpSceneInfo {
+  name: string
+  active: boolean
+}
+
 interface UIState {
   activeSidebarItem: SidebarItem
   activeTab: InspectorTab
@@ -13,6 +18,7 @@ interface UIState {
   compareANodeId: string | null
   compareBNodeId: string | null
   sketchUpStatus: ConnectionStatus
+  sketchUpScenes: SketchUpSceneInfo[]
 
   setActiveSidebarItem: (item: SidebarItem) => void
   setActiveTab: (tab: InspectorTab) => void
@@ -22,6 +28,7 @@ interface UIState {
   setCompareA: (nodeId: string | null) => void
   setCompareB: (nodeId: string | null) => void
   setSketchUpStatus: (status: ConnectionStatus) => void
+  setSketchUpScenes: (scenes: SketchUpSceneInfo[]) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -33,6 +40,7 @@ export const useUIStore = create<UIState>((set) => ({
   compareANodeId: null,
   compareBNodeId: null,
   sketchUpStatus: 'disconnected',
+  sketchUpScenes: [],
 
   setActiveSidebarItem: (item) => set({ activeSidebarItem: item }),
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -42,4 +50,5 @@ export const useUIStore = create<UIState>((set) => ({
   setCompareA: (nodeId) => set({ compareANodeId: nodeId }),
   setCompareB: (nodeId) => set({ compareBNodeId: nodeId }),
   setSketchUpStatus: (status) => set({ sketchUpStatus: status }),
+  setSketchUpScenes: (scenes) => set({ sketchUpScenes: scenes }),
 }))

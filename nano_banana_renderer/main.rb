@@ -148,6 +148,7 @@ module NanoBanana
       submenu = menu.add_submenu(PLUGIN_NAME)
 
       submenu.add_item('루비실행') { show_main_dialog }
+      submenu.add_item('Vizmaker 앱 열기') { open_vizmaker_app }
       submenu.add_separator
       submenu.add_item('설정') { show_settings_dialog }
       submenu.add_separator
@@ -433,6 +434,19 @@ module NanoBanana
     # ========================================
     # 도움말 및 정보
     # ========================================
+
+    # Vizmaker 앱 열기: 현재 뷰 즉시 캡처 + 브라우저/앱 활성화
+    # (실물 VizMaker의 "CAD 아이콘 클릭 -> 앱 포커스 + 뷰 전송" UX)
+    def open_vizmaker_app
+      start_local_server unless @local_server
+      capture_current_view
+      app_url = @config_store&.load_setting('vizmaker_app_url')
+      app_url = 'http://localhost:5173' if app_url.nil? || app_url.empty?
+      UI.openURL(app_url)
+      puts "[NanoBanana] Vizmaker 앱 열기: #{app_url}"
+    rescue StandardError => e
+      puts "[NanoBanana] Vizmaker 앱 열기 실패: #{e.message}"
+    end
 
     def show_help
       UI.openURL('https://github.com/nanobanana/sketchup-plugin/wiki')

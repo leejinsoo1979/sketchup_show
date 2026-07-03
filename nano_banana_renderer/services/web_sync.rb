@@ -25,22 +25,31 @@ module NanoBanana
       @local_port = 9876
       local_ip = get_local_ip
 
+      # 브릿지 명령 큐 (WEBrick 스레드에서 push, 메인 스레드 타이머에서 실행)
+      # WEBrick 핸들러에서 SketchUp API를 직접 호출하면 안 된다.
+      @bridge_commands = []
+      @bridge_mutex = Mutex.new
+      @bridge_scenes_body = { scenes: [], timestamp: 0 }.to_json
+
+      cors = proc do |res|
+        res['Access-Control-Allow-Origin'] = '*'
+        res['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        res['Access-Control-Allow-Headers'] = 'Content-Type'
+        res['Content-Type'] = 'application/json'
+      end
+
       @local_server_thread = Thread.new do
         begin
           @local_server = WEBrick::HTTPServer.new(
             Port: @local_port,
             BindAddress: '0.0.0.0',
-            Logger: WEBrick::Log.new("/dev/null"),
+            Logger: WEBrick::Log.new(File::NULL), # /dev/null 하드코딩은 Windows에서 서버 기동 실패
             AccessLog: []
           )
 
-          # CORS 및 데이터 API
+          # 현재 캡처 데이터
           @local_server.mount_proc '/api/data' do |req, res|
-            res['Access-Control-Allow-Origin'] = '*'
-            res['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
-            res['Access-Control-Allow-Headers'] = 'Content-Type'
-            res['Content-Type'] = 'application/json'
-
+            cors.call(res)
             if req.request_method == 'OPTIONS'
               res.status = 200
             else
@@ -52,11 +61,61 @@ module NanoBanana
             end
           end
 
-          # 상태 확인 API
-          @local_server.mount_proc '/api/ping' do |req, res|
-            res['Access-Control-Allow-Origin'] = '*'
-            res['Content-Type'] = 'application/json'
-            res.body = { status: 'ok', app: 'BananaShow', ip: local_ip, port: @local_port }.to_json
+          # 상태 확인
+          @local_server.mount_proc '/api/ping' do |_req, res|
+            cors.call(res)
+            res.body = {
+              status: 'ok', app: 'VizMaker Bridge',
+              ip: local_ip, port: @local_port,
+              sketchup: Sketchup.version
+            }.to_json
+          end
+
+          # 씬 목록 (메인 스레드가 갱신한 캐시를 그대로 반환)
+          @local_server.mount_proc '/api/scenes' do |_req, res|
+            cors.call(res)
+            res.body = @bridge_scenes_body
+          end
+
+          # 앱 → SketchUp 명령 (씬 전환, 카메라, 즉시 캡처)
+          @local_server.mount_proc '/api/command' do |req, res|
+            cors.call(res)
+            if req.request_method == 'OPTIONS'
+              res.status = 200
+            elsif req.request_method == 'POST'
+              begin
+                cmd = JSON.parse(req.body.to_s)
+                @bridge_mutex.synchronize { @bridge_commands << cmd }
+                res.body = { accepted: true }.to_json
+              rescue JSON::ParserError
+                res.status = 400
+                res.body = { accepted: false, error: 'invalid json' }.to_json
+              end
+            else
+              res.status = 405
+              res.body = { accepted: false, error: 'POST only' }.to_json
+            end
+          end
+
+          # 앱 → SketchUp 렌더 결과 수신
+          @local_server.mount_proc '/api/result' do |req, res|
+            cors.call(res)
+            if req.request_method == 'OPTIONS'
+              res.status = 200
+            elsif req.request_method == 'POST'
+              begin
+                data = JSON.parse(req.body.to_s)
+                @web_received_result = data['image']
+                puts "[NanoBanana] 브릿지: 렌더 결과 수신 (node=#{data['nodeId']})"
+                res.body = { received: true }.to_json
+              rescue JSON::ParserError
+                res.status = 400
+                res.body = { received: false, error: 'invalid json' }.to_json
+              end
+            else
+              res.status = 405
+              res.body = { received: false, error: 'POST only' }.to_json
+            end
           end
 
           puts "[NanoBanana] 로컬 서버 시작: http://#{local_ip}:#{@local_port}"
@@ -66,15 +125,80 @@ module NanoBanana
         end
       end
 
-      # 캡처 타이머 시작 (1초마다)
+      # 캡처 + 씬 목록 캐시 타이머 (1초마다, 메인 스레드)
       @web_sync_timer = UI.start_timer(1, true) do
-        capture_current_view if @local_server
+        if @local_server
+          capture_current_view
+          update_bridge_scenes
+        end
+      end
+
+      # 명령 처리 타이머 (0.3초마다, 메인 스레드 — 씬 전환 반응성 확보)
+      @bridge_command_timer = UI.start_timer(0.3, true) do
+        process_bridge_commands if @local_server
       end
 
       "#{local_ip}:#{@local_port}"
     end
 
+    # 앱에서 보낸 명령을 메인 스레드에서 실행
+    def process_bridge_commands
+      cmds = @bridge_mutex.synchronize do
+        list = @bridge_commands.dup
+        @bridge_commands.clear
+        list
+      end
+
+      cmds.each do |cmd|
+        begin
+          case cmd['type']
+          when 'select_scene'
+            pages = Sketchup.active_model.pages
+            page = pages[cmd['name'].to_s]
+            if page
+              pages.selected_page = page
+              Sketchup.active_model.active_view.invalidate
+              puts "[NanoBanana] 브릿지: 씬 전환 -> #{cmd['name']}"
+              capture_current_view
+              update_bridge_scenes
+            end
+          when 'camera'
+            case cmd['action']
+            when 'move' then camera_move(cmd['value'].to_s)
+            when 'rotate' then camera_rotate(cmd['value'].to_s)
+            when 'height' then camera_set_height(cmd['value'].to_s)
+            when 'fov' then camera_set_fov(cmd['value'].to_s)
+            when 'two_point' then apply_two_point_perspective
+            end
+            capture_current_view
+          when 'capture'
+            capture_current_view
+          end
+        rescue StandardError => e
+          puts "[NanoBanana] 브릿지 명령 에러(#{cmd['type']}): #{e.message}"
+        end
+      end
+    end
+
+    # 씬 목록 캐시 갱신 (메인 스레드 전용)
+    def update_bridge_scenes
+      model = Sketchup.active_model
+      return unless model
+
+      pages = model.pages
+      selected = pages.selected_page&.name
+      scenes = pages.map { |p| { name: p.name, active: p.name == selected } }
+      @bridge_scenes_body = { scenes: scenes, timestamp: Time.now.to_i }.to_json
+    rescue StandardError => e
+      puts "[NanoBanana] 씬 캐시 에러: #{e.message}"
+    end
+
     def stop_local_server
+      if @bridge_command_timer
+        UI.stop_timer(@bridge_command_timer)
+        @bridge_command_timer = nil
+      end
+
       if @web_sync_timer
         UI.stop_timer(@web_sync_timer)
         @web_sync_timer = nil

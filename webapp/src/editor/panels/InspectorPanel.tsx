@@ -5,6 +5,7 @@ import { PreviewTab } from './PreviewTab'
 import { CompareTab } from './CompareTab'
 import { DrawTab } from './DrawTab'
 import { RenderSettings } from './RenderSettings'
+import { SketchUpScenesPanel } from './SketchUpScenesPanel'
 import { PromptPresets } from './PromptPresets'
 
 const tabs: { id: InspectorTab; label: string }[] = [
@@ -91,6 +92,8 @@ export function InspectorPanel() {
       </div>
 
       {/* Render Settings Section */}
+      <SketchUpScenesPanel selectedNode={selectedNode} />
+
       <RenderSettings selectedNode={selectedNode} />
 
       {/* Prompt Presets Section */}

@@ -51,7 +51,7 @@
   ├─ 노드 에디터 (React Flow)
   ├─ AI 엔진 허브 (Gemini 직접 호출 + Replicate/fal.ai로 Flux·Kling·Seedance·Magnific...)
   └─ 브릿지 클라이언트 (api/sketchupBridge.ts — localhost:9876 폴링)
-        ↕ HTTP (이미지는 파일 경로 전달 — base64 청크 불필요)
+        ↕ HTTP JSON (이미지는 base64로 한 번에 전달 — HtmlDialog식 30KB 청크 불필요)
 [SketchUp Ruby 브릿지] ← nano_banana_renderer/의 로컬 서버
   ├─ 뷰포트 캡처 (고품질 1024~1920, Edge OFF)
   ├─ 씬 목록/전환, 카메라 제어
