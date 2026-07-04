@@ -4,6 +4,24 @@
 # 로컬 WEBrick 서버, 동기화 기능
 
 module NanoBanana
+  # UI.start_timer 컨텍스트에서 카메라/씬 '변경'이 조용히 무시되는 SketchUp 제약 회피.
+  # View#animation의 nextFrame은 렌더 루프에서 실행되어 뷰 변경이 허용된다.
+  class BridgeExec
+    def initialize(&block)
+      @block = block
+    end
+
+    def nextFrame(view)
+      begin
+        @block.call
+      rescue StandardError => e
+        NanoBanana.puts "[NanoBanana] 브릿지 뷰 실행 에러: #{e.message}"
+      end
+      view.show_frame
+      false # 1프레임만 실행하고 종료
+    end
+  end
+
   class << self
     # ========================================
     # 로컬 웹 서버 (동기화용)
@@ -148,20 +166,28 @@ module NanoBanana
         end
       end
 
-      # 캡처 + 씬 목록 캐시 타이머 (1초마다, 메인 스레드)
-      @web_sync_timer = UI.start_timer(1, true) do
+      # 캡처 + 씬 목록 캐시 타이머 (0.5초마다, 메인 스레드)
+      # 카메라가 실제로 움직였을 때만 캡처 -> 유휴 시 write_image 0회 (SketchUp 버벅임 방지)
+      @web_sync_timer = UI.start_timer(0.5, true) do
         if @local_server
-          capture_current_view
+          capture_if_view_changed
           update_bridge_scenes
         end
       end
 
-      # 명령 처리 타이머 (0.3초마다, 메인 스레드 — 씬 전환 반응성 확보)
-      @bridge_command_timer = UI.start_timer(0.3, true) do
+      # 명령 처리 타이머 (0.1초마다 — 씬 전환/카메라 반응속도)
+      @bridge_command_timer = UI.start_timer(0.1, true) do
         process_bridge_commands if @local_server
       end
 
       "#{local_ip}:#{@local_port}"
+    end
+
+    # 뷰 변경을 허용된 컨텍스트(View Animation)에서 실행
+    def run_on_view(&block)
+      Sketchup.active_model.active_view.animation = BridgeExec.new(&block)
+    rescue StandardError => e
+      puts "[NanoBanana] run_on_view 에러: #{e.message}"
     end
 
     # 앱에서 보낸 명령을 메인 스레드에서 실행
@@ -179,21 +205,38 @@ module NanoBanana
             pages = Sketchup.active_model.pages
             page = pages[cmd['name'].to_s]
             if page
-              pages.selected_page = page
-              Sketchup.active_model.active_view.invalidate
-              puts "[NanoBanana] 브릿지: 씬 전환 -> #{cmd['name']}"
-              capture_current_view
-              update_bridge_scenes
+              name = cmd['name'].to_s
+              run_on_view do
+                pages.selected_page = page
+                # selected_page=가 무시되는 환경 대비: 씬 카메라를 직접 적용
+                if page.use_camera? && page.camera
+                  view = Sketchup.active_model.active_view
+                  view.camera.set(page.camera.eye, page.camera.target, page.camera.up)
+                  view.camera.perspective = page.camera.perspective?
+                  view.camera.fov = page.camera.fov if page.camera.perspective?
+                end
+                Sketchup.active_model.active_view.invalidate
+              end
+              @bridge_scene_override = name
+              puts "[NanoBanana] 브릿지: 씬 전환 -> #{name}"
+              UI.start_timer(0.35, false) do
+                capture_current_view
+                update_bridge_scenes
+              end
             end
           when 'camera'
-            case cmd['action']
-            when 'move' then camera_move(cmd['value'].to_s)
-            when 'rotate' then camera_rotate(cmd['value'].to_s)
-            when 'height' then camera_set_height(cmd['value'].to_s)
-            when 'fov' then camera_set_fov(cmd['value'].to_s)
-            when 'two_point' then apply_two_point_perspective
+            action = cmd['action']
+            value = cmd['value'].to_s
+            run_on_view do
+              case action
+              when 'move' then camera_move(value)
+              when 'rotate' then camera_rotate(value)
+              when 'height' then camera_set_height(value)
+              when 'fov' then camera_set_fov(value)
+              when 'two_point' then apply_two_point_perspective
+              end
             end
-            capture_current_view
+            UI.start_timer(0.35, false) { capture_current_view }
           when 'capture'
             capture_current_view(cmd['size'])
           when 'add_scene'
@@ -212,7 +255,13 @@ module NanoBanana
       return unless model
 
       pages = model.pages
-      selected = pages.selected_page&.name
+      native = pages.selected_page&.name
+      # SketchUp 쪽에서 씬이 직접 바뀌면 오버라이드 해제
+      if @bridge_prev_native && native != @bridge_prev_native
+        @bridge_scene_override = nil
+      end
+      @bridge_prev_native = native
+      selected = @bridge_scene_override || native
       scenes = pages.map { |p| { name: p.name, active: p.name == selected } }
       @bridge_scenes_body = { scenes: scenes, timestamp: Time.now.to_i }.to_json
     rescue StandardError => e
@@ -241,6 +290,18 @@ module NanoBanana
       end
 
       puts "[NanoBanana] 로컬 서버 중지"
+    end
+
+    # 카메라 시그니처가 바뀐 경우에만 캡처 (미러링용)
+    def capture_if_view_changed
+      cam = Sketchup.active_model.active_view.camera
+      sig = [cam.eye.to_a, cam.target.to_a, cam.up.to_a, cam.perspective? ? cam.fov : 0]
+      return if sig == @bridge_cam_sig
+
+      @bridge_cam_sig = sig
+      capture_current_view
+    rescue StandardError => e
+      puts "[NanoBanana] 뷰 변경 감지 에러: #{e.message}"
     end
 
     def capture_current_view(size = nil)

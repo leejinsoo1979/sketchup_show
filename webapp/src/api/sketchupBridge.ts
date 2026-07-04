@@ -78,7 +78,7 @@ interface ScenesResponse {
 // ---------------------------------------------------------------------------
 
 const BRIDGE_BASE_URL = 'http://localhost:9876'
-const POLL_INTERVAL_MS = 3000
+const POLL_INTERVAL_MS = 2000
 const REQUEST_TIMEOUT_MS = 2000
 
 // ---------------------------------------------------------------------------
@@ -205,14 +205,19 @@ async function sendCommand(cmd: Record<string, unknown>): Promise<boolean> {
   }
 }
 
-/** SketchUp 씬 전환. 전환 직후 새 캡처가 폴링으로 들어온다. */
+/** SketchUp 씬 전환. 탭 하이라이트는 즉시(낙관적) 반영, 캡처는 연속 폴링으로 수신. */
 export async function selectScene(name: string): Promise<boolean> {
+  // 낙관적 UI: 서버 응답을 기다리지 않고 active 탭 즉시 갱신
+  const ui = useUIStore.getState()
+  ui.setSketchUpScenes(ui.sketchUpScenes.map((s) => ({ ...s, active: s.name === name })))
+
   const ok = await sendCommand({ type: 'select_scene', name })
   if (ok) {
-    // 씬이 바뀌면 같은 이미지 dedup 캐시를 무효화해 즉시 갱신되게 한다
     lastSourceHash = null
-    // 전환 렌더가 끝난 뒤 바로 한 번 폴링
-    setTimeout(pollOnce, 700)
+    // 전환 직후 새 캡처를 빠르게 연속 수신 (0.5s / 1.2s / 2.5s)
+    setTimeout(pollOnce, 500)
+    setTimeout(pollOnce, 1200)
+    setTimeout(pollOnce, 2500)
   }
   return ok
 }
@@ -225,7 +230,8 @@ export async function sendCamera(
   const ok = await sendCommand({ type: 'camera', action, value })
   if (ok) {
     lastSourceHash = null
-    setTimeout(pollOnce, 600)
+    setTimeout(pollOnce, 500)
+    setTimeout(pollOnce, 1100)
   }
   return ok
 }
