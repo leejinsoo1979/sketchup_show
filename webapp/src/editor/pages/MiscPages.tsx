@@ -70,8 +70,10 @@ export function AccountPage() {
       <div className="w-full" style={{ maxWidth: 560 }}>
         {/* 프로필 카드 */}
         <div
-          className="relative overflow-hidden rounded-2xl p-6"
+          className="relative overflow-hidden"
           style={{
+            borderRadius: 16,
+            padding: 24,
             background: 'linear-gradient(135deg, #171721 0%, #12121b 60%, #0f1e1a 100%)',
             border: '1px solid #2c2c38',
             boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
@@ -98,7 +100,7 @@ export function AccountPage() {
           </div>
 
           {/* 크레딧 */}
-          <div className="mt-6 flex items-end justify-between rounded-xl p-4" style={{ background: 'rgba(0,201,167,0.06)', border: '1px solid rgba(0,201,167,0.25)' }}>
+          <div className="flex items-end justify-between" style={{ marginTop: 20, borderRadius: 12, padding: 16, background: 'rgba(0,201,167,0.07)', border: '1px solid rgba(0,201,167,0.3)' }}>
             <div>
               <div style={{ color: '#7ddcc9', fontSize: 12, fontWeight: 600, letterSpacing: 0.5 }}>CREDITS</div>
               <div style={{ color: '#00e5be', fontSize: 38, fontWeight: 800, lineHeight: 1.15, minHeight: 44 }}>
@@ -117,7 +119,7 @@ export function AccountPage() {
         <AppPasswordCard email={me?.email ?? user?.email ?? ''} />
 
         {/* 최근 사용 내역 */}
-        <div className="mt-5 rounded-2xl p-5" style={{ background: '#14141d', border: '1px solid #2c2c38' }}>
+        <div style={{ marginTop: 18, borderRadius: 16, padding: 20, background: '#14141d', border: '1px solid #2c2c38' }}>
           <div style={{ color: '#ffffff', fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>최근 사용 내역</div>
           {logs.length === 0 && <div style={{ color: '#55555f', fontSize: 12 }}>아직 사용 내역이 없습니다</div>}
           {logs.map((l, i) => (
@@ -211,7 +213,7 @@ function AppPasswordCard({ email }: { email: string }) {
   }
 
   return (
-    <div className="mt-5 rounded-2xl p-5" style={{ background: '#14141d', border: '1px solid #2c2c38' }}>
+    <div style={{ marginTop: 18, borderRadius: 16, padding: 20, background: '#14141d', border: '1px solid #2c2c38' }}>
       <div style={{ color: '#ffffff', fontSize: 13.5, fontWeight: 700 }}>데스크톱 앱 로그인 비밀번호</div>
       <div className="mb-3 mt-1" style={{ fontSize: 11.5, color: '#8a8a96', lineHeight: 1.6 }}>
         설치형 Lumanova 앱은 크롬의 구글 자동로그인을 쓸 수 없습니다. 여기서 비밀번호를 한 번 만들어두면,
