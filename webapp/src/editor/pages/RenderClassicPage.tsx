@@ -104,6 +104,12 @@ export function RenderClassicPage() {
   const liveImage = liveNode?.result?.image ?? (liveNode && 'image' in liveNode.params ? (liveNode.params as { image: string }).image : null)
   const sourceImage = s.previewOverride ?? (s.mirror ? (liveImage ?? s.frozenSource) : (s.frozenSource ?? liveImage))
 
+  // 카메라 조작 = 다시 구도 잡는 중: 고정 캡처를 풀고 미러를 재개해 변화가 바로 보이게 한다
+  const camCommand = useCallback((action: Parameters<typeof sendCamera>[0], value?: string) => {
+    useClassicStore.getState().set({ mirror: true, frozenSource: null, previewOverride: null, sourceLoading: true })
+    sendCamera(action, value)
+  }, [])
+
   // ── 실시간 미러링 (Electron: SketchUp 창을 30fps 스트림으로) ──
   useEffect(() => {
     if (!window.vizmakerNative || !s.mirror || status !== 'connected') {
@@ -170,7 +176,7 @@ export function RenderClassicPage() {
         q: ['move', 'up'], e: ['move', 'down'], z: ['rotate', 'left'], x: ['rotate', 'right'],
       }
       const m = map[e.key.toLowerCase()]
-      if (m) sendCamera(m[0], m[1])
+      if (m) camCommand(m[0], m[1])
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -349,7 +355,7 @@ export function RenderClassicPage() {
               </button>
               <button
                 title="2점 투시 자동 보정"
-                onClick={() => { s.set({ sourceLoading: true }); sendCamera('two_point') }}
+                onClick={() => { s.set({ sourceLoading: true }); camCommand('two_point') }}
                 style={{ width: 27, height: 27, borderRadius: 6, background: '#1e1e1e', border: `1px solid ${C.border}`, color: '#999', fontSize: 12 }}
               >
                 ⊞
@@ -359,20 +365,20 @@ export function RenderClassicPage() {
             {/* WASD / QE / ZX */}
             <div className="mt-1 flex items-start justify-center gap-2">
               <div className="flex flex-col items-center gap-1">
-                <CamKey k="W" title="전진 (W)" onClick={() => sendCamera('move', 'forward')} />
+                <CamKey k="W" title="전진 (W)" onClick={() => camCommand('move', 'forward')} />
                 <div className="flex gap-1">
-                  <CamKey k="A" title="왼쪽 (A)" onClick={() => sendCamera('move', 'left')} />
-                  <CamKey k="S" title="후진 (S)" onClick={() => sendCamera('move', 'back')} />
-                  <CamKey k="D" title="오른쪽 (D)" onClick={() => sendCamera('move', 'right')} />
+                  <CamKey k="A" title="왼쪽 (A)" onClick={() => camCommand('move', 'left')} />
+                  <CamKey k="S" title="후진 (S)" onClick={() => camCommand('move', 'back')} />
+                  <CamKey k="D" title="오른쪽 (D)" onClick={() => camCommand('move', 'right')} />
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <CamKey k="Q" title="위로 (Q)" onClick={() => sendCamera('move', 'up')} />
-                <CamKey k="E" title="아래로 (E)" onClick={() => sendCamera('move', 'down')} />
+                <CamKey k="Q" title="위로 (Q)" onClick={() => camCommand('move', 'up')} />
+                <CamKey k="E" title="아래로 (E)" onClick={() => camCommand('move', 'down')} />
               </div>
               <div className="flex flex-col gap-1">
-                <CamKey k="Z" title="좌회전 (Z)" onClick={() => sendCamera('rotate', 'left')} />
-                <CamKey k="X" title="우회전 (X)" onClick={() => sendCamera('rotate', 'right')} />
+                <CamKey k="Z" title="좌회전 (Z)" onClick={() => camCommand('rotate', 'left')} />
+                <CamKey k="X" title="우회전 (X)" onClick={() => camCommand('rotate', 'right')} />
               </div>
             </div>
             <div className="text-center" style={{ fontSize: 9, color: '#555' }}>
@@ -385,7 +391,7 @@ export function RenderClassicPage() {
             <Segmented
               options={[{ v: 'standing', l: '서기' }, { v: 'seated', l: '앉기' }, { v: 'low_angle', l: '낮음' }]}
               value=""
-              onChange={(v) => { s.set({ sourceLoading: true }); sendCamera('height', v) }}
+              onChange={(v) => { s.set({ sourceLoading: true }); camCommand('height', v) }}
             />
           </div>
 
@@ -394,7 +400,7 @@ export function RenderClassicPage() {
             <Segmented
               options={[{ v: 'wide', l: '광각' }, { v: 'standard', l: '표준' }, { v: 'telephoto', l: '망원' }]}
               value=""
-              onChange={(v) => { s.set({ sourceLoading: true }); sendCamera('fov', v) }}
+              onChange={(v) => { s.set({ sourceLoading: true }); camCommand('fov', v) }}
             />
           </div>
         </div>
