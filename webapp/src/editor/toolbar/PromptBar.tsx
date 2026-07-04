@@ -135,7 +135,7 @@ export function PromptBar() {
         }
         className="flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 transition-colors"
         style={{
-          backgroundColor: autoLoading ? '#ff4466' : autoEnabled ? '#7c5cff' : '#1a1a24',
+          backgroundColor: autoLoading ? '#ff4466' : autoEnabled ? '#00c9a7' : '#1a1a24',
           color: autoEnabled || autoLoading ? '#ffffff' : '#555566',
           fontSize: 13,
           fontWeight: 600,

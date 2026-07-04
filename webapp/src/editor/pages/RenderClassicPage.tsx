@@ -529,7 +529,8 @@ export function RenderClassicPage() {
                 className="flex items-center gap-1"
                 style={{
                   padding: '3px 12px', borderRadius: 5, fontSize: 11, fontWeight: 600,
-                  background: s.autoLoading ? '#ff4466' : '#7c5cff', color: '#fff',
+                  background: s.autoLoading ? '#ff4466' : '#00c9a7',
+                  color: s.autoLoading ? '#fff' : '#06251f',
                 }}
               >
                 {s.autoLoading ? <><Loader2 size={11} className="animate-spin" /> 취소</> : 'Auto'}
