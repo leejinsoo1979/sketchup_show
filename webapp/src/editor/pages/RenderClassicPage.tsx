@@ -674,17 +674,16 @@ function Panel({ label, active, image, emptyText, loading, loadingText, video, v
 // SketchUp 창 스트림에서 3D 뷰포트 영역만 잘라 표시 (메뉴/툴바 제거)
 function CroppedVideo({ videoRef, viewport }: {
   videoRef: React.RefObject<HTMLVideoElement | null>
-  viewport: { w: number; h: number } | null
+  viewport: { w: number; h: number; sf: number } | null
 }) {
   const [dims, setDims] = useState<{ W: number; H: number } | null>(null)
 
-  // 크롭 계산: 뷰포트 픽셀(레티나 2배 보정) 기준, 좌측 정렬 + 하단 상태바 제외
+  // 크롭 계산: 뷰포트(물리 픽셀) 기준, 좌측 정렬 + 하단 상태바 제외
   let crop: { w: number; h: number; top: number } | null = null
-  if (dims && viewport) {
-    const factor = dims.W / viewport.w >= 1.5 ? 2 : 1
-    const w = Math.min(viewport.w * factor, dims.W)
-    const h = Math.min(viewport.h * factor, dims.H)
-    const statusBar = 30 * factor
+  if (dims && viewport && viewport.w <= dims.W && viewport.h < dims.H) {
+    const w = viewport.w
+    const h = viewport.h
+    const statusBar = Math.round(24 * viewport.sf)
     const top = Math.max(0, dims.H - h - statusBar)
     crop = { w, h, top }
   }
