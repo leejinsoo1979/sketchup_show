@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useCreditStore } from '../../state/creditStore'
 import { saasMode, apiMe } from '../../api/lumanovaApi'
-import { getFirebaseAuth } from '../../auth/firebase'
+import { getFirebaseAuth, useAuthUser } from '../../auth/firebase'
 
 /** 공용 심플 페이지 레이아웃 */
 function PageShell({ title, children }: { title: string; children: React.ReactNode }) {
@@ -18,56 +18,120 @@ function PageShell({ title, children }: { title: string; children: React.ReactNo
 export function AccountPage() {
   const localBalance = useCreditStore((s) => s.balance)
   const [me, setMe] = useState<{ email: string | null; balance: number } | null>(null)
+  const [logs, setLogs] = useState<{ engine: string; cost: number; status: string; at: string }[]>([])
   const [err, setErr] = useState<string | null>(null)
   const saas = saasMode()
+  const user = useAuthUser()
 
   useEffect(() => {
-    if (!saas) return
+    if (!saas || !user) return
     apiMe().then(setMe).catch((e) => setErr(String(e.message ?? e)))
-  }, [saas])
+    // 최근 사용 내역 (Firestore REST - 본인 로그만 규칙상 허용)
+    user.getIdToken().then(async (token) => {
+      try {
+        const r = await fetch(
+          `https://firestore.googleapis.com/v1/projects/lumanova-24e9b/databases/(default)/documents/users/${user.uid}/renderLogs?pageSize=50`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+        const j = await r.json()
+        const rows = (j.documents ?? []).map((d: { fields: Record<string, { stringValue?: string; integerValue?: string; timestampValue?: string }> }) => ({
+          engine: d.fields.engine?.stringValue ?? '?',
+          cost: Number(d.fields.cost?.integerValue ?? 0),
+          status: d.fields.status?.stringValue ?? '?',
+          at: d.fields.createdAt?.timestampValue ?? '',
+        }))
+        rows.sort((a: { at: string }, b: { at: string }) => b.at.localeCompare(a.at))
+        setLogs(rows.slice(0, 10))
+      } catch { /* 내역은 부가 정보 */ }
+    })
+  }, [saas, user])
+
+  const ENGINE_LABEL: Record<string, string> = {
+    main: '렌더 (Nanobanana)', pro: 'Pro 렌더 (Nanobanana Pro)', auto_prompt: 'Auto 프롬프트',
+  }
+
+  if (!saas) {
+    return (
+      <PageShell title="Account">
+        <div className="rounded p-4" style={{ backgroundColor: '#1a1a24', border: '1px solid #222233' }}>
+          <div style={{ color: '#cccccc', fontSize: 13 }}>Credits (개발자 모드)</div>
+          <div style={{ color: '#00c9a7', fontSize: 28, fontWeight: 700 }}>{localBalance}</div>
+          <div className="mt-1" style={{ fontSize: 11, color: '#666666' }}>
+            개발자 모드: 로그인 없이 로컬 키로 직접 호출합니다.
+          </div>
+        </div>
+      </PageShell>
+    )
+  }
 
   return (
-    <PageShell title="Account">
-      <div
-        className="rounded p-4"
-        style={{ backgroundColor: '#1a1a24', border: '1px solid #222233' }}
-      >
-        {saas ? (
-          <>
-            <div style={{ color: '#cccccc', fontSize: 13 }}>로그인 계정</div>
-            <div style={{ color: '#ffffff', fontSize: 15, fontWeight: 600 }}>
-              {me?.email ?? (err ? '조회 실패' : '불러오는 중...')}
-            </div>
-            <div className="mt-3" style={{ color: '#cccccc', fontSize: 13 }}>Credits</div>
-            <div style={{ color: '#00c9a7', fontSize: 28, fontWeight: 700 }}>
-              {me ? me.balance : '—'}
-            </div>
-            {err && <div style={{ color: '#ff6666', fontSize: 11 }}>{err}</div>}
-            <div className="mt-1" style={{ fontSize: 11, color: '#666666' }}>
-              렌더 1크레딧 / Pro 렌더 4크레딧 / Auto 프롬프트 1크레딧. 충전은 운영자에게 문의하세요.
+    <div className="flex flex-1 justify-center overflow-y-auto" style={{ background: '#0b0b0f', padding: '48px 24px' }}>
+      <div className="w-full" style={{ maxWidth: 560 }}>
+        {/* 프로필 카드 */}
+        <div
+          className="relative overflow-hidden rounded-2xl p-6"
+          style={{
+            background: 'linear-gradient(135deg, #14141c 0%, #101018 60%, #0e1a17 100%)',
+            border: '1px solid #26262f',
+          }}
+        >
+          <div className="flex items-center gap-4">
+            <span className="flex items-center justify-center overflow-hidden rounded-full" style={{ width: 64, height: 64, background: '#00c9a7', color: '#06251f', fontSize: 26, fontWeight: 800 }}>
+              {user?.photoURL
+                ? <img src={user.photoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                : (me?.email?.[0]?.toUpperCase() ?? '·')}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate" style={{ color: '#ffffff', fontSize: 16, fontWeight: 700 }}>
+                {user?.displayName || me?.email?.split('@')[0] || '...'}
+              </div>
+              <div className="truncate" style={{ color: '#8a8a96', fontSize: 12.5 }}>{me?.email ?? user?.email ?? ''}</div>
             </div>
             <button
-              className="mt-4"
               onClick={() => getFirebaseAuth()?.signOut()}
-              style={{
-                height: 34, padding: '0 18px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                background: '#2a1a1a', color: '#ff8888', border: '1px solid #442222',
-              }}
+              style={{ height: 32, padding: '0 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'transparent', color: '#ff8888', border: '1px solid #3a2626' }}
             >
               로그아웃
             </button>
-          </>
-        ) : (
-          <>
-            <div style={{ color: '#cccccc', fontSize: 13 }}>Credits (개발자 모드)</div>
-            <div style={{ color: '#00c9a7', fontSize: 28, fontWeight: 700 }}>{localBalance}</div>
-            <div className="mt-1" style={{ fontSize: 11, color: '#666666' }}>
-              개발자 모드: 로그인 없이 로컬 키로 직접 호출합니다.
+          </div>
+
+          {/* 크레딧 */}
+          <div className="mt-6 flex items-end justify-between rounded-xl p-4" style={{ background: 'rgba(0,201,167,0.06)', border: '1px solid rgba(0,201,167,0.25)' }}>
+            <div>
+              <div style={{ color: '#7ddcc9', fontSize: 12, fontWeight: 600, letterSpacing: 0.5 }}>CREDITS</div>
+              <div style={{ color: '#00e5be', fontSize: 40, fontWeight: 800, lineHeight: 1.1 }}>
+                {me ? me.balance : '—'}
+              </div>
             </div>
-          </>
-        )}
+            <div className="text-right" style={{ fontSize: 11, color: '#8a8a96', lineHeight: 1.7 }}>
+              렌더 <b style={{ color: '#cfcfda' }}>1</b> · Pro 렌더 <b style={{ color: '#cfcfda' }}>4</b> · Auto <b style={{ color: '#cfcfda' }}>1</b>
+              <br />충전 문의: sbbc212@gmail.com
+            </div>
+          </div>
+          {err && <div className="mt-2" style={{ color: '#ff6666', fontSize: 12 }}>{err}</div>}
+        </div>
+
+        {/* 최근 사용 내역 */}
+        <div className="mt-4 rounded-2xl p-5" style={{ background: '#12121a', border: '1px solid #22222c' }}>
+          <div style={{ color: '#ffffff', fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>최근 사용 내역</div>
+          {logs.length === 0 && <div style={{ color: '#55555f', fontSize: 12 }}>아직 사용 내역이 없습니다</div>}
+          {logs.map((l, i) => (
+            <div key={i} className="flex items-center justify-between" style={{ padding: '8px 0', borderTop: i ? '1px solid #1c1c26' : 'none' }}>
+              <div>
+                <span style={{ color: '#d8d8e0', fontSize: 12.5 }}>{ENGINE_LABEL[l.engine] ?? l.engine}</span>
+                <span className="ml-2" style={{ fontSize: 10.5, color: l.status === 'ok' ? '#4cd6a8' : '#ff7777' }}>
+                  {l.status === 'ok' ? '성공' : '실패'}
+                </span>
+              </div>
+              <div className="text-right">
+                <span style={{ color: '#9a9aa6', fontSize: 11 }}>{l.at ? new Date(l.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                <span className="ml-3" style={{ color: '#7ddcc9', fontSize: 12, fontWeight: 700 }}>-{l.cost}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </PageShell>
+    </div>
   )
 }
 
