@@ -195,7 +195,10 @@ module NanoBanana
             end
             capture_current_view
           when 'capture'
-            capture_current_view
+            capture_current_view(cmd['size'])
+          when 'add_scene'
+            add_scene
+            update_bridge_scenes
           end
         rescue StandardError => e
           puts "[NanoBanana] 브릿지 명령 에러(#{cmd['type']}): #{e.message}"
@@ -240,13 +243,16 @@ module NanoBanana
       puts "[NanoBanana] 로컬 서버 중지"
     end
 
-    def capture_current_view
+    def capture_current_view(size = nil)
       return unless @local_server
 
       begin
+        # size 지정 시 고품질 캡처 (Convert), 미지정 시 미러링용 기본 해상도
+        dims = { '1024' => [1024, 576], '1536' => [1536, 864], '1920' => [1920, 1080] }[size.to_s]
+        w, h = dims || [1280, 720]
         view = Sketchup.active_model.active_view
         temp_path = File.join(Dir.tmpdir, 'nanobanana_live.png')
-        view.write_image(temp_path, 1280, 720, true)
+        view.write_image(temp_path, w, h, true)
 
         if File.exist?(temp_path)
           @current_source_image = Base64.strict_encode64(File.binread(temp_path))

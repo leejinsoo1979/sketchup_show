@@ -230,14 +230,19 @@ export async function sendCamera(
   return ok
 }
 
-/** 현재 뷰 즉시 재캡처 요청. */
-export async function requestCapture(): Promise<boolean> {
-  const ok = await sendCommand({ type: 'capture' })
+/** 현재 뷰 즉시 재캡처 요청. size: '1024'|'1536'|'1920' = 고품질 Convert 캡처. */
+export async function requestCapture(size?: string): Promise<boolean> {
+  const ok = await sendCommand(size ? { type: 'capture', size } : { type: 'capture' })
   if (ok) {
     lastSourceHash = null
-    setTimeout(pollOnce, 700)
+    setTimeout(pollOnce, 900)
   }
   return ok
+}
+
+/** 현재 뷰를 SketchUp 씬으로 저장. */
+export async function addScene(): Promise<boolean> {
+  return sendCommand({ type: 'add_scene' })
 }
 
 export async function pushResult(
