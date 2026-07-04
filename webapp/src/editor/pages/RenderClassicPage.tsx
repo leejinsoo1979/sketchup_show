@@ -31,7 +31,7 @@ const C = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ fontSize: 10, color: C.label, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+    <span style={{ fontSize: 9, color: C.label, textTransform: 'uppercase', letterSpacing: 0.5 }}>
       {children}
     </span>
   )
@@ -50,7 +50,7 @@ function Segmented({ options, value, onChange }: {
           onClick={() => onChange(o.v)}
           className="flex-1 transition-colors"
           style={{
-            padding: '8px 4px', fontSize: 11, fontWeight: 500, borderRadius: 4,
+            padding: '5px 4px', fontSize: 11, fontWeight: 500, borderRadius: 4,
             background: value === o.v ? '#333333' : 'transparent',
             color: value === o.v ? '#ffffff' : C.dim,
           }}
@@ -68,7 +68,7 @@ function CamKey({ k, title, onClick, active }: { k: string; title: string; onCli
       title={title}
       onClick={onClick}
       style={{
-        width: 26, height: 26, fontSize: 10, fontWeight: 600, borderRadius: 4,
+        width: 22, height: 22, fontSize: 9, fontWeight: 600, borderRadius: 4,
         background: active ? C.accent : '#1e1e1e', color: active ? '#0a0a14' : '#999',
         border: `1px solid ${C.border}`,
       }}
@@ -270,12 +270,12 @@ export function RenderClassicPage() {
     <div className="flex flex-1 overflow-hidden" style={{ background: C.bg, color: C.text, fontSize: 12 }}>
       {/* ══ 좌측 컨트롤 사이드바 (레거시 .sidebar 200px) ══ */}
       <aside className="flex flex-col" style={{ width: 200, minWidth: 200, background: C.sidebar, borderRight: `1px solid ${C.border}` }}>
-        <div style={{ padding: 16, borderBottom: `1px solid ${C.border}`, fontSize: 13, fontWeight: 600, color: '#fff' }}>
+        <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontSize: 13, fontWeight: 600, color: '#fff' }}>
           VizMaker
         </div>
 
-        <div className="flex flex-1 flex-col gap-5 overflow-y-auto" style={{ padding: 16, minHeight: 0 }}>
-          <div className="flex flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto" style={{ padding: '10px 12px', minHeight: 0 }}>
+          <div className="flex flex-col gap-1">
             <SectionLabel>Time</SectionLabel>
             <Segmented
               options={[{ v: 'day', l: 'Day' }, { v: 'evening', l: 'Eve' }, { v: 'night', l: 'Night' }]}
@@ -284,7 +284,7 @@ export function RenderClassicPage() {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <SectionLabel>Lights</SectionLabel>
             <Segmented
               options={[{ v: 'on', l: 'On' }, { v: 'off', l: 'Off' }]}
@@ -293,13 +293,13 @@ export function RenderClassicPage() {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <SectionLabel>Model</SectionLabel>
             <select
               value={s.model}
               onChange={(e) => s.set({ model: e.target.value as ClassicModel })}
               style={{
-                width: '100%', padding: '8px 10px', background: C.input,
+                width: '100%', padding: '6px 10px', background: C.input,
                 border: `1px solid ${C.border}`, borderRadius: 6, color: '#ccc', fontSize: 11,
               }}
             >
@@ -308,7 +308,7 @@ export function RenderClassicPage() {
             </select>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <SectionLabel>Size</SectionLabel>
             <Segmented
               options={[{ v: '1024', l: '속도' }, { v: '1536', l: '밸런스' }, { v: '1920', l: '고품질' }]}
@@ -317,14 +317,14 @@ export function RenderClassicPage() {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <SectionLabel>Camera</SectionLabel>
             <div className="flex gap-1.5">
               <button
                 onClick={() => s.set({ mirror: !s.mirror, statusText: s.mirror ? '미러링 중지' : '미러링 시작' })}
                 className="flex-1"
                 style={{
-                  height: 32, borderRadius: 6, fontSize: 11, fontWeight: 600,
+                  height: 27, borderRadius: 6, fontSize: 11, fontWeight: 600,
                   background: s.mirror ? C.accent : '#1e1e1e',
                   color: s.mirror ? '#0a0a14' : '#999', border: `1px solid ${s.mirror ? C.accent : C.border}`,
                 }}
@@ -334,7 +334,7 @@ export function RenderClassicPage() {
               <button
                 title="2점 투시 자동 보정"
                 onClick={() => { s.set({ sourceLoading: true }); sendCamera('two_point') }}
-                style={{ width: 32, height: 32, borderRadius: 6, background: '#1e1e1e', border: `1px solid ${C.border}`, color: '#999', fontSize: 12 }}
+                style={{ width: 27, height: 27, borderRadius: 6, background: '#1e1e1e', border: `1px solid ${C.border}`, color: '#999', fontSize: 12 }}
               >
                 ⊞
               </button>
@@ -364,7 +364,7 @@ export function RenderClassicPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <SectionLabel>Height</SectionLabel>
             <Segmented
               options={[{ v: 'standing', l: '서기' }, { v: 'seated', l: '앉기' }, { v: 'low_angle', l: '낮음' }]}
@@ -373,7 +373,7 @@ export function RenderClassicPage() {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <SectionLabel>FOV</SectionLabel>
             <Segmented
               options={[{ v: 'wide', l: '광각' }, { v: 'standard', l: '표준' }, { v: 'telephoto', l: '망원' }]}
@@ -384,10 +384,10 @@ export function RenderClassicPage() {
         </div>
 
         {/* Convert / Edit / Export (레거시 .sidebar-actions) */}
-        <div className="flex flex-col gap-2" style={{ padding: 16, borderTop: `1px solid ${C.border}` }}>
+        <div className="flex flex-col gap-1.5" style={{ padding: '8px 12px', borderTop: `1px solid ${C.border}` }}>
           <button
             onClick={doConvert}
-            style={{ height: 36, borderRadius: 6, fontSize: 12, fontWeight: 500, background: '#222', color: '#ddd', border: `1px solid ${C.border}` }}
+            style={{ height: 30, borderRadius: 6, fontSize: 12, fontWeight: 500, background: '#222', color: '#ddd', border: `1px solid ${C.border}` }}
           >
             Convert
           </button>
@@ -396,7 +396,7 @@ export function RenderClassicPage() {
             disabled={!s.resultImage}
             title="이미지 로컬 보정 (밝기/대비/채도 등 - API 호출 없음)"
             style={{
-              height: 36, borderRadius: 6, fontSize: 12, fontWeight: 500,
+              height: 30, borderRadius: 6, fontSize: 12, fontWeight: 500,
               background: s.resultImage ? '#222' : '#1a1a1a',
               color: s.resultImage ? '#ddd' : '#444',
               border: `1px solid ${s.resultImage ? '#333333' : '#2a2a2a'}`,
@@ -408,7 +408,7 @@ export function RenderClassicPage() {
             onClick={doExport}
             disabled={!s.resultImage}
             style={{
-              height: 36, borderRadius: 6, fontSize: 12, fontWeight: 500,
+              height: 30, borderRadius: 6, fontSize: 12, fontWeight: 500,
               background: s.resultImage ? '#222' : '#1a1a1a',
               color: s.resultImage ? '#ddd' : '#444',
               border: `1px solid ${s.resultImage ? C.border : '#2a2a2a'}`,
@@ -419,7 +419,7 @@ export function RenderClassicPage() {
         </div>
 
         {/* 연결 상태 (레거시 .sidebar-footer) */}
-        <div className="flex items-center gap-2" style={{ padding: '10px 16px', borderTop: `1px solid ${C.border}` }}>
+        <div className="flex items-center gap-2" style={{ padding: '6px 16px', borderTop: `1px solid ${C.border}` }}>
           <span style={{
             width: 8, height: 8, borderRadius: 4,
             background: status === 'connected' ? '#4caf50' : '#f44336',
