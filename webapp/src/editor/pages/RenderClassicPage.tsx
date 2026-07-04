@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ImagePlus, Zap, Loader2 } from 'lucide-react'
+import { ImagePlus, Zap, Loader2, SlidersHorizontal, Download } from 'lucide-react'
 import { useClassicStore, type ClassicModel, type ClassicSize } from '../../state/classicStore'
 import { useUIStore } from '../../state/uiStore'
 import { useGraphStore } from '../../state/graphStore'
@@ -80,7 +80,7 @@ function CamKey({ k, title, onClick, active }: { k: string; title: string; onCli
 
 declare global {
   interface Window {
-    vizmakerNative?: { getSketchUpSourceId: () => Promise<string | null> }
+    vizmakerNative?: { getSketchUpSourceId: () => Promise<string | null>; setSketchUpTitleHint: (t: string) => void }
   }
 }
 
@@ -111,6 +111,9 @@ export function RenderClassicPage() {
       return
     }
     let cancelled = false
+    // 정확한 창 매칭: 모델 창 제목 힌트 전달 (제목에 sketchup이 든 IDE 창 오탐 방지)
+    const hint = useUIStore.getState().sketchUpViewport?.title
+    if (hint) window.vizmakerNative.setSketchUpTitleHint(hint)
     navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
       .then((stream) => {
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return }
@@ -383,38 +386,42 @@ export function RenderClassicPage() {
           </div>
         </div>
 
-        {/* Convert / Edit / Export (레거시 .sidebar-actions) */}
-        <div className="flex flex-col gap-1.5" style={{ padding: '8px 12px', borderTop: `1px solid ${C.border}` }}>
+        {/* 액션: Convert 버튼 + Edit/Export 아이콘 한 줄 통합 */}
+        <div className="flex gap-1.5" style={{ padding: '8px 12px', borderTop: `1px solid ${C.border}` }}>
           <button
             onClick={doConvert}
-            style={{ height: 30, borderRadius: 6, fontSize: 12, fontWeight: 500, background: '#222', color: '#ddd', border: `1px solid ${C.border}` }}
+            className="flex-1"
+            style={{ height: 32, borderRadius: 6, fontSize: 12, fontWeight: 600, background: '#222', color: '#ddd', border: `1px solid ${C.border}` }}
           >
             Convert
           </button>
           <button
             onClick={() => setEditOpen(true)}
             disabled={!s.resultImage}
-            title="이미지 로컬 보정 (밝기/대비/채도 등 - API 호출 없음)"
+            title="이미지 보정 (밝기/대비/채도 등)"
+            className="flex items-center justify-center"
             style={{
-              height: 30, borderRadius: 6, fontSize: 12, fontWeight: 500,
-              background: s.resultImage ? '#222' : '#1a1a1a',
-              color: s.resultImage ? '#ddd' : '#444',
-              border: `1px solid ${s.resultImage ? '#333333' : '#2a2a2a'}`,
-            }}
-          >
-            Edit
-          </button>
-          <button
-            onClick={doExport}
-            disabled={!s.resultImage}
-            style={{
-              height: 30, borderRadius: 6, fontSize: 12, fontWeight: 500,
+              width: 32, height: 32, borderRadius: 6,
               background: s.resultImage ? '#222' : '#1a1a1a',
               color: s.resultImage ? '#ddd' : '#444',
               border: `1px solid ${s.resultImage ? C.border : '#2a2a2a'}`,
             }}
           >
-            Export
+            <SlidersHorizontal size={14} />
+          </button>
+          <button
+            onClick={doExport}
+            disabled={!s.resultImage}
+            title="결과 이미지 저장"
+            className="flex items-center justify-center"
+            style={{
+              width: 32, height: 32, borderRadius: 6,
+              background: s.resultImage ? '#222' : '#1a1a1a',
+              color: s.resultImage ? '#ddd' : '#444',
+              border: `1px solid ${s.resultImage ? C.border : '#2a2a2a'}`,
+            }}
+          >
+            <Download size={14} />
           </button>
         </div>
 
