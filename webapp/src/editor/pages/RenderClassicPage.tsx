@@ -585,7 +585,7 @@ function Panel({ label, active, image, emptyText, loading, loadingText, video, v
   loading?: boolean
   loadingText?: string
   video?: React.RefObject<HTMLVideoElement | null> | null
-  videoViewport?: { w: number; h: number } | null
+  videoViewport?: { w: number; h: number; sf: number } | null
   tab: 'prompt' | 'negative'
   onTab: (t: 'prompt' | 'negative') => void
   prompt: string
