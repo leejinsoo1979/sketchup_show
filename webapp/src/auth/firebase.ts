@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react'
 import { initializeApp, type FirebaseApp } from 'firebase/app'
-import { getAuth, type Auth } from 'firebase/auth'
+import { getAuth, onAuthStateChanged, type Auth, type User } from 'firebase/auth'
 
 // ---------------------------------------------------------------------------
 // Firebase 클라이언트 (Lumanova SaaS)
@@ -47,4 +48,16 @@ export async function getIdToken(): Promise<string | null> {
   const auth = getFirebaseAuth()
   if (!auth?.currentUser) return null
   return auth.currentUser.getIdToken()
+}
+
+
+/** 현재 로그인 사용자 (SaaS 모드 아니면 항상 null). */
+export function useAuthUser(): User | null {
+  const [user, setUser] = useState<User | null>(() => getFirebaseAuth()?.currentUser ?? null)
+  useEffect(() => {
+    const auth = getFirebaseAuth()
+    if (!auth) return
+    return onAuthStateChanged(auth, setUser)
+  }, [])
+  return user
 }

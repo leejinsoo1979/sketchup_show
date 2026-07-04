@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useUIStore, type SidebarItem } from '../../state/uiStore'
+import { firebaseEnabled, useAuthUser } from '../../auth/firebase'
 
 interface SidebarButton {
   id: SidebarItem
@@ -95,7 +96,54 @@ export function LeftSidebar() {
         {bottomButtons.map((btn) => (
           <SidebarIcon key={btn.id} button={btn} />
         ))}
+        <ProfileBadge />
       </div>
     </aside>
+  )
+}
+
+
+// 좌측 하단 프로필 배지: 로그인 상태를 항상 눈으로 확인 가능하게
+function ProfileBadge() {
+  const user = useAuthUser()
+  const setActiveSidebarItem = useUIStore((st) => st.setActiveSidebarItem)
+  const saas = firebaseEnabled()
+  const loggedIn = saas && !!user
+  const initial = user?.email?.[0]?.toUpperCase() ?? 'D'
+  const label = loggedIn ? (user?.email?.split('@')[0] ?? '') : 'Dev'
+
+  return (
+    <button
+      title={loggedIn ? `로그인됨: ${user?.email}` : '개발자 모드 (로그인 없음)'}
+      onClick={() => setActiveSidebarItem('account')}
+      className="mx-1.5 mb-1 mt-2 flex flex-col items-center"
+    >
+      <span
+        className="relative flex items-center justify-center rounded-full"
+        style={{
+          width: 34, height: 34, fontSize: 14, fontWeight: 700,
+          background: loggedIn ? '#00c9a7' : '#2a2a34',
+          color: loggedIn ? '#06251f' : '#777788',
+          border: loggedIn ? 'none' : '1px dashed #444450',
+        }}
+      >
+        {user?.photoURL ? (
+          <img src={user.photoURL} alt="" className="h-full w-full rounded-full object-cover" referrerPolicy="no-referrer" />
+        ) : (
+          initial
+        )}
+        <span
+          className="absolute rounded-full"
+          style={{
+            right: -1, bottom: -1, width: 10, height: 10,
+            background: loggedIn ? '#22cc66' : '#666672',
+            border: '2px solid #0d0d13',
+          }}
+        />
+      </span>
+      <span className="mt-1 w-full truncate text-center" style={{ fontSize: 9, color: loggedIn ? '#bfeee4' : '#666672' }}>
+        {label}
+      </span>
+    </button>
   )
 }
