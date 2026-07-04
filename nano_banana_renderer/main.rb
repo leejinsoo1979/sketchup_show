@@ -435,15 +435,26 @@ module NanoBanana
     # 도움말 및 정보
     # ========================================
 
-    # Vizmaker 앱 열기: 현재 뷰 즉시 캡처 + 브라우저/앱 활성화
-    # (실물 VizMaker의 "CAD 아이콘 클릭 -> 앱 포커스 + 뷰 전송" UX)
+    # Vizmaker 앱 열기: 현재 뷰 즉시 캡처 + 설치된 데스크톱 앱 실행
+    # (엔스케이프와 동일한 UX: CAD에서 클릭 -> 앱이 뜨면서 뷰 전송)
     def open_vizmaker_app
       start_local_server unless @local_server
       capture_current_view
+
+      if Sketchup.platform == :platform_osx
+        # 설치된 VizMaker.app 실행 (이미 떠 있으면 포커스만 - 단일 인스턴스)
+        launched = system('open', '-a', 'VizMaker')
+        if launched
+          puts '[NanoBanana] VizMaker 앱 실행'
+          return
+        end
+      end
+
+      # 앱이 설치되어 있지 않으면 웹 버전으로 폴백
       app_url = @config_store&.load_setting('vizmaker_app_url')
-      app_url = 'http://localhost:5173' if app_url.nil? || app_url.empty?
+      app_url = 'https://hyper-real-3vvh.vercel.app' if app_url.nil? || app_url.empty?
       UI.openURL(app_url)
-      puts "[NanoBanana] Vizmaker 앱 열기: #{app_url}"
+      puts "[NanoBanana] VizMaker 웹으로 열기: #{app_url}"
     rescue StandardError => e
       puts "[NanoBanana] Vizmaker 앱 열기 실패: #{e.message}"
     end
