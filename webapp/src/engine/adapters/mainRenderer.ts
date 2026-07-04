@@ -1,6 +1,7 @@
 import type { RenderInput } from '../../types/engine'
 import type { NodeResult } from '../../types/node'
 import { callGemini, useMock } from '../geminiClient'
+import { saasMode, apiRender } from '../../api/lumanovaApi'
 
 // ── Mock (development) ─────────────────────────────────────────────────────
 
@@ -51,6 +52,24 @@ async function renderMainGemini(input: RenderInput): Promise<NodeResult> {
 
 // ── Exported switcher ──────────────────────────────────────────────────────
 
+// SaaS 모드: 서버 프록시(크레딧 차감) 경유. 반환 형태는 기존과 동일.
+async function renderMainSaas(input: RenderInput): Promise<NodeResult> {
+  const engine = input.engine?.startsWith('experimental') ? 'pro' as const : 'main' as const
+  const r = await apiRender({
+    engine,
+    image: input.image,
+    prompt: input.prompt,
+    negativePrompt: input.negativePrompt ?? '',
+  })
+  return {
+    image: r.image,
+    resolution: input.resolution,
+    timestamp: new Date().toISOString(),
+    cacheKey: '',
+  }
+}
+
 export async function renderMain(input: RenderInput): Promise<NodeResult> {
+  if (saasMode()) return renderMainSaas(input)
   return useMock() ? renderMainMock(input) : renderMainGemini(input)
 }
