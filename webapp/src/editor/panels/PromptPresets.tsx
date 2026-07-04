@@ -218,7 +218,7 @@ export function PromptPresets({ selectedNode }: PromptPresetsProps) {
     <div>
       <div className="flex w-full items-center gap-2 px-4" style={{ height: 40 }}>
         <ClipboardList size={16} style={{ color: '#888888' }} />
-        {/* 실물 VizMaker: Prompt Presets | My Presets 탭 */}
+        {/* 실물 Lumanova: Prompt Presets | My Presets 탭 */}
         {(['Prompt Presets', 'My Presets'] as const).map((t) => (
           <button
             key={t}

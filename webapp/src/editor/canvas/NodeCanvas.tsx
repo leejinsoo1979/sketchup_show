@@ -568,17 +568,17 @@ function NodeCanvasInner() {
         }}
         deleteKeyCode="Delete"
       >
-        {/* 실물 VizMaker: 무광 검정 캔버스 (그리드 없음) */}
+        {/* 실물 Lumanova: 무광 검정 캔버스 (그리드 없음) */}
         <Background variant={BackgroundVariant.Dots} gap={9999} size={0.01} color="#0b0b0f" />
       </ReactFlow>
 
-      {/* 실물 VizMaker: 캔버스 워터마크 */}
+      {/* 실물 Lumanova: 캔버스 워터마크 */}
       <div
         className="pointer-events-none absolute inset-0 flex items-center justify-center select-none"
         style={{ zIndex: 0 }}
       >
         <span style={{ fontSize: 130, fontWeight: 800, color: 'rgba(255,255,255,0.025)', letterSpacing: 2 }}>
-          VizMaker
+          Lumanova
         </span>
       </div>
 

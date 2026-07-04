@@ -44,14 +44,14 @@ function HistoryCard({ snapshot }: { snapshot: GraphSnapshot }) {
     if (!snap) return
     const { nodes, edges } = snap.graph
     useGraphStore.setState({ nodes, edges, selectedNodeId: null })
-    // 복원 후 에디터 화면으로 복귀 (실물 VizMaker 동작)
+    // 복원 후 에디터 화면으로 복귀 (실물 Lumanova 동작)
     useUIStore.getState().setActiveSidebarItem('render')
   }
 
   const handleSave = () => {
     if (!thumbnail) return
     const ts = new Date(snapshot.timestamp).toISOString().slice(0, 19).replace(/:/g, '-')
-    downloadImage(thumbnail, `vizmaker-${ts}.png`)
+    downloadImage(thumbnail, `lumanova-${ts}.png`)
   }
 
   return (

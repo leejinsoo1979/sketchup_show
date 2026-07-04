@@ -180,7 +180,7 @@ export function PromptBar() {
           <X size={14} />
         </button>
       )}
-      {/* 실물 VizMaker: 입력 우측 재생성 아이콘 (프롬프트 다시 실행) */}
+      {/* 실물 Lumanova: 입력 우측 재생성 아이콘 (프롬프트 다시 실행) */}
       <button
         title="다시 생성 (Make)"
         onClick={() => document.querySelector<HTMLButtonElement>('[data-make-button]')?.click()}

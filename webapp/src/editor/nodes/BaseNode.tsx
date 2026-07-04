@@ -4,7 +4,7 @@ import { Loader2, AlertTriangle } from 'lucide-react'
 import type { NodeStatus } from '../../types/node'
 
 // ---------------------------------------------------------------------------
-// 실물 VizMaker 노드 카드 클론 (docs/reference/vizmaker-ui/ 기준)
+// 실물 Lumanova 노드 카드 클론 (docs/reference/vizmaker-ui/ 기준)
 // - 이미지가 곧 카드 본체 (라운드, cover)
 // - 라벨은 카드 '밖' 아래 중앙: 굵은 제목 + 회색 프롬프트 요약 2줄
 // - 포트는 이미지 중앙 높이의 작은 점
@@ -35,7 +35,7 @@ function frameBorder(status: NodeStatus, selected: boolean): string {
   return '1px solid #2a2a32'
 }
 
-// 실물 VizMaker: 연결점은 작은 라운드-사각 칩
+// 실물 Lumanova: 연결점은 작은 라운드-사각 칩
 const portStyle: React.CSSProperties = {
   width: 13,
   height: 13,

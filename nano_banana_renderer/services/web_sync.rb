@@ -102,7 +102,7 @@ module NanoBanana
           @local_server.mount_proc '/api/ping' do |_req, res|
             cors.call(res)
             res.body = {
-              status: 'ok', app: 'VizMaker Bridge',
+              status: 'ok', app: 'Lumanova Bridge',
               ip: local_ip, port: @local_port,
               sketchup: Sketchup.version
             }.to_json

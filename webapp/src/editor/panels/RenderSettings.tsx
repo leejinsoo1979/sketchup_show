@@ -23,7 +23,7 @@ function getCurrentRenderModeValue(node: NodeData): string {
   return node.type
 }
 
-// 실물 VizMaker: 라벨 좌측 + 어두운 우측정렬 드롭다운 행
+// 실물 Lumanova: 라벨 좌측 + 어두운 우측정렬 드롭다운 행
 function RightAlignedRow({ label, value, options, onChange }: {
   label: string
   value: string
@@ -307,7 +307,7 @@ export function RenderSettings({ selectedNode }: RenderSettingsProps) {
                 onChange={handleRenderModeChange}
               />
 
-              {/* 실물 VizMaker: Precise/Quality/Fast 칩 - 캡처/출력 해상도에 연결 */}
+              {/* 실물 Lumanova: Precise/Quality/Fast 칩 - 캡처/출력 해상도에 연결 */}
               <div className="mb-3 flex gap-1.5">
                 {([['Precise', '1920'], ['Quality', '1536'], ['Fast', '1024']] as const).map(([label, res]) => {
                   const cur = ((selectedNode.params as RenderParams).resolution ?? '1024') === res
@@ -328,7 +328,7 @@ export function RenderSettings({ selectedNode }: RenderSettingsProps) {
                 })}
               </div>
 
-              {/* 실물 VizMaker: Priority / Resolution / Aspect ratio 행 (우측정렬 드롭다운) */}
+              {/* 실물 Lumanova: Priority / Resolution / Aspect ratio 행 (우측정렬 드롭다운) */}
               <RightAlignedRow label="Priority" value="Standard" options={['Standard']} onChange={() => {}} />
               <RightAlignedRow
                 label="Resolution"

@@ -59,7 +59,7 @@ export interface UpscaleParams {
 }
 
 export interface VideoParams {
-  // 실물 VizMaker 엔진 4종 (docs/VIDEO_ANALYSIS.md §6)
+  // 실물 Lumanova 엔진 4종 (docs/VIDEO_ANALYSIS.md §6)
   engine: 'kling' | 'seedance' | 'sora' | 'veo'
   duration: 5 | 10
   prompt: string

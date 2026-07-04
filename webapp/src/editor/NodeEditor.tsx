@@ -134,7 +134,7 @@ export function NodeEditor() {
         }}
       >
         <span style={{ color: '#888888', fontSize: 12 }}>
-          VizMaker
+          Lumanova
         </span>
         <span style={{ color: '#444444', fontSize: 12, margin: '0 8px' }}>|</span>
         <span style={{ color: '#888888', fontSize: 12 }}>

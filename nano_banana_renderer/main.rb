@@ -160,10 +160,10 @@ module NanoBanana
     def register_toolbar
       toolbar = UI::Toolbar.new(PLUGIN_NAME)
 
-      # VizMaker 앱 실행 (메인 버튼 - 엔스케이프식 원클릭)
-      cmd_app = UI::Command.new('VizMaker') { open_vizmaker_app }
-      cmd_app.tooltip = 'VizMaker 열기'
-      cmd_app.status_bar_text = '현재 뷰를 VizMaker 앱으로 보냅니다'
+      # Lumanova 앱 실행 (메인 버튼 - 엔스케이프식 원클릭)
+      cmd_app = UI::Command.new('Lumanova') { open_vizmaker_app }
+      cmd_app.tooltip = 'Lumanova 열기'
+      cmd_app.status_bar_text = '현재 뷰를 Lumanova 앱으로 보냅니다'
       cmd_app.small_icon = File.join(PLUGIN_ROOT, 'assets/icons/vizmaker_small.png')
       cmd_app.large_icon = File.join(PLUGIN_ROOT, 'assets/icons/vizmaker_large.png')
       toolbar.add_item(cmd_app)
@@ -450,10 +450,10 @@ module NanoBanana
       capture_current_view
 
       if Sketchup.platform == :platform_osx
-        # 설치된 VizMaker.app 실행 (이미 떠 있으면 포커스만 - 단일 인스턴스)
-        launched = system('open', '-a', 'VizMaker')
+        # 설치된 Lumanova.app 실행 (이미 떠 있으면 포커스만 - 단일 인스턴스)
+        launched = system('open', '-a', 'Lumanova')
         if launched
-          puts '[NanoBanana] VizMaker 앱 실행'
+          puts '[NanoBanana] Lumanova 앱 실행'
           return
         end
       end
@@ -462,7 +462,7 @@ module NanoBanana
       app_url = @config_store&.load_setting('vizmaker_app_url')
       app_url = 'https://hyper-real-3vvh.vercel.app' if app_url.nil? || app_url.empty?
       UI.openURL(app_url)
-      puts "[NanoBanana] VizMaker 웹으로 열기: #{app_url}"
+      puts "[NanoBanana] Lumanova 웹으로 열기: #{app_url}"
     rescue StandardError => e
       puts "[NanoBanana] Vizmaker 앱 열기 실패: #{e.message}"
     end

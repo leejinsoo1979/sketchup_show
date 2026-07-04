@@ -43,8 +43,8 @@
   "description": "Node-based AI rendering desktop app with SketchUp bridge",
   "main": "electron/main.cjs",
   "build": {
-    "appId": "com.nanobanana.vizmaker",
-    "productName": "VizMaker",
+    "appId": "com.lumanova.app",
+    "productName": "Lumanova",
     "directories": {
       "output": "release"
     },

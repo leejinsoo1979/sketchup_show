@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// VizMaker 데스크톱 앱 — Electron 메인 프로세스
+// Lumanova 데스크톱 앱 — Electron 메인 프로세스
 //
 // 개발:   VITE_DEV_SERVER_URL 환경변수가 있으면 dev 서버를 로드
 // 배포:   dist/index.html 로드 (vite.config.ts의 base './' 필수)
@@ -32,7 +32,7 @@ function createWindow() {
     minWidth: 1100,
     minHeight: 700,
     backgroundColor: '#0a0a14',
-    title: 'VizMaker',
+    title: 'Lumanova',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

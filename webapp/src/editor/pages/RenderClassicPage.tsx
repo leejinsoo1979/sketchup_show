@@ -283,7 +283,7 @@ export function RenderClassicPage() {
     if (!img) return
     const a = document.createElement('a')
     a.href = img
-    a.download = `vizmaker-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`
+    a.download = `lumanova-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`
     a.click()
   }, [])
 
@@ -302,7 +302,7 @@ export function RenderClassicPage() {
       {/* ══ 좌측 컨트롤 사이드바 (레거시 .sidebar 200px) ══ */}
       <aside className="flex flex-col" style={{ width: 200, minWidth: 200, background: C.sidebar, borderRight: `1px solid ${C.border}` }}>
         <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontSize: 13, fontWeight: 600, color: '#fff' }}>
-          VizMaker
+          Lumanova
         </div>
 
         <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto" style={{ padding: '10px 12px', minHeight: 0 }}>

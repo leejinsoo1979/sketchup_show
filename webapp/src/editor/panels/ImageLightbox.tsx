@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 
 /**
- * 전체화면 이미지 확대 보기 (실물 VizMaker의 Enlarge).
+ * 전체화면 이미지 확대 보기 (실물 Lumanova의 Enlarge).
  * 휠 = 줌, 드래그 = 이동, 더블클릭 = 리셋, ESC/X = 닫기
  */
 export function ImageLightbox({ image, onClose }: { image: string; onClose: () => void }) {
