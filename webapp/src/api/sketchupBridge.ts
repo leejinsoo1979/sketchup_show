@@ -179,15 +179,15 @@ async function syncApiKeyFromBridge(): Promise<void> {
   }
 }
 
-/** SketchUp의 저장된 씬 목록 조회. */
-export async function getScenes(): Promise<SketchUpScene[]> {
+/** SketchUp의 저장된 씬 목록 조회. null = 일시적 실패 (기존 목록 유지해야 함). */
+export async function getScenes(): Promise<SketchUpScene[] | null> {
   try {
     const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/scenes`)
-    if (!res.ok) return []
+    if (!res.ok) return null
     const data: ScenesResponse = await res.json()
     return data.scenes ?? []
   } catch {
-    return []
+    return null
   }
 }
 
@@ -305,23 +305,32 @@ function injectCapture(imageBase64: string) {
 // Polling loop
 // ---------------------------------------------------------------------------
 
+let pingFailures = 0
+
 async function pollOnce() {
   const ui = useUIStore.getState()
   const isConnected = await ping()
 
   if (isConnected) {
+    pingFailures = 0
     ui.setSketchUpStatus('connected')
     await syncApiKeyFromBridge()
     const capture = await fetchCapture()
     if (capture) {
       injectCapture(capture)
     }
-    // 씬 목록 동기화 (인스펙터의 씬 전환 UI용)
+    // 씬 목록 동기화 — 일시적 실패(null)면 기존 탭 유지 (탭이 깜빡이며 사라지는 문제 방지)
     const scenes = await getScenes()
-    ui.setSketchUpScenes(scenes)
+    if (scenes !== null) {
+      ui.setSketchUpScenes(scenes)
+    }
   } else {
-    ui.setSketchUpStatus('disconnected')
-    ui.setSketchUpScenes([])
+    // SketchUp이 캡처 등으로 바빠 응답이 늦은 것일 수 있으니, 2회 연속 실패부터 끊김 처리
+    pingFailures += 1
+    if (pingFailures >= 2) {
+      ui.setSketchUpStatus('disconnected')
+      ui.setSketchUpScenes([])
+    }
   }
 }
 
