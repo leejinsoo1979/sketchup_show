@@ -39,10 +39,10 @@ function SidebarIcon({ button }: { button: SidebarButton }) {
   return (
     <button
       onClick={() => setActiveSidebarItem(button.id)}
-      className="relative mx-1.5 my-0.5 flex flex-col items-center justify-center"
+      className="relative my-0.5 flex flex-col items-center justify-center self-center"
       style={{
         height: 62,
-        width: 'calc(100% - 12px)',
+        width: 64,
         borderRadius: 10,
         background: isActive ? 'rgba(0,201,167,0.10)' : 'transparent',
         transition: 'background 150ms',
@@ -76,7 +76,7 @@ function SidebarIcon({ button }: { button: SidebarButton }) {
 export function LeftSidebar() {
   return (
     <aside
-      className="flex h-full flex-col"
+      className="flex h-full flex-col items-center"
       style={{
         width: 76,
         minWidth: 76,
@@ -86,13 +86,13 @@ export function LeftSidebar() {
         paddingBottom: 6,
       }}
     >
-      <div className="flex flex-col">
+      <div className="flex w-full flex-col items-center">
         {topButtons.map((btn) => (
           <SidebarIcon key={btn.id} button={btn} />
         ))}
       </div>
       <div className="flex-1" />
-      <div className="flex flex-col">
+      <div className="flex w-full flex-col items-center">
         {bottomButtons.map((btn) => (
           <SidebarIcon key={btn.id} button={btn} />
         ))}
@@ -116,7 +116,8 @@ function ProfileBadge() {
     <button
       title={loggedIn ? `로그인됨: ${user?.email}` : '개발자 모드 (로그인 없음)'}
       onClick={() => setActiveSidebarItem('account')}
-      className="mx-1.5 mb-1 mt-2 flex flex-col items-center"
+      className="mb-1 mt-2 flex flex-col items-center self-center"
+      style={{ width: 64 }}
     >
       <span
         className="relative flex items-center justify-center rounded-full"
