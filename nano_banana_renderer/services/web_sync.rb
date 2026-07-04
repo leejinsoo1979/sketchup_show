@@ -7,8 +7,9 @@ module NanoBanana
   # UI.start_timer 컨텍스트에서 카메라/씬 '변경'이 조용히 무시되는 SketchUp 제약 회피.
   # View#animation의 nextFrame은 렌더 루프에서 실행되어 뷰 변경이 허용된다.
   class BridgeExec
-    def initialize(&block)
+    def initialize(on_done = nil, &block)
       @block = block
+      @on_done = on_done
     end
 
     def nextFrame(view)
@@ -18,6 +19,12 @@ module NanoBanana
         NanoBanana.puts "[NanoBanana] 브릿지 뷰 실행 에러: #{e.message}"
       end
       view.show_frame
+      # 변경이 '적용된 후'에만 후속 작업(캡처) 실행 - 이전 화면이 찍히는 레이스 방지
+      if @on_done
+        done = @on_done
+        @on_done = nil
+        UI.start_timer(0.1, false) { done.call }
+      end
       false # 1프레임만 실행하고 종료
     end
   end
@@ -184,8 +191,8 @@ module NanoBanana
     end
 
     # 뷰 변경을 허용된 컨텍스트(View Animation)에서 실행
-    def run_on_view(&block)
-      Sketchup.active_model.active_view.animation = BridgeExec.new(&block)
+    def run_on_view(on_done = nil, &block)
+      Sketchup.active_model.active_view.animation = BridgeExec.new(on_done, &block)
     rescue StandardError => e
       puts "[NanoBanana] run_on_view 에러: #{e.message}"
     end
@@ -206,7 +213,7 @@ module NanoBanana
             page = pages[cmd['name'].to_s]
             if page
               name = cmd['name'].to_s
-              run_on_view do
+              run_on_view(proc { capture_now_and_sync }) do
                 # 전환 애니메이션(수 초) 없이 즉시 점프
                 opts = Sketchup.active_model.options['PageOptions']
                 prev_show = opts ? opts['ShowTransition'] : nil
@@ -227,12 +234,11 @@ module NanoBanana
               end
               @bridge_scene_override = name
               puts "[NanoBanana] 브릿지: 씬 전환 -> #{name}"
-              UI.start_timer(0.25, false) { capture_now_and_sync }
             end
           when 'camera'
             action = cmd['action']
             value = cmd['value'].to_s
-            run_on_view do
+            run_on_view(proc { capture_now_and_sync }) do
               case action
               when 'move' then camera_move(value)
               when 'rotate' then camera_rotate(value)
@@ -241,7 +247,7 @@ module NanoBanana
               when 'two_point' then apply_two_point_perspective
               end
             end
-            UI.start_timer(0.25, false) { capture_now_and_sync }
+            # 캡처는 변경 적용 완료 콜백(run_on_view on_done)이 수행
           when 'capture'
             capture_current_view(cmd['size'])
           when 'add_scene'
