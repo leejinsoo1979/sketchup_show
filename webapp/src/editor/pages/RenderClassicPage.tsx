@@ -77,6 +77,12 @@ function CamKey({ k, title, onClick, active }: { k: string; title: string; onCli
   )
 }
 
+declare global {
+  interface Window {
+    vizmakerNative?: { getSketchUpSourceId: () => Promise<string | null> }
+  }
+}
+
 // ── 메인 페이지 ──────────────────────────────────────────────────────────────
 
 export function RenderClassicPage() {
@@ -87,11 +93,48 @@ export function RenderClassicPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [tab, setTab] = useState<{ src: 'prompt' | 'negative'; res: 'prompt' | 'negative' }>({ src: 'prompt', res: 'prompt' })
   const abortRef = useRef<AbortController | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [liveStream, setLiveStream] = useState<MediaStream | null>(null)
 
   // SketchUp 미러 이미지 (브릿지가 그래프의 sketchup 소스 노드에 주입)
   const liveNode = nodes.find((n) => n.type === 'SOURCE' && 'origin' in n.params && n.params.origin === 'sketchup')
   const liveImage = liveNode?.result?.image ?? (liveNode && 'image' in liveNode.params ? (liveNode.params as { image: string }).image : null)
   const sourceImage = s.previewOverride ?? (s.mirror ? (liveImage ?? s.frozenSource) : (s.frozenSource ?? liveImage))
+
+  // ── 실시간 미러링 (Electron: SketchUp 창을 30fps 스트림으로) ──
+  useEffect(() => {
+    if (!window.vizmakerNative || !s.mirror || status !== 'connected') {
+      setLiveStream((prev) => { prev?.getTracks().forEach((t) => t.stop()); return null })
+      return
+    }
+    let cancelled = false
+    navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+      .then((stream) => {
+        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return }
+        setLiveStream(stream)
+      })
+      .catch(() => {
+        // 화면 기록 권한 없음 등 - 폴링 미러로 폴백
+        setLiveStream(null)
+      })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.mirror, status])
+
+  useEffect(() => {
+    if (videoRef.current && liveStream) videoRef.current.srcObject = liveStream
+  }, [liveStream])
+
+  // 스트림에서 정지 프레임 추출 (Convert 전 Auto 실행 시 사용)
+  const grabStreamFrame = useCallback((): string | null => {
+    const v = videoRef.current
+    if (!v || !liveStream || v.videoWidth === 0) return null
+    const c = document.createElement('canvas')
+    c.width = v.videoWidth
+    c.height = v.videoHeight
+    c.getContext('2d')!.drawImage(v, 0, 0)
+    return c.toDataURL('image/jpeg', 0.85)
+  }, [liveStream])
 
   // 새 소스 이미지 도착: 씬 프리뷰 캐시에 저장하고 즉시표시 상태 해제
   useEffect(() => {
@@ -149,14 +192,16 @@ export function RenderClassicPage() {
 
   const doAuto = useCallback(async () => {
     if (s.autoLoading) { abortRef.current?.abort(); return }
-    if (!sourceImage) { s.set({ statusText: '먼저 Convert 하거나 이미지를 불러오세요' }); return }
+    const streamFrame = grabStreamFrame()
+    const autoInput = streamFrame ?? sourceImage
+    if (!autoInput) { s.set({ statusText: '먼저 Convert 하거나 이미지를 불러오세요' }); return }
     const controller = new AbortController()
     abortRef.current = controller
     s.set({ autoLoading: true, statusText: 'Auto 프롬프트 생성 중...' })
     const watchdog = setTimeout(() => controller.abort(), 120_000)
     try {
       const r = await generateAutoPrompt({
-        image: sourceImage,
+        image: autoInput,
         timePreset: s.timePreset,
         lightsOn: s.lightsOn,
         signal: controller.signal,
@@ -175,11 +220,12 @@ export function RenderClassicPage() {
       clearTimeout(watchdog)
       useClassicStore.getState().set({ autoLoading: false })
     }
-  }, [s, sourceImage])
+  }, [s, sourceImage, grabStreamFrame])
 
   const doRender = useCallback(async (which: 'src' | 'res') => {
     const st = useClassicStore.getState()
-    const input = which === 'src' ? sourceImage : (st.resultImage ?? sourceImage)
+    const streamNow = which === 'src' ? grabStreamFrame() : null
+    const input = which === 'src' ? (st.frozenSource ?? streamNow ?? sourceImage) : (st.resultImage ?? sourceImage)
     const prompt = which === 'src' ? st.sourcePrompt : st.resultPrompt
     const negative = which === 'src' ? st.sourceNegative : st.resultNegative
     if (!input) { st.set({ statusText: '소스 이미지가 없습니다' }); return }
@@ -204,7 +250,7 @@ export function RenderClassicPage() {
         statusText: `렌더링 실패: ${err instanceof Error ? err.message : err}`,
       })
     }
-  }, [sourceImage])
+  }, [sourceImage, grabStreamFrame])
 
   const doExport = useCallback(() => {
     const img = useClassicStore.getState().resultImage
@@ -430,8 +476,9 @@ export function RenderClassicPage() {
             active
             image={sourceImage}
             emptyText="SketchUp 연결 대기 중... (또는 이미지 버튼으로 불러오기)"
-            loading={s.sourceLoading}
+            loading={s.sourceLoading && !liveStream}
             loadingText="SketchUp 화면 불러오는 중..."
+            video={liveStream ? videoRef : null}
             tab={tab.src}
             onTab={(t) => setTab((p) => ({ ...p, src: t }))}
             prompt={s.sourcePrompt}
@@ -517,13 +564,14 @@ function PanelAction({ children, title, onClick, disabled }: {
   )
 }
 
-function Panel({ label, active, image, emptyText, loading, loadingText, tab, onTab, prompt, negative, onPrompt, onNegative, promptPlaceholder, headerRight, actions }: {
+function Panel({ label, active, image, emptyText, loading, loadingText, video, tab, onTab, prompt, negative, onPrompt, onNegative, promptPlaceholder, headerRight, actions }: {
   label: string
   active?: boolean
   image: string | null
   emptyText: string
   loading?: boolean
   loadingText?: string
+  video?: React.RefObject<HTMLVideoElement | null> | null
   tab: 'prompt' | 'negative'
   onTab: (t: 'prompt' | 'negative') => void
   prompt: string
@@ -550,7 +598,9 @@ function Panel({ label, active, image, emptyText, loading, loadingText, tab, onT
 
       {/* 이미지 영역 (16:9) */}
       <div className="relative flex items-center justify-center" style={{ width: '100%', aspectRatio: '16 / 9', background: C.panelBg, minHeight: 0 }}>
-        {image ? (
+        {video ? (
+          <video ref={video} autoPlay muted playsInline className="h-full w-full object-contain" />
+        ) : image ? (
           <img src={image} alt="" className="h-full w-full object-contain" draggable={false} />
         ) : (
           <span style={{ color: '#444', fontSize: 12 }}>{emptyText}</span>

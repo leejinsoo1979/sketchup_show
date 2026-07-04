@@ -4,7 +4,7 @@
 // 개발:   VITE_DEV_SERVER_URL 환경변수가 있으면 dev 서버를 로드
 // 배포:   dist/index.html 로드 (vite.config.ts의 base './' 필수)
 // ---------------------------------------------------------------------------
-const { app, BrowserWindow, shell } = require('electron')
+const { app, BrowserWindow, shell, ipcMain, desktopCapturer, session } = require('electron')
 const path = require('path')
 
 const DEV_URL = process.env.VITE_DEV_SERVER_URL
@@ -37,6 +37,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   })
 
@@ -60,7 +61,30 @@ function createWindow() {
   })
 }
 
+// SketchUp 창을 실시간 미러링 소스로 제공
+ipcMain.handle('sketchup-window-source', async () => {
+  try {
+    const sources = await desktopCapturer.getSources({ types: ['window'] })
+    const su = sources.find((s) => /sketchup/i.test(s.name))
+    return su ? su.id : null
+  } catch {
+    return null
+  }
+})
+
 app.whenReady().then(() => {
+  // getDisplayMedia 요청을 SketchUp 창으로 자동 연결
+  session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['window'] })
+      const su = sources.find((s) => /sketchup/i.test(s.name))
+      if (su) callback({ video: su })
+      else callback({})
+    } catch {
+      callback({})
+    }
+  })
+
   createWindow()
 
   app.on('activate', () => {
