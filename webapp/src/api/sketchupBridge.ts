@@ -100,7 +100,8 @@ function defaultSceneMeta(): SceneMeta {
 
 function toDataUri(base64: string): string {
   if (base64.startsWith('data:')) return base64
-  return `data:image/png;base64,${base64}`
+  const mime = base64.startsWith('/9j/') ? 'image/jpeg' : 'image/png'
+  return `data:${mime};base64,${base64}`
 }
 
 async function fetchWithTimeout(

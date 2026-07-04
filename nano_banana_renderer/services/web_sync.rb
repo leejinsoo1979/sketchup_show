@@ -227,7 +227,7 @@ module NanoBanana
               end
               @bridge_scene_override = name
               puts "[NanoBanana] 브릿지: 씬 전환 -> #{name}"
-              UI.start_timer(0.3, false) { update_bridge_scenes }
+              UI.start_timer(0.25, false) { capture_now_and_sync }
             end
           when 'camera'
             action = cmd['action']
@@ -241,7 +241,7 @@ module NanoBanana
               when 'two_point' then apply_two_point_perspective
               end
             end
-            # 캡처는 카메라 정지 감지(capture_if_view_changed)가 1회 수행
+            UI.start_timer(0.25, false) { capture_now_and_sync }
           when 'capture'
             capture_current_view(cmd['size'])
           when 'add_scene'
@@ -297,9 +297,25 @@ module NanoBanana
       puts "[NanoBanana] 로컬 서버 중지"
     end
 
+    # 명령 직후: 즉시 캡처하고 변경감지 상태 동기화 (이중 캡처 방지)
+    def capture_now_and_sync
+      capture_current_view
+      cam = Sketchup.active_model&.active_view&.camera
+      if cam
+        @bridge_cam_sig = [cam.eye.to_a, cam.target.to_a, cam.up.to_a, cam.perspective? ? cam.fov : 0]
+      end
+      @bridge_view_moved = false
+      update_bridge_scenes
+    rescue StandardError => e
+      puts "[NanoBanana] 즉시 캡처 에러: #{e.message}"
+    end
+
     # 카메라가 '멈춘 직후' 1회만 캡처 (움직이는 동안 무거운 캡처 중첩 방지)
     def capture_if_view_changed
-      cam = Sketchup.active_model.active_view.camera
+      model = Sketchup.active_model
+      return unless model
+
+      cam = model.active_view.camera
       sig = [cam.eye.to_a, cam.target.to_a, cam.up.to_a, cam.perspective? ? cam.fov : 0]
 
       if sig != @bridge_cam_sig
@@ -323,9 +339,19 @@ module NanoBanana
         # size 지정 시 고품질 캡처 (Convert), 미지정 시 미러링용 기본 해상도
         dims = { '1024' => [1024, 576], '1536' => [1536, 864], '1920' => [1920, 1080] }[size.to_s]
         w, h = dims || [960, 540]
-        view = Sketchup.active_model.active_view
-        temp_path = File.join(Dir.tmpdir, 'nanobanana_live.png')
-        view.write_image(temp_path, w, h, true)
+        model = Sketchup.active_model
+        return unless model
+
+        view = model.active_view
+        temp_path = File.join(Dir.tmpdir, 'nanobanana_live.jpg')
+        view.write_image(
+          filename: temp_path,
+          width: w,
+          height: h,
+          antialias: !dims.nil?, # 미러는 속도 우선, Convert(고품질)만 안티앨리어싱
+          transparent: false,
+          compression: dims ? 0.85 : 0.75
+        )
 
         if File.exist?(temp_path)
           @current_source_image = Base64.strict_encode64(File.binread(temp_path))
