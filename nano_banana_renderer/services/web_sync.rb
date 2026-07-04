@@ -35,6 +35,8 @@ module NanoBanana
         res['Access-Control-Allow-Origin'] = '*'
         res['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
         res['Access-Control-Allow-Headers'] = 'Content-Type'
+        # Chrome PNA/LNA: 공개 https 사이트(Vercel 배포)에서 localhost 브릿지 접근 허용
+        res['Access-Control-Allow-Private-Network'] = 'true'
         res['Content-Type'] = 'application/json'
       end
 
