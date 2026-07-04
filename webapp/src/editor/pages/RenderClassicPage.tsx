@@ -3,7 +3,7 @@ import { ImagePlus, Zap, Loader2, SlidersHorizontal, Download } from 'lucide-rea
 import { useClassicStore, type ClassicModel, type ClassicSize } from '../../state/classicStore'
 import { useUIStore } from '../../state/uiStore'
 import { useGraphStore } from '../../state/graphStore'
-import { selectScene, requestCapture, addScene, sendCamera } from '../../api/sketchupBridge'
+import { selectScene, requestCapture, addScene, sendCamera, fetchSourceOnce } from '../../api/sketchupBridge'
 import { generateAutoPrompt, buildLightingDescription } from '../../engine/autoPrompt'
 import { renderMain } from '../../engine/adapters/mainRenderer'
 import { EditOverlay } from '../panels/EditOverlay'
@@ -177,19 +177,28 @@ export function RenderClassicPage() {
   }, [])
 
   // ── 동작 ──
+  // Convert: 고품질 캡처를 '새 이미지 도착 확인'까지 기다렸다가 고정 표시 (레거시 동작)
   const doConvert = useCallback(async () => {
-    s.set({ statusText: 'Convert 중... (고품질 캡처)' })
+    s.set({ statusText: `Convert 중... (고품질 ${s.size}px 캡처)`, sourceLoading: true })
+    const before = await fetchSourceOnce()
     await requestCapture(s.size)
-    // 새 캡처가 폴링으로 들어온 뒤 고정
-    setTimeout(() => {
-      const st = useGraphStore.getState()
-      const node = st.nodes.find((n) => n.type === 'SOURCE' && 'origin' in n.params && n.params.origin === 'sketchup')
-      const img = node?.result?.image ?? null
-      useClassicStore.getState().set({
-        frozenSource: img,
-        statusText: img ? 'Convert 완료 - Auto로 프롬프트 생성하세요' : 'Convert 실패 - SketchUp 연결 확인',
-      })
-    }, 1600)
+    const t0 = Date.now()
+    const poll = async () => {
+      const now = await fetchSourceOnce()
+      if (now && now.sig !== before?.sig) {
+        // 새 고화질 캡처 도착: 미러 정지 + 정지 이미지 고정 (렌더/Auto의 입력)
+        useClassicStore.getState().set({
+          frozenSource: now.uri,
+          mirror: false,
+          sourceLoading: false,
+          statusText: `고품질 캡처 완료 (${s.size}px) - Auto로 프롬프트 생성하세요. Mirror를 켜면 실시간으로 복귀`,
+        })
+        return
+      }
+      if (Date.now() - t0 < 10_000) setTimeout(poll, 450)
+      else useClassicStore.getState().set({ sourceLoading: false, statusText: 'Convert 실패 - SketchUp 연결 확인' })
+    }
+    setTimeout(poll, 600)
   }, [s])
 
   const doAuto = useCallback(async () => {

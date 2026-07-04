@@ -166,6 +166,19 @@ async function fetchCapture(): Promise<string | null> {
   }
 }
 
+/** 현재 소스 이미지를 1회 직접 조회 (dedup 캐시 무시). Convert 완료 감지용. */
+export async function fetchSourceOnce(): Promise<{ uri: string; sig: string } | null> {
+  try {
+    const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/data`)
+    if (!res.ok) return null
+    const data: DataResponse = await res.json()
+    if (!data.source) return null
+    return { uri: toDataUri(data.source), sig: `${data.source.length}:${data.source.slice(0, 80)}` }
+  } catch {
+    return null
+  }
+}
+
 /** 플러그인에 저장된 API Key를 자동으로 받아와 등록 (사용자 재입력 불필요). */
 async function syncApiKeyFromBridge(): Promise<void> {
   if (getStoredApiKey()) return // 이미 있으면 유지
