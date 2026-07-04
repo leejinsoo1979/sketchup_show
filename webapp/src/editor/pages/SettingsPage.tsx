@@ -51,7 +51,36 @@ export function SettingsPage() {
         </div>
       </Section>
 
-      {!saas && <DevApiKeySection />}
+      <Section title="플러그인">
+        <div className="flex items-center justify-between">
+          <div>
+            <div style={{ color: '#e6e6ee', fontSize: 13, fontWeight: 600 }}>SketchUp</div>
+            <div style={{ marginTop: 3, fontSize: 11.5, color: '#71717c' }}>
+              SketchUp 2021~2025 지원 · 설치: 창 → Extension Manager → Install Extension → 받은 rbz 선택 → SketchUp 재시작
+            </div>
+          </div>
+          <a
+            href="/downloads/NanoBananaRenderer_v1.0.5.rbz"
+            download
+            className="flex items-center"
+            style={{
+              height: 36, padding: '0 18px', borderRadius: 8, fontSize: 12.5, fontWeight: 700,
+              background: '#00c9a7', color: '#06251f', textDecoration: 'none', flexShrink: 0,
+            }}
+          >
+            플러그인 다운로드 (.rbz)
+          </a>
+        </div>
+        <div className="mt-3 flex gap-1.5" style={{ borderTop: '1px solid #22222a', paddingTop: 12 }}>
+          {['3ds Max', 'Revit', 'Rhino', 'Blender', 'Archicad'].map((n) => (
+            <span key={n} style={{ padding: '3px 10px', borderRadius: 999, fontSize: 10.5, background: '#1e1e26', color: '#5a5a66', border: '1px solid #2a2a34' }}>
+              {n} 지원 예정
+            </span>
+          ))}
+        </div>
+      </Section>
+
+      <ApiKeySection saas={saas} />
 
       <Section title="정보">
         <Row label="앱" value="Lumanova" />
@@ -62,8 +91,8 @@ export function SettingsPage() {
   )
 }
 
-// 개발자 모드 전용: 로컬 Gemini API Key (SaaS 모드에서는 서버가 키를 보유하므로 불필요)
-function DevApiKeySection() {
+// Gemini API Key: 개발자 모드에선 필수, SaaS 모드에선 선택(본인 키 사용 시 크레딧 미차감)
+function ApiKeySection({ saas }: { saas: boolean }) {
   const [apiKey, setApiKey] = useState(() => getStoredApiKey() ?? '')
   const [saved, setSaved] = useState(false)
   const [revealed, setRevealed] = useState(false)
@@ -75,7 +104,12 @@ function DevApiKeySection() {
   }
 
   return (
-    <Section title="Gemini API Key (개발자 모드)">
+    <Section title={saas ? 'API Key (선택)' : 'Gemini API Key'}>
+      {saas && (
+        <div className="mb-3" style={{ fontSize: 11.5, color: '#71717c' }}>
+          기본적으로 키는 필요 없습니다(크레딧으로 렌더링). 본인 Gemini 키를 입력하면 크레딧 차감 없이 본인 키로 렌더링합니다.
+        </div>
+      )}
       <div className="flex gap-2">
         <input
           type={revealed ? 'text' : 'password'}

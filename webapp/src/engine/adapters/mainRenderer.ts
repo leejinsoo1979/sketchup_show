@@ -1,6 +1,6 @@
 import type { RenderInput } from '../../types/engine'
 import type { NodeResult } from '../../types/node'
-import { callGemini, useMock } from '../geminiClient'
+import { callGemini, useMock, getStoredApiKey } from '../geminiClient'
 import { saasMode, apiRender } from '../../api/lumanovaApi'
 
 // ── Mock (development) ─────────────────────────────────────────────────────
@@ -70,6 +70,7 @@ async function renderMainSaas(input: RenderInput): Promise<NodeResult> {
 }
 
 export async function renderMain(input: RenderInput): Promise<NodeResult> {
-  if (saasMode()) return renderMainSaas(input)
+  // SaaS 모드: 기본은 서버 프록시(크레딧). 개인 키를 넣었으면 본인 키로 직접 호출(미차감)
+  if (saasMode() && !getStoredApiKey()) return renderMainSaas(input)
   return useMock() ? renderMainMock(input) : renderMainGemini(input)
 }
