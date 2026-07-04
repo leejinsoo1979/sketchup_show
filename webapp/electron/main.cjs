@@ -44,8 +44,11 @@ function createWindow() {
   // 렌더러가 문서 title을 바꾸지 못하게 (앱 이름 고정)
   mainWindow.on('page-title-updated', (e) => e.preventDefault())
 
-  // 외부 링크는 기본 브라우저로
+  // Google/Firebase 로그인 팝업은 앱 안에서 허용, 그 외 링크는 기본 브라우저로
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (/accounts\.google\.com|firebaseapp\.com|googleusercontent\.com/.test(url)) {
+      return { action: 'allow' }
+    }
     if (url.startsWith('http')) shell.openExternal(url)
     return { action: 'deny' }
   })
