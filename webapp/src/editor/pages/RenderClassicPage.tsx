@@ -550,6 +550,16 @@ export function RenderClassicPage() {
           {/* RESULT 1 */}
           <Panel
             label="RESULT 1"
+            labelRight={s.resultImage ? (
+              <>
+                <button title="이미지 보정 (밝기/대비/채도 등)" onClick={() => setEditOpen(true)} style={{ color: '#999' }} className="hover:text-white">
+                  <SlidersHorizontal size={12} />
+                </button>
+                <button title="이미지 저장" onClick={doExport} style={{ color: '#999' }} className="hover:text-white">
+                  <Download size={12} />
+                </button>
+              </>
+            ) : undefined}
             image={s.resultImage}
             emptyText={s.rendering ? '렌더링 중...' : 'Ready'}
             loading={s.rendering}
@@ -613,8 +623,9 @@ function PanelAction({ children, title, onClick, disabled }: {
   )
 }
 
-function Panel({ label, active, image, emptyText, loading, loadingText, video, videoViewport, tab, onTab, prompt, negative, onPrompt, onNegative, promptPlaceholder, headerRight, actions }: {
+function Panel({ label, labelRight, active, image, emptyText, loading, loadingText, video, videoViewport, tab, onTab, prompt, negative, onPrompt, onNegative, promptPlaceholder, headerRight, actions }: {
   label: string
+  labelRight?: React.ReactNode
   active?: boolean
   image: string | null
   emptyText: string
@@ -644,6 +655,7 @@ function Panel({ label, active, image, emptyText, loading, loadingText, video, v
         }}
       >
         <span>{label}</span>
+        {labelRight && <span className="flex items-center gap-2">{labelRight}</span>}
       </div>
 
       {/* 이미지 영역 (16:9) */}
