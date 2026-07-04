@@ -73,6 +73,27 @@ module NanoBanana
             }.to_json
           end
 
+          # API Key 자동 전달 (신뢰된 출처만: 우리 앱/사이트)
+          # 사용자가 앱에 키를 다시 입력할 필요를 없앤다
+          @local_server.mount_proc '/api/apikey' do |req, res|
+            origin = req['Origin'].to_s
+            trusted = origin.empty? ||
+                      origin == 'null' ||
+                      origin.start_with?('http://localhost') ||
+                      origin.start_with?('http://127.0.0.1') ||
+                      origin == 'https://hyper-real-3vvh.vercel.app'
+            cors.call(res)
+            if req.request_method == 'OPTIONS'
+              res.status = 200
+            elsif trusted
+              key = @config_store&.load_api_key
+              res.body = { apiKey: key || '' }.to_json
+            else
+              res.status = 403
+              res.body = { apiKey: '', error: 'origin not allowed' }.to_json
+            end
+          end
+
           # 씬 목록 (메인 스레드가 갱신한 캐시를 그대로 반환)
           @local_server.mount_proc '/api/scenes' do |_req, res|
             cors.call(res)

@@ -1,4 +1,5 @@
 import { useGraphStore } from '../state/graphStore'
+import { getStoredApiKey, setStoredApiKey } from '../engine/geminiClient'
 import { useUIStore } from '../state/uiStore'
 import type { SceneMeta } from '../types/node'
 
@@ -162,6 +163,22 @@ async function fetchCapture(): Promise<string | null> {
   }
 }
 
+/** 플러그인에 저장된 API Key를 자동으로 받아와 등록 (사용자 재입력 불필요). */
+async function syncApiKeyFromBridge(): Promise<void> {
+  if (getStoredApiKey()) return // 이미 있으면 유지
+  try {
+    const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/apikey`)
+    if (!res.ok) return
+    const data: { apiKey?: string } = await res.json()
+    if (data.apiKey && data.apiKey.trim().length > 0) {
+      setStoredApiKey(data.apiKey)
+      console.log('[Bridge] SketchUp 플러그인에서 API Key 자동 등록됨')
+    }
+  } catch {
+    // 브릿지가 구버전이거나 키가 없으면 조용히 넘어감
+  }
+}
+
 /** SketchUp의 저장된 씬 목록 조회. */
 export async function getScenes(): Promise<SketchUpScene[]> {
   try {
@@ -276,6 +293,7 @@ async function pollOnce() {
 
   if (isConnected) {
     ui.setSketchUpStatus('connected')
+    await syncApiKeyFromBridge()
     const capture = await fetchCapture()
     if (capture) {
       injectCapture(capture)
