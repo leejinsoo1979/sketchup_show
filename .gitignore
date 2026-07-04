@@ -2,3 +2,4 @@
 *.rbz
 temp.zip
 webapp/release/
+node_modules/
