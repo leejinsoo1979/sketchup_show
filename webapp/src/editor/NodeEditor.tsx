@@ -209,22 +209,25 @@ export function NodeEditor() {
 
               {/* Bottom Prompt Bar */}
               <div
-                className="relative flex shrink-0 items-center"
+                className="relative flex shrink-0 items-center justify-center"
                 style={{
-                  height: 64,
-                  background: 'transparent',
-                  padding: '0 24px 12px',
-                  gap: 12,
-                  justifyContent: 'center',
+                  height: 86,
+                  background: 'linear-gradient(180deg, rgba(11,11,15,0) 0%, rgba(13,13,20,.88) 38%, rgba(13,13,20,.98) 100%)',
+                  padding: '14px 30px 18px',
                 }}
               >
-                <PromptBar />
-                <MakeButton
-                  credits={estimatedCost}
-                  disabled={makeDisabled}
-                  isRunning={isRunning}
-                  onClick={handleMake}
-                />
+                <div
+                  className="flex w-full items-center justify-center gap-3"
+                  style={{ maxWidth: 1280 }}
+                >
+                  <PromptBar />
+                  <MakeButton
+                    credits={estimatedCost}
+                    disabled={makeDisabled}
+                    isRunning={isRunning}
+                    onClick={handleMake}
+                  />
+                </div>
 
                 {/* Execution error display */}
                 {executionError && (
@@ -249,7 +252,7 @@ export function NodeEditor() {
                     <div
                       className="h-full animate-pulse"
                       style={{
-                        background: 'linear-gradient(90deg, #ff4466, #ff6688)',
+                        background: 'linear-gradient(90deg, rgba(0,201,167,0), #00f0c8, rgba(0,201,167,0))',
                         width: '100%',
                       }}
                     />

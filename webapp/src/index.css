@@ -38,3 +38,76 @@ html.landing #root {
   overflow-x: hidden;
   overflow-y: auto;
 }
+
+/* Node canvas connection states */
+.lumanova-edge {
+  pointer-events: visibleStroke;
+}
+
+.lumanova-edge__halo {
+  opacity: 0.18;
+  filter: blur(5px);
+}
+
+.lumanova-edge--active .lumanova-edge__halo {
+  opacity: 0.34;
+  animation: lumanova-edge-breathe 1.45s ease-in-out infinite;
+}
+
+.lumanova-edge--ready .lumanova-edge__halo {
+  opacity: 0.16;
+}
+
+.lumanova-edge__flow {
+  opacity: 0.9;
+  filter: drop-shadow(0 0 7px rgba(0, 240, 200, 0.62));
+  animation: lumanova-edge-flow 0.72s linear infinite;
+}
+
+.lumanova-edge__spark {
+  opacity: 0.95;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 18px rgba(0, 240, 200, 0.72));
+  animation: lumanova-edge-spark 1.08s cubic-bezier(0.35, 0, 0.25, 1) infinite;
+}
+
+.lumanova-edge__complete {
+  opacity: 0.42;
+  animation: lumanova-edge-complete 2.6s linear infinite;
+}
+
+@keyframes lumanova-edge-flow {
+  from {
+    stroke-dashoffset: 30;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes lumanova-edge-spark {
+  from {
+    stroke-dashoffset: 112;
+  }
+  to {
+    stroke-dashoffset: 15;
+  }
+}
+
+@keyframes lumanova-edge-breathe {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.46;
+  }
+}
+
+@keyframes lumanova-edge-complete {
+  from {
+    stroke-dashoffset: 12;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}

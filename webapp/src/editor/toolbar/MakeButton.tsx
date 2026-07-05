@@ -9,35 +9,56 @@ interface MakeButtonProps {
 
 export function MakeButton({ credits, disabled, isRunning, onClick }: MakeButtonProps) {
   return (
-    <div className="flex flex-col items-center px-3">
+    <div className="flex shrink-0 items-center">
       <button
         data-make-button
         onClick={onClick}
         disabled={disabled}
-        className="flex h-9 items-center gap-1.5 rounded-md px-5 text-sm font-bold transition-colors duration-150"
+        className="group flex items-center justify-center gap-2 rounded-xl transition-colors duration-150"
         style={{
-          backgroundColor: disabled ? '#333340' : '#00c9a7',
-          color: disabled ? '#666666' : '#06251f',
-          minWidth: 100,
+          width: 132,
+          height: 48,
+          background: disabled
+            ? 'linear-gradient(180deg, #23232c, #1a1a22)'
+            : 'linear-gradient(180deg, #18e3c4, #00bfa2)',
+          border: disabled ? '1px solid #32323e' : '1px solid rgba(94,255,226,.45)',
+          color: disabled ? '#6d6d78' : '#031716',
+          fontSize: 13,
+          fontWeight: 850,
           cursor: disabled ? 'not-allowed' : 'pointer',
+          boxShadow: disabled
+            ? 'inset 0 1px 0 rgba(255,255,255,.04)'
+            : '0 16px 34px rgba(0,201,167,.22), inset 0 1px 0 rgba(255,255,255,.32)',
         }}
         onMouseEnter={(e) => {
-          if (!disabled) e.currentTarget.style.backgroundColor = '#00ddb8'
+          if (!disabled) e.currentTarget.style.background = 'linear-gradient(180deg, #27f1d2, #00c9a7)'
         }}
         onMouseLeave={(e) => {
-          if (!disabled) e.currentTarget.style.backgroundColor = '#00c9a7'
+          if (!disabled) e.currentTarget.style.background = 'linear-gradient(180deg, #18e3c4, #00bfa2)'
         }}
       >
-        {isRunning ? 'Running...' : 'Make'}
-        {isRunning ? (
-          <Loader2 size={14} className="animate-spin" />
-        ) : (
-          <Play size={13} fill="currentColor" />
-        )}
+        <span className="flex min-w-0 flex-col items-start leading-none">
+          <span>{isRunning ? 'Running' : 'Make'}</span>
+          <span style={{ marginTop: 5, fontSize: 10.5, fontWeight: 700, opacity: disabled ? 0.55 : 0.72 }}>
+            {credits} credit{credits === 1 ? '' : 's'}
+          </span>
+        </span>
+        <span
+          className="flex items-center justify-center rounded-full"
+          style={{
+            width: 24,
+            height: 24,
+            background: disabled ? '#2c2c36' : 'rgba(3,23,22,.13)',
+            color: disabled ? '#686875' : '#031716',
+          }}
+        >
+          {isRunning ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : (
+            <Play size={12} fill="currentColor" />
+          )}
+        </span>
       </button>
-      <span style={{ color: '#666666', fontSize: 11 }}>
-        Credits: {credits}
-      </span>
     </div>
   )
 }

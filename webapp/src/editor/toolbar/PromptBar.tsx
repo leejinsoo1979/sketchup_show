@@ -121,7 +121,19 @@ export function PromptBar() {
   }
 
   return (
-    <div style={{ maxWidth: 860 }} className="relative flex flex-1 items-center gap-2 px-3">
+    <div
+      className="relative flex min-w-0 flex-1 items-center"
+      style={{
+        maxWidth: 1040,
+        height: 54,
+        gap: 8,
+        padding: 5,
+        borderRadius: 16,
+        background: 'linear-gradient(180deg, rgba(25,25,34,.96), rgba(16,16,24,.96))',
+        border: '1px solid rgba(255,255,255,.08)',
+        boxShadow: '0 18px 48px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.05)',
+      }}
+    >
       {/* Auto 프롬프트 생성 (생성 중 클릭 = 취소) */}
       <button
         onClick={handleAuto}
@@ -133,12 +145,23 @@ export function PromptBar() {
               ? 'AI가 씬을 분석해 프롬프트와 네거티브를 자동 생성'
               : 'Render 노드를 선택하고 Source와 연결하세요'
         }
-        className="flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 transition-colors"
+        className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 transition-colors"
         style={{
-          backgroundColor: autoLoading ? '#ff4466' : autoEnabled ? '#00c9a7' : '#1a1a24',
-          color: autoEnabled || autoLoading ? '#ffffff' : '#555566',
-          fontSize: 13,
-          fontWeight: 600,
+          height: 42,
+          minWidth: 74,
+          background: autoLoading
+            ? 'rgba(255,68,102,.18)'
+            : autoEnabled
+              ? 'rgba(0,201,167,.14)'
+              : 'rgba(255,255,255,.035)',
+          border: autoLoading
+            ? '1px solid rgba(255,68,102,.42)'
+            : autoEnabled
+              ? '1px solid rgba(0,201,167,.34)'
+              : '1px solid rgba(255,255,255,.06)',
+          color: autoLoading ? '#ff8da3' : autoEnabled ? '#7ff5e3' : '#595967',
+          fontSize: 12.5,
+          fontWeight: 780,
           cursor: autoEnabled || autoLoading ? 'pointer' : 'not-allowed',
         }}
       >
@@ -159,23 +182,23 @@ export function PromptBar() {
         value={promptText}
         onChange={(e) => handleChange(e.target.value)}
         placeholder="Enter your image prompt here..."
-        className="h-11 w-full rounded-lg px-4 pr-16 text-sm outline-none"
+        className="h-full min-w-0 flex-1 rounded-xl px-4 pr-16 outline-none"
         style={{
-          backgroundColor: '#15151d',
-          border: '1px solid #2a2a36',
-          borderBottom: '2px solid #00c9a7',
-          boxShadow: '0 6px 20px rgba(0,0,0,0.35), 0 2px 10px rgba(0,201,167,0.10)',
-          color: '#ffffff',
-          fontSize: 14,
+          backgroundColor: '#0d0d14',
+          border: '1px solid rgba(0,201,167,.46)',
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.025), 0 0 0 3px rgba(0,201,167,.08)',
+          color: '#f5f5fa',
+          fontSize: 13.5,
+          fontWeight: 500,
         }}
       />
       {promptText && (
         <button
           onClick={handleClear}
-          className="absolute right-12 flex items-center justify-center transition-colors duration-150"
-          style={{ color: '#666666' }}
+          className="absolute flex items-center justify-center rounded-full transition-colors duration-150"
+          style={{ right: 47, width: 24, height: 24, color: '#777784', background: 'rgba(255,255,255,.04)' }}
           onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#666666')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#777784')}
         >
           <X size={14} />
         </button>
@@ -184,8 +207,8 @@ export function PromptBar() {
       <button
         title="다시 생성 (Make)"
         onClick={() => document.querySelector<HTMLButtonElement>('[data-make-button]')?.click()}
-        className="absolute right-3 flex items-center justify-center rounded-full"
-        style={{ width: 28, height: 28, background: '#23232e', border: '1px solid #343440', color: '#b9b9c4' }}
+        className="absolute right-3 flex items-center justify-center rounded-full transition-colors"
+        style={{ width: 30, height: 30, background: '#1d1d28', border: '1px solid #363644', color: '#bfc0cb' }}
       >
         <RotateCw size={13} />
       </button>

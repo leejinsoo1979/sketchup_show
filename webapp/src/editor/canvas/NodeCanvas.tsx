@@ -16,6 +16,10 @@ import {
   applyEdgeChanges,
   useReactFlow,
   ReactFlowProvider,
+  BaseEdge,
+  getBezierPath,
+  type EdgeProps,
+  type EdgeTypes,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { FolderOpen, ImageIcon } from 'lucide-react'
@@ -30,6 +34,7 @@ import { ContextMenu, type MenuItem } from './ContextMenu'
 import { useGraphStore } from '../../state/graphStore'
 import { useUIStore } from '../../state/uiStore'
 import { executePipeline } from '../../engine'
+import { useExecutionStore } from '../../state/executionStore'
 import type { NodeType } from '../../types/node'
 import type { EdgeData } from '../../types/graph'
 
@@ -40,6 +45,98 @@ const nodeTypes: NodeTypes = {
   UPSCALE: UpscaleNode,
   VIDEO: VideoNode,
   COMPARE: CompareNode,
+}
+
+type EdgeVisualState = 'idle' | 'ready' | 'active' | 'complete' | 'error'
+
+function AnimatedPipelineEdge({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  markerEnd,
+  selected,
+  data,
+}: EdgeProps) {
+  const [edgePath] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  })
+  const state = ((data as { state?: EdgeVisualState } | undefined)?.state ?? 'idle') as EdgeVisualState
+  const isActive = state === 'active'
+  const isReady = state === 'ready'
+  const isComplete = state === 'complete'
+  const isError = state === 'error'
+  const baseStroke = isError ? '#ff5a65' : isActive ? '#00f0c8' : isReady ? '#00c9a7' : isComplete ? '#4d8c82' : '#454550'
+  const baseWidth = isActive ? 2.35 : selected ? 2.15 : 1.65
+
+  return (
+    <g className={`lumanova-edge lumanova-edge--${state}${selected ? ' lumanova-edge--selected' : ''}`}>
+      {(isActive || isReady) && (
+        <path
+          d={edgePath}
+          fill="none"
+          stroke={isActive ? '#00f0c8' : '#00c9a7'}
+          strokeWidth={isActive ? 12 : 8}
+          strokeLinecap="round"
+          className="lumanova-edge__halo"
+        />
+      )}
+      <BaseEdge
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={{
+          stroke: baseStroke,
+          strokeWidth: baseWidth,
+          strokeLinecap: 'round',
+          filter: isError ? 'drop-shadow(0 0 7px rgba(255,90,101,.35))' : undefined,
+        }}
+      />
+      {isActive && (
+        <>
+          <path
+            d={edgePath}
+            fill="none"
+            stroke="#9affef"
+            strokeWidth={2.7}
+            strokeLinecap="round"
+            strokeDasharray="12 18"
+            className="lumanova-edge__flow"
+          />
+          <path
+            d={edgePath}
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth={5}
+            strokeLinecap="round"
+            strokeDasharray="1 96"
+            className="lumanova-edge__spark"
+          />
+        </>
+      )}
+      {isComplete && (
+        <path
+          d={edgePath}
+          fill="none"
+          stroke="#00c9a7"
+          strokeWidth={1.1}
+          strokeLinecap="round"
+          strokeDasharray="2 10"
+          className="lumanova-edge__complete"
+        />
+      )}
+    </g>
+  )
+}
+
+const edgeTypes: EdgeTypes = {
+  lumanova: AnimatedPipelineEdge,
 }
 
 interface DropMenuState {
@@ -133,6 +230,9 @@ function NodeCanvasInner() {
 
   const nodes = useGraphStore((s) => s.nodes)
   const edges = useGraphStore((s) => s.edges)
+  const isExecuting = useExecutionStore((s) => s.isRunning)
+  const currentNodeId = useExecutionStore((s) => s.currentNodeId)
+  const executionQueue = useExecutionStore((s) => s.queue)
   const selectedNodeId = useGraphStore((s) => s.selectedNodeId)
   const selectNode = useGraphStore((s) => s.selectNode)
   const updateNodePosition = useGraphStore((s) => s.updateNodePosition)
@@ -180,17 +280,38 @@ function NodeCanvasInner() {
 
   // Convert graphStore edges to React Flow edges
   const rfEdges: RFEdge[] = useMemo(
-    () =>
-      edges.map((e) => ({
-        id: e.id,
-        source: e.from,
-        sourceHandle: e.fromPort,
-        target: e.to,
-        targetHandle: e.toPort,
-        style: { stroke: '#555555', strokeWidth: 2 },
-        animated: false,
-      })),
-    [edges],
+    () => {
+      const nodeStatus = new Map(nodes.map((n) => [n.id, n.status]))
+      const queued = new Set(executionQueue)
+
+      return edges.map((e) => {
+        const fromStatus = nodeStatus.get(e.from)
+        const toStatus = nodeStatus.get(e.to)
+        let state: EdgeVisualState = 'idle'
+
+        if (fromStatus === 'error' || toStatus === 'error' || toStatus === 'blocked') {
+          state = 'error'
+        } else if (isExecuting && (currentNodeId === e.to || toStatus === 'running')) {
+          state = 'active'
+        } else if (isExecuting && queued.has(e.to)) {
+          state = 'ready'
+        } else if (fromStatus === 'done' && toStatus === 'done') {
+          state = 'complete'
+        }
+
+        return {
+          id: e.id,
+          type: 'lumanova',
+          source: e.from,
+          sourceHandle: e.fromPort,
+          target: e.to,
+          targetHandle: e.toPort,
+          animated: false,
+          data: { state },
+        }
+      })
+    },
+    [edges, nodes, isExecuting, currentNodeId, executionQueue],
   )
 
   const onNodesChange: OnNodesChange = useCallback(
@@ -560,6 +681,7 @@ function NodeCanvasInner() {
         onDragOver={onDragOver}
         onDrop={onDrop}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
         style={{ backgroundColor: '#0b0b0f' }}
