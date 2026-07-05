@@ -45,6 +45,7 @@ export async function apiRender(opts: {
   image: string
   prompt: string
   negativePrompt?: string
+  mask?: string
 }): Promise<{ image: string; balance: number }> {
   const r = await call('/api/render', opts)
   return { image: String(r.image), balance: Number(r.balance) }

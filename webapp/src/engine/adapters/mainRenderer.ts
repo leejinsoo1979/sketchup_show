@@ -21,14 +21,18 @@ async function renderMainMock(input: RenderInput): Promise<NodeResult> {
 
 // ── Gemini (production) ────────────────────────────────────────────────────
 
+const MASK_INSTRUCTION = `\n\n[SELECTION MASK - CRITICAL]\nThe second image is a selection mask. WHITE areas = the ONLY region you may change. BLACK areas = must remain EXACTLY identical to the input image, pixel-faithful. Apply the requested change only inside the white region.`
+
 async function renderMainGemini(input: RenderInput): Promise<NodeResult> {
   // Gemini에는 네거티브 파라미터가 없으므로 프롬프트에 AVOID 섹션으로 합성
-  const fullPrompt = input.negativePrompt
+  let fullPrompt = input.negativePrompt
     ? `${input.prompt}\n\n[NEGATIVE - MUST AVOID]\n${input.negativePrompt}`
     : input.prompt
+  if (input.mask) fullPrompt += MASK_INSTRUCTION
 
   const result = await callGemini({
     image: input.image,
+    maskImage: input.mask ?? undefined,
     prompt: fullPrompt,
     engine: input.engine,
   })
@@ -60,6 +64,7 @@ async function renderMainSaas(input: RenderInput): Promise<NodeResult> {
     image: input.image,
     prompt: input.prompt,
     negativePrompt: input.negativePrompt ?? '',
+    mask: input.mask ?? undefined,
   })
   return {
     image: r.image,

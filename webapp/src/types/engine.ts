@@ -14,6 +14,8 @@ export interface RenderInput {
   negativePrompt: string
   seed: number | null
   resolution: string
+  /** 선택 영역 마스크 (흰색=변경 허용). 있으면 해당 영역만 편집 */
+  mask?: string | null
 }
 
 export interface ModifierInput {

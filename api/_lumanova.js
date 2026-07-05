@@ -133,7 +133,9 @@ function splitDataUri(image) {
 }
 
 /** 이미지 렌더 (image-to-image). 반환: { image: dataUri } */
-export async function geminiRender({ engine, image, prompt, negativePrompt }) {
+const MASK_INSTRUCTION = `\n\n[SELECTION MASK - CRITICAL]\nThe second image is a selection mask. WHITE areas = the ONLY region you may change. BLACK areas = must remain EXACTLY identical to the input image, pixel-faithful. Apply the requested change only inside the white region.`
+
+export async function geminiRender({ engine, image, prompt, negativePrompt, mask = null }) {
   const key = process.env.GEMINI_API_KEY
   if (!key) throw new Error('SERVER_NOT_CONFIGURED: GEMINI_API_KEY missing')
   const model = MODEL_MAP[engine] ?? MODEL_MAP.main
@@ -142,7 +144,14 @@ export async function geminiRender({ engine, image, prompt, negativePrompt }) {
   if (negativePrompt && negativePrompt.trim()) {
     fullPrompt += `\n\n[NEGATIVE - MUST AVOID]\n${negativePrompt.trim()}`
   }
+  if (mask) fullPrompt += MASK_INSTRUCTION
   const { mimeType, data } = splitDataUri(image)
+  const parts = [{ inlineData: { mimeType, data } }]
+  if (mask) {
+    const mk = splitDataUri(mask)
+    parts.push({ inlineData: { mimeType: mk.mimeType, data: mk.data } })
+  }
+  parts.push({ text: fullPrompt })
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
@@ -151,7 +160,7 @@ export async function geminiRender({ engine, image, prompt, negativePrompt }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        contents: [{ parts: [{ inlineData: { mimeType, data } }, { text: fullPrompt }] }],
+        contents: [{ parts }],
         generationConfig: { responseModalities: ['IMAGE'] },
       }),
     },

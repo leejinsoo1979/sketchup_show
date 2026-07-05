@@ -179,6 +179,7 @@ export interface GeminiResult {
 
 export interface CallGeminiOptions {
   image: string // data URI or raw base64
+  maskImage?: string // 선택 영역 마스크 (두 번째 이미지로 전달)
   prompt: string
   engine?: string // maps to model
   systemInstruction?: string // override default
@@ -205,16 +206,16 @@ export async function callGemini(
     generationConfig['thinkingConfig'] = { thinkingBudget: 0 }
   }
 
+  const parts: Record<string, unknown>[] = [{ inlineData: { mimeType, data: base64 } }]
+  if (opts.maskImage) {
+    const mk = stripDataUri(opts.maskImage)
+    parts.push({ inlineData: { mimeType: mk.mimeType, data: mk.base64 } })
+  }
+  parts.push({ text: opts.prompt })
+
   const body = {
     system_instruction: { parts: [{ text: sysText }] },
-    contents: [
-      {
-        parts: [
-          { inlineData: { mimeType, data: base64 } },
-          { text: opts.prompt },
-        ],
-      },
-    ],
+    contents: [{ parts }],
     generationConfig,
   }
 

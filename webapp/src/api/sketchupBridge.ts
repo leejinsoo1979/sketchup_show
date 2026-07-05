@@ -262,6 +262,37 @@ export async function requestCapture(size?: string): Promise<boolean> {
   return ok
 }
 
+export interface MaskData {
+  uri: string
+  map: { color: string; material: string }[]
+}
+
+/** 오브젝트 ID 마스크 캡처 요청 후 수신 (클릭 선택용). */
+export async function captureMask(): Promise<MaskData | null> {
+  const before = await fetchMaskOnce()
+  await sendCommand({ type: 'capture_mask' })
+  for (let i = 0; i < 20; i++) {
+    await new Promise((r) => setTimeout(r, 500))
+    const now = await fetchMaskOnce()
+    if (now && (!before || now.timestamp !== before.timestamp)) {
+      return { uri: toDataUri(now.mask), map: now.map }
+    }
+  }
+  return null
+}
+
+async function fetchMaskOnce(): Promise<{ mask: string; map: { color: string; material: string }[]; timestamp: number } | null> {
+  try {
+    const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/mask`)
+    if (!res.ok) return null
+    const j = await res.json()
+    if (!j.mask) return null
+    return j
+  } catch {
+    return null
+  }
+}
+
 /** 현재 뷰를 SketchUp 씬으로 저장. */
 export async function addScene(): Promise<boolean> {
   return sendCommand({ type: 'add_scene' })

@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const user = await verifyUser(req)
   if (!user) return res.status(401).json({ error: 'UNAUTHORIZED' })
 
-  const { engine = 'main', image, prompt, negativePrompt = '' } = req.body ?? {}
+  const { engine = 'main', image, prompt, negativePrompt = '', mask = null } = req.body ?? {}
   if (!image || !prompt) return res.status(400).json({ error: 'BAD_REQUEST' })
   if (String(image).length > 12_000_000) return res.status(413).json({ error: 'IMAGE_TOO_LARGE' })
 
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const out = await geminiRender({ engine, image, prompt, negativePrompt })
+    const out = await geminiRender({ engine, image, prompt, negativePrompt, mask })
     await logRender(user, engine, cost, 'ok')
     return res.status(200).json({ image: out.image, balance })
   } catch (err) {
