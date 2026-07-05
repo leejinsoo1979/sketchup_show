@@ -336,8 +336,10 @@ module NanoBanana
 
       view = model.active_view
       ro = model.rendering_options
-      # 태그별 색상 표시 모드: 모델 무변경 + 즉시 전환 (재질 색칠 방식은 대형 모델에서 수 분 프리즈)
+      # 태그별 색상 표시 모드: 즉시 전환 (재질 색칠 방식은 대형 모델에서 수 분 프리즈)
+      # SketchUp 기본 태그색은 서로 겹치므로 캡처 순간에만 고유색을 입히고 원색으로 복원
       saved = {}
+      orig_colors = []
       begin
         { 'DisplayColorByLayer' => true, 'Texture' => false,
           'DisplayShadows' => false, 'EdgeDisplayMode' => 0 }.each do |k, v|
@@ -348,9 +350,17 @@ module NanoBanana
           end
         end
 
-        map = model.layers.map do |l|
+        map = []
+        model.layers.each_with_index do |l, i|
           c = l.color
-          { color: format('#%02x%02x%02x', c.red, c.green, c.blue), material: l.name == 'Layer0' ? '기본' : l.name }
+          orig_colors << [l, Sketchup::Color.new(c.red, c.green, c.blue, c.alpha)]
+          # 황금각 색상환: 태그 수와 무관하게 서로 뚜렷이 구분되는 고유색 (흰/검/하늘색 회피)
+          hue = (i * 137.508) % 360.0
+          sat = 0.85 - 0.25 * ((i / 3) % 2)
+          val = 0.95 - 0.30 * ((i / 2) % 2)
+          r, g, b = hsv_to_rgb(hue, sat, val)
+          l.color = Sketchup::Color.new(r, g, b)
+          map << { color: format('#%02x%02x%02x', r, g, b), material: l.name == 'Layer0' ? '기본' : l.name }
         end
 
         temp_path = File.join(Dir.tmpdir, 'lumanova_mask.png')
@@ -362,9 +372,27 @@ module NanoBanana
       rescue StandardError => e
         puts "[NanoBanana] 마스크 캡처 에러: #{e.message}"
       ensure
+        orig_colors.each { |l, c| l.color = c rescue nil }
         saved.each { |k, v| ro[k] = v rescue nil }
         view.invalidate
       end
+    end
+
+    # HSV -> RGB (0~255 정수)
+    def hsv_to_rgb(h, s, v)
+      c = v * s
+      x = c * (1 - ((h / 60.0) % 2 - 1).abs)
+      m = v - c
+      r1, g1, b1 =
+        case h
+        when 0...60   then [c, x, 0]
+        when 60...120 then [x, c, 0]
+        when 120...180 then [0, c, x]
+        when 180...240 then [0, x, c]
+        when 240...300 then [x, 0, c]
+        else [c, 0, x]
+        end
+      [((r1 + m) * 255).round, ((g1 + m) * 255).round, ((b1 + m) * 255).round]
     end
 
     # 명령 직후: 즉시 캡처하고 변경감지 상태 동기화 (이중 캡처 방지)
