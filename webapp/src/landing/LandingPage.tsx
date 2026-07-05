@@ -27,11 +27,8 @@ function useReveal<T extends HTMLElement>(threshold = 0.2) {
 }
 
 function Logo({ size = 30 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
-      <path d="M8 32 V8 L20 20 L32 8 V32" stroke={TEAL} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
+  // LN 모노그램 원형 마크 (사용자 지정 로고)
+  return <img src="/landing/logo-circle.png" alt="Lumanova" width={size} height={size} style={{ objectFit: 'contain', display: 'block' }} />
 }
 
 // ── 상단 네비 ──
@@ -93,30 +90,31 @@ function Hero() {
         >
           AI-POWERED RENDERING
         </span>
-        <h1 style={{ marginTop: 24, fontSize: 'clamp(48px, 6.5vw, 92px)', fontWeight: 800, lineHeight: 1.02, letterSpacing: '-0.03em' }}>
+        <h1 style={{ marginTop: 30, fontSize: 'clamp(48px, 6.5vw, 92px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.03em' }}>
           <span style={{ color: '#fff' }}>Render Beyond</span><br />
           <span style={{ color: TEAL }}>Imagination</span>
         </h1>
-        <p style={{ marginTop: 22, fontSize: 'clamp(16px, 1.6vw, 19px)', lineHeight: 1.65, color: '#a9a9b6', maxWidth: 460 }}>
+        <p style={{ marginTop: 30, fontSize: 'clamp(16px, 1.6vw, 19px)', lineHeight: 1.7, color: '#a9a9b6', maxWidth: 460 }}>
           Lumanova는 AI 기술로 상상을 현실로 만드는<br />차세대 렌더링 플랫폼입니다.
         </p>
-        <div className="mt-9 flex flex-wrap items-center gap-3.5">
+        <div className="flex flex-wrap items-center gap-4" style={{ marginTop: 44 }}>
           <button
             onClick={goApp}
             className="flex items-center gap-2"
-            style={{ padding: '15px 30px', borderRadius: 999, background: TEAL, color: '#06251f', fontSize: 15.5, fontWeight: 800 }}
+            style={{ padding: '16px 32px', borderRadius: 999, background: TEAL, color: '#06251f', fontSize: 15.5, fontWeight: 800 }}
           >
             무료로 시작하기 <span style={{ fontSize: 17 }}>→</span>
           </button>
           <a
-            href="#gallery"
+            href="/downloads/NanoBananaRenderer_v1.0.5.rbz"
+            download
             className="flex items-center gap-2"
-            style={{ padding: '15px 26px', borderRadius: 999, border: '1px solid #333', color: '#e6e6ee', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}
+            style={{ padding: '16px 28px', borderRadius: 999, border: '1px solid #333', color: '#e6e6ee', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}
           >
-            갤러리 보기 <span style={{ fontSize: 13 }}>▷</span>
+            앱 다운로드 <span style={{ fontSize: 14 }}>↓</span>
           </a>
         </div>
-        <div className="mt-16 flex items-center gap-2.5" style={{ color: '#7a7a86', fontSize: 13 }}>
+        <div className="flex items-center gap-2.5" style={{ marginTop: 56, color: '#7a7a86', fontSize: 13 }}>
           <span style={{ display: 'inline-flex', width: 26, height: 26, borderRadius: 999, border: '1px solid #333', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>↓</span>
           Scroll to explore
         </div>
