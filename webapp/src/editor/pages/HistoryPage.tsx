@@ -6,6 +6,8 @@ import { useUIStore } from '../../state/uiStore'
 import { useAuthUser } from '../../auth/firebase'
 import type { GraphSnapshot } from '../../types/graph'
 
+const HISTORY_PAGE_SIZE = 16
+
 function formatTimeAgo(timestamp: string): string {
   const now = Date.now()
   const then = new Date(timestamp).getTime()
@@ -81,7 +83,7 @@ function HistoryCard({ snapshot, onOpen }: { snapshot: GraphSnapshot; onOpen: (s
         backgroundColor: '#171720',
         border: '1px solid #242430',
         borderRadius: 8,
-        width: 360,
+        width: '100%',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -399,14 +401,14 @@ export function HistoryPage() {
   const loadSnapshots = useHistoryStore((s) => s.loadSnapshots)
   const user = useAuthUser()
   const [query, setQuery] = useState('')
-  const [visibleCount, setVisibleCount] = useState(12)
+  const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE)
   const [detailSnapshot, setDetailSnapshot] = useState<GraphSnapshot | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    setVisibleCount(12)
+    setVisibleCount(HISTORY_PAGE_SIZE)
     void loadSnapshots().finally(() => {
       if (!cancelled) setLoading(false)
     })
@@ -428,7 +430,7 @@ export function HistoryPage() {
   const hasMore = visibleCount < filteredSnapshots.length
   const refreshHistory = () => {
     setLoading(true)
-    setVisibleCount(12)
+    setVisibleCount(HISTORY_PAGE_SIZE)
     void loadSnapshots().finally(() => setLoading(false))
   }
 
@@ -463,7 +465,7 @@ export function HistoryPage() {
             <Search size={13} color="#747481" />
             <input
               value={query}
-              onChange={(e) => { setQuery(e.target.value); setVisibleCount(12) }}
+              onChange={(e) => { setQuery(e.target.value); setVisibleCount(HISTORY_PAGE_SIZE) }}
               placeholder="Search history"
               className="min-w-0 flex-1 bg-transparent outline-none"
               style={{ color: '#d8d8e0', fontSize: 12 }}
@@ -532,9 +534,11 @@ export function HistoryPage() {
           <div
             className="grid"
             style={{
-              gridTemplateColumns: 'repeat(auto-fill, 360px)',
-              gap: 20,
-              justifyContent: 'start',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: 18,
+              width: '100%',
+              maxWidth: 1520,
+              margin: '0 auto',
             }}
           >
             {visibleSnapshots.map((snapshot) => (
@@ -546,7 +550,7 @@ export function HistoryPage() {
           {hasMore && (
             <div className="mt-6 flex justify-center">
               <button
-                onClick={() => setVisibleCount((c) => c + 12)}
+                onClick={() => setVisibleCount((c) => c + HISTORY_PAGE_SIZE)}
                 className="rounded-md px-6 py-2 text-sm transition-colors duration-150"
                 style={{
                   backgroundColor: '#333340',
