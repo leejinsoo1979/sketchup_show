@@ -28,3 +28,13 @@ body,
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* 랜딩 페이지: 세로 스크롤 허용 (에디터용 100vh/overflow:hidden 해제) */
+html.landing,
+html.landing body,
+html.landing #root {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
