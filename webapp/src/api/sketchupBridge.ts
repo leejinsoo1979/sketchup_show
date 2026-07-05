@@ -210,9 +210,12 @@ export async function getScenes(): Promise<SketchUpScene[] | null> {
 /** 앱 → SketchUp 명령 전송 (씬 전환, 카메라, 즉시 캡처). */
 async function sendCommand(cmd: Record<string, unknown>): Promise<boolean> {
   try {
+    // Content-Type: text/plain = CORS 단순 요청 -> OPTIONS 프리플라이트가 발생하지 않음.
+    // (WEBrick ProcHandler가 OPTIONS를 405로 응답하는 문제를 브라우저에서 원천 회피.
+    //  Ruby 쪽은 req.body를 JSON.parse 하므로 Content-Type과 무관하게 동작)
     const res = await fetchWithTimeout(`${BRIDGE_BASE_URL}/api/command`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(cmd),
     })
     return res.ok
@@ -267,28 +270,20 @@ export interface MaskData {
   map: { color: string; material: string }[]
 }
 
-/** 오브젝트 ID 마스크 캡처 요청 후 수신 (클릭 선택용). */
+/** 오브젝트 ID 마스크 캡처 요청 후 수신 (클릭 선택용).
+ *  주의: 오래된 마스크로 폴백하지 않는다 - 다른 뷰의 마스크가 렌더와 어긋나는 사고 방지. */
 export async function captureMask(): Promise<MaskData | null> {
   const before = await fetchMaskOnce()
   const sent = await sendCommand({ type: 'capture_mask' })
-  if (sent) {
-    for (let i = 0; i < 90; i++) {
-      await new Promise((r) => setTimeout(r, 500))
-      const now = await fetchMaskOnce()
-      if (now && (!before || now.timestamp !== before.timestamp)) {
-        return { uri: toDataUri(now.mask), map: now.map }
-      }
+  if (!sent) return null
+  for (let i = 0; i < 90; i++) {
+    await new Promise((r) => setTimeout(r, 500))
+    const now = await fetchMaskOnce()
+    if (now && (!before || now.timestamp !== before.timestamp)) {
+      return { uri: toDataUri(now.mask), map: now.map }
     }
   }
-  // 새 캡처 실패(명령 차단/타임아웃) 시 기존 마스크로 폴백 (GET은 항상 통과)
-  const existing = before ?? (await fetchMaskOnce())
-  return existing ? { uri: toDataUri(existing.mask), map: existing.map } : null
-}
-
-/** 기존 마스크만 조회 (새 캡처 없이). 앱 시작 시 ▦ 마스크 뷰 활성화용. */
-export async function fetchExistingMask(): Promise<MaskData | null> {
-  const m = await fetchMaskOnce()
-  return m ? { uri: toDataUri(m.mask), map: m.map } : null
+  return null
 }
 
 async function fetchMaskOnce(): Promise<{ mask: string; map: { color: string; material: string }[]; timestamp: number } | null> {
