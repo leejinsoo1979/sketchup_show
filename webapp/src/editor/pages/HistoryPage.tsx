@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Clock, Download, RotateCcw, Search, ImageIcon, RefreshCw, Eye, ChevronsLeftRight, ArrowLeft, Copy } from 'lucide-react'
+import { Clock, Download, RotateCcw, Search, ImageIcon, RefreshCw, Eye, ChevronsLeftRight, ArrowLeft, Copy, Loader2 } from 'lucide-react'
 import { useHistoryStore } from '../../state/historyStore'
 import { useGraphStore } from '../../state/graphStore'
 import { useUIStore } from '../../state/uiStore'
@@ -81,6 +81,7 @@ function HistoryCard({ snapshot, onOpen }: { snapshot: GraphSnapshot; onOpen: (s
         backgroundColor: '#171720',
         border: '1px solid #242430',
         borderRadius: 8,
+        width: 360,
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -111,25 +112,30 @@ function HistoryCard({ snapshot, onOpen }: { snapshot: GraphSnapshot; onOpen: (s
 
       {hovered && (
         <div
-          className="absolute inset-x-0 top-0 flex justify-end p-2"
+          className="absolute inset-0 flex items-center justify-center"
           style={{
-            background: 'linear-gradient(180deg, rgba(5,5,9,.54) 0%, rgba(5,5,9,0) 100%)',
+            background: 'rgba(5,5,9,.68)',
           }}
         >
           <button
             onClick={(e) => { e.stopPropagation(); onOpen(snapshot) }}
-            className="flex items-center justify-center rounded-md"
+            className="flex items-center gap-2 rounded-full px-4"
             style={{
-              width: 30,
-              height: 30,
-              backgroundColor: 'rgba(18,18,25,.86)',
-              border: '1px solid rgba(255,255,255,.14)',
-              color: '#e7e7ee',
-              boxShadow: '0 8px 18px rgba(0,0,0,.28)',
+              minWidth: 96,
+              height: 38,
+              justifyContent: 'center',
+              backgroundColor: 'rgba(17,17,24,.94)',
+              border: '1px solid rgba(0,201,167,.58)',
+              color: '#eafffb',
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: 0.2,
+              boxShadow: '0 16px 38px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.08)',
             }}
             title="View"
           >
-            <Eye size={14} />
+            <Eye size={15} />
+            View
           </button>
         </div>
       )}
@@ -395,10 +401,18 @@ export function HistoryPage() {
   const [query, setQuery] = useState('')
   const [visibleCount, setVisibleCount] = useState(12)
   const [detailSnapshot, setDetailSnapshot] = useState<GraphSnapshot | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadSnapshots()
+    let cancelled = false
+    setLoading(true)
     setVisibleCount(12)
+    void loadSnapshots().finally(() => {
+      if (!cancelled) setLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [loadSnapshots, user?.uid])
 
   const filteredSnapshots = useMemo(() => {
@@ -412,6 +426,11 @@ export function HistoryPage() {
 
   const visibleSnapshots = filteredSnapshots.slice(0, visibleCount)
   const hasMore = visibleCount < filteredSnapshots.length
+  const refreshHistory = () => {
+    setLoading(true)
+    setVisibleCount(12)
+    void loadSnapshots().finally(() => setLoading(false))
+  }
 
   if (detailSnapshot) {
     return <HistoryDetailView snapshot={detailSnapshot} onBack={() => setDetailSnapshot(null)} />
@@ -428,7 +447,7 @@ export function HistoryPage() {
             History
           </h1>
           <div className="mt-1" style={{ color: '#777784', fontSize: 12 }}>
-            {filteredSnapshots.length} saved renders
+            {loading ? 'Loading history...' : `${filteredSnapshots.length} saved renders`}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -451,41 +470,61 @@ export function HistoryPage() {
             />
           </div>
           <button
-            onClick={() => { void loadSnapshots(); setVisibleCount(12) }}
+            onClick={refreshHistory}
             className="flex items-center justify-center rounded-full"
             style={{ width: 34, height: 34, background: '#171720', border: '1px solid #2a2a36', color: '#8f8f9a' }}
             title="Refresh history"
+            disabled={loading}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {filteredSnapshots.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-1 items-center justify-center px-7">
+          <div
+            className="flex w-full max-w-sm flex-col items-center rounded-lg px-8 py-7 text-center"
+            style={{ background: '#15151d', border: '1px solid #252532', boxShadow: '0 18px 55px rgba(0,0,0,.22)' }}
+          >
+            <div className="flex items-center justify-center rounded-full" style={{ width: 52, height: 52, background: '#101018', border: '1px solid #2c2c39' }}>
+              <Loader2 size={23} className="animate-spin" style={{ color: '#00c9a7' }} />
+            </div>
+            <div className="mt-4" style={{ color: '#eeeeF5', fontSize: 14, fontWeight: 750 }}>
+              Loading history
+            </div>
+            <div className="mt-1.5" style={{ color: '#858592', fontSize: 12, lineHeight: 1.45 }}>
+              Syncing saved render thumbnails for this account.
+            </div>
+          </div>
+        </div>
+      ) : filteredSnapshots.length === 0 ? (
         <div
-          className="flex flex-1 flex-col items-center justify-center"
+          className="flex flex-1 items-center justify-center px-7"
           style={{ color: '#6f6f7a' }}
         >
           <div
-            className="flex flex-col items-center rounded-lg px-8 py-7"
-            style={{ background: '#171720', border: '1px solid #262633', boxShadow: '0 18px 50px rgba(0,0,0,.18)' }}
+            className="flex w-full max-w-sm flex-col items-center rounded-lg px-8 py-7 text-center"
+            style={{ background: '#15151d', border: '1px solid #252532', boxShadow: '0 18px 55px rgba(0,0,0,.22)' }}
           >
-            <div className="flex items-center justify-center rounded-full" style={{ width: 54, height: 54, background: '#101018', border: '1px solid #2a2a36' }}>
+            <div className="flex items-center justify-center rounded-full" style={{ width: 52, height: 52, background: '#101018', border: '1px solid #2c2c39' }}>
               <ImageIcon size={22} />
             </div>
-            <div className="mt-3" style={{ color: '#e5e5ec', fontSize: 14, fontWeight: 700 }}>
-              No renders saved yet
+            <div className="mt-4" style={{ color: '#eeeeF5', fontSize: 14, fontWeight: 750 }}>
+              {query.trim() ? 'No matching renders' : 'No renders saved yet'}
             </div>
-            <div className="mt-1" style={{ fontSize: 12, color: '#7b7b87' }}>
-              Render results will appear here as thumbnails.
+            <div className="mt-1.5 max-w-xs" style={{ fontSize: 12, color: '#858592', lineHeight: 1.45 }}>
+              {query.trim() ? 'Try another search term.' : 'Finished render results will appear here as thumbnails.'}
             </div>
-            <button
-              onClick={() => useUIStore.getState().setActiveSidebarItem('render')}
-              className="mt-5 rounded-md px-4 py-2 text-xs"
-              style={{ background: '#00c9a7', color: '#071916', fontWeight: 750 }}
-            >
-              Go to Render
-            </button>
+            {!query.trim() && (
+              <button
+                onClick={() => useUIStore.getState().setActiveSidebarItem('render')}
+                className="mt-5 rounded-md px-4"
+                style={{ height: 34, background: '#00c9a7', color: '#061614', fontSize: 12, fontWeight: 800, boxShadow: '0 10px 26px rgba(0,201,167,.18)' }}
+              >
+                Go to Render
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -493,8 +532,9 @@ export function HistoryPage() {
           <div
             className="grid"
             style={{
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: 18,
+              gridTemplateColumns: 'repeat(auto-fill, 360px)',
+              gap: 20,
+              justifyContent: 'start',
             }}
           >
             {visibleSnapshots.map((snapshot) => (
