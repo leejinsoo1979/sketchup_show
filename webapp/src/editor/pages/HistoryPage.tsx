@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Clock, Download, RotateCcw, Search, ImageIcon, RefreshCw, Eye, ChevronsLeftRight, ArrowLeft, Copy, Loader2 } from 'lucide-react'
+import { Clock, Download, RotateCcw, Search, ImageIcon, RefreshCw, Eye, ChevronsLeftRight, ArrowLeft, Copy } from 'lucide-react'
 import { useHistoryStore } from '../../state/historyStore'
 import { useGraphStore } from '../../state/graphStore'
 import { useUIStore } from '../../state/uiStore'
@@ -69,6 +69,46 @@ function getSnapshotEngine(snapshot: GraphSnapshot): string {
     if ('engine' in params && typeof params.engine === 'string') return params.engine
   }
   return 'main'
+}
+
+function HistorySkeletonGrid() {
+  return (
+    <div className="flex-1 overflow-y-auto px-7 py-6">
+      <div
+        className="grid animate-pulse"
+        style={{
+          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gap: 18,
+          width: '100%',
+          maxWidth: 1520,
+          margin: '0 auto',
+        }}
+      >
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className="overflow-hidden"
+            style={{
+              backgroundColor: '#171720',
+              border: '1px solid #242430',
+              borderRadius: 8,
+              width: '100%',
+              opacity: 1 - i * 0.09,
+            }}
+          >
+            <div style={{ aspectRatio: '16 / 10', backgroundColor: '#1d1d28' }} />
+            <div
+              className="flex items-center justify-between gap-2 px-3"
+              style={{ borderTop: '1px solid #222233', height: 34 }}
+            >
+              <div style={{ width: 72, height: 8, borderRadius: 4, backgroundColor: '#242430' }} />
+              <div style={{ width: 20, height: 8, borderRadius: 4, backgroundColor: '#242430' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function HistoryCard({ snapshot, onOpen }: { snapshot: GraphSnapshot; onOpen: (snapshot: GraphSnapshot) => void }) {
@@ -484,22 +524,7 @@ export function HistoryPage() {
       </div>
 
       {loading ? (
-        <div className="flex flex-1 items-center justify-center px-7">
-          <div
-            className="flex w-full max-w-sm flex-col items-center rounded-lg px-8 py-7 text-center"
-            style={{ background: '#15151d', border: '1px solid #252532', boxShadow: '0 18px 55px rgba(0,0,0,.22)' }}
-          >
-            <div className="flex items-center justify-center rounded-full" style={{ width: 52, height: 52, background: '#101018', border: '1px solid #2c2c39' }}>
-              <Loader2 size={23} className="animate-spin" style={{ color: '#00c9a7' }} />
-            </div>
-            <div className="mt-4" style={{ color: '#eeeeF5', fontSize: 14, fontWeight: 750 }}>
-              Loading history
-            </div>
-            <div className="mt-1.5" style={{ color: '#858592', fontSize: 12, lineHeight: 1.45 }}>
-              Syncing saved render thumbnails for this account.
-            </div>
-          </div>
-        </div>
+        <HistorySkeletonGrid />
       ) : filteredSnapshots.length === 0 ? (
         <div
           className="flex flex-1 items-center justify-center px-7"
