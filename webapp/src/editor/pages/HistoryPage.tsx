@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Clock, Download, ArrowDownToLine, Search, ImageIcon, RefreshCw, Eye, ChevronsLeftRight, ArrowLeft, Copy } from 'lucide-react'
+import { Clock, Download, RotateCcw, Search, ImageIcon, RefreshCw, Eye, ChevronsLeftRight, ArrowLeft, Copy } from 'lucide-react'
 import { useHistoryStore } from '../../state/historyStore'
 import { useGraphStore } from '../../state/graphStore'
 import { useUIStore } from '../../state/uiStore'
@@ -195,20 +195,22 @@ function HistoryDetailView({ snapshot, onBack }: { snapshot: GraphSnapshot; onBa
           {canRestore && (
             <button
               onClick={handleUse}
-              className="flex items-center justify-center rounded-md"
-              style={{ width: 32, height: 32, background: 'rgba(0,201,167,.12)', border: '1px solid rgba(0,201,167,.38)', color: '#37e7cb' }}
-              title="Use"
+              className="flex items-center gap-1.5 rounded-md"
+              style={{ height: 32, padding: '0 12px', background: 'rgba(0,201,167,.12)', border: '1px solid rgba(0,201,167,.38)', color: '#37e7cb', fontSize: 12.5, fontWeight: 600 }}
+              title="이 작업을 편집 화면으로 불러오기"
             >
-              <ArrowDownToLine size={15} />
+              <RotateCcw size={14} />
+              불러오기
             </button>
           )}
           <button
             onClick={handleSave}
-            className="flex items-center justify-center rounded-md"
-            style={{ width: 32, height: 32, background: '#1b1b24', border: '1px solid #30303b', color: '#d9d9e2' }}
-            title="Save"
+            className="flex items-center gap-1.5 rounded-md"
+            style={{ height: 32, padding: '0 12px', background: '#1b1b24', border: '1px solid #30303b', color: '#d9d9e2', fontSize: 12.5, fontWeight: 600 }}
+            title="결과 이미지를 PNG로 저장"
           >
-            <Download size={15} />
+            <Download size={14} />
+            저장
           </button>
         </div>
       </div>
