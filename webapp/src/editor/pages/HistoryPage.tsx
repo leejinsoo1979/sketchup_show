@@ -115,6 +115,8 @@ function HistoryCard({ snapshot, onOpen }: { snapshot: GraphSnapshot; onOpen: (s
   const [hovered, setHovered] = useState(false)
 
   const thumbnail = getResultThumbnail(snapshot)
+  const sourceThumbnail = getSourceThumbnail(snapshot)
+  const showSource = hovered && !!sourceThumbnail && sourceThumbnail !== thumbnail
 
   return (
     <div
@@ -144,19 +146,45 @@ function HistoryCard({ snapshot, onOpen }: { snapshot: GraphSnapshot; onOpen: (s
           <ImageIcon size={22} style={{ color: '#444452' }} />
         )}
 
+        {sourceThumbnail && sourceThumbnail !== thumbnail && (
+          <img
+            src={sourceThumbnail}
+            alt="Source thumbnail"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            style={{ opacity: showSource ? 1 : 0, transition: 'opacity .25s ease' }}
+            draggable={false}
+          />
+        )}
+
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background: 'linear-gradient(180deg, rgba(0,0,0,0) 52%, rgba(0,0,0,.42) 100%)',
           }}
         />
+
+        {showSource && (
+          <span
+            className="pointer-events-none absolute left-2 top-2 rounded px-1.5 py-0.5"
+            style={{
+              background: 'rgba(5,5,9,.72)',
+              border: '1px solid rgba(255,255,255,.14)',
+              color: '#c9c9d4',
+              fontSize: 9,
+              fontWeight: 800,
+              letterSpacing: 0.6,
+            }}
+          >
+            SOURCE
+          </span>
+        )}
       </div>
 
       {hovered && (
         <div
           className="absolute inset-0 flex items-center justify-center"
           style={{
-            background: 'rgba(5,5,9,.68)',
+            background: showSource ? 'rgba(5,5,9,.18)' : 'rgba(5,5,9,.68)',
           }}
         >
           <button
