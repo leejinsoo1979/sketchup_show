@@ -17,6 +17,11 @@ function documentId(name = '') {
   return name.split('/').pop() ?? ''
 }
 
+function safeDocumentId(value = '') {
+  const id = String(value).trim()
+  return /^[A-Za-z0-9_-]{8,120}$/.test(id) ? id : ''
+}
+
 export default async function handler(req, res) {
   cors(res)
   if (req.method === 'OPTIONS') return res.status(200).end()
@@ -60,8 +65,10 @@ export default async function handler(req, res) {
     if (thumbnail.length > 900_000) return res.status(413).json({ error: 'THUMBNAIL_TOO_LARGE' })
     if (sourceThumbnail && String(sourceThumbnail).length > 900_000) return res.status(413).json({ error: 'SOURCE_THUMBNAIL_TOO_LARGE' })
 
-    const created = await fsFetch(`/users/${user.uid}/history`, {
-      method: 'POST',
+    const docId = safeDocumentId(clientId)
+    const path = docId ? `/users/${user.uid}/history/${docId}` : `/users/${user.uid}/history`
+    const created = await fsFetch(path, {
+      method: docId ? 'PATCH' : 'POST',
       token: user.token,
       body: {
         fields: {
@@ -79,7 +86,7 @@ export default async function handler(req, res) {
       },
     })
     if (!created.ok) return res.status(created.status).json({ error: 'HISTORY_WRITE_FAILED' })
-    return res.status(200).json({ ok: true, id: documentId(created.json.name) })
+    return res.status(200).json({ ok: true, id: docId || documentId(created.json.name) })
   }
 
   return res.status(405).json({ error: 'METHOD' })

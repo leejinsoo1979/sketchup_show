@@ -254,6 +254,21 @@ function mergeSnapshots(...groups: GraphSnapshot[][]): GraphSnapshot[] {
     .slice(0, MAX_HISTORY_ITEMS)
 }
 
+function mergeServerSnapshotsWithLocalOriginals(serverSnapshots: GraphSnapshot[], localSnapshots: GraphSnapshot[]): GraphSnapshot[] {
+  const localById = new Map(localSnapshots.map((snapshot) => [snapshot.id, snapshot]))
+  return serverSnapshots.map((serverSnapshot) => {
+    const localSnapshot = localById.get(serverSnapshot.id)
+    if (!localSnapshot) return serverSnapshot
+    return {
+      ...serverSnapshot,
+      graph: localSnapshot.graph.nodes.length > 0 ? localSnapshot.graph : serverSnapshot.graph,
+      thumbnails: localSnapshot.thumbnails.length > 0 ? localSnapshot.thumbnails : serverSnapshot.thumbnails,
+      sourceThumbnail: (localSnapshot as GraphSnapshot & { sourceThumbnail?: string }).sourceThumbnail
+        || (serverSnapshot as GraphSnapshot & { sourceThumbnail?: string }).sourceThumbnail,
+    } as GraphSnapshot
+  })
+}
+
 export const useHistoryStore = create<HistoryState>((set, get) => ({
   snapshots: [],
 
@@ -311,9 +326,10 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       try {
         const { items } = await apiHistory(60)
         const serverSnapshots = items.map(snapshotFromServerItem)
-        const snapshots = mergeSnapshots(localSnapshots, serverSnapshots)
+        const snapshots = mergeServerSnapshotsWithLocalOriginals(serverSnapshots, localSnapshots)
         set({ snapshots })
-        localSnapshots.forEach((snapshot) => {
+        const serverIds = new Set(serverSnapshots.map((snapshot) => snapshot.id))
+        localSnapshots.filter((snapshot) => !serverIds.has(snapshot.id)).forEach((snapshot) => {
           void persistSnapshotToServer(snapshot)
         })
         return
