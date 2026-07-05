@@ -130,32 +130,101 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-export function TutorialPage() {
+// 실물 스타일 페이지 컨테이너 (대형 제목 + 섹션 카드) — Account와 동일 언어
+function SectionPage({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <PageShell title="Tutorial">
-      <p>기본 워크플로우:</p>
-      <ol className="ml-5 mt-2 list-decimal space-y-1">
-        <li>SketchUp에서 구도를 잡고 NanoBanana 아이콘을 눌러 뷰를 가져옵니다 (또는 이미지를 드래그).</li>
-        <li>Source 노드를 선택하고 우측 프리셋에서 <b>View to render</b> → <b>Make</b>.</li>
-        <li>같은 노드에서 Make를 반복하면 변형이 병렬로 생성됩니다.</li>
-        <li>Draw 탭에서 화살표/색상 마킹, Ctrl+V로 레퍼런스 이미지를 붙여넣어 합성을 지시합니다.</li>
-        <li>반복 수정으로 품질이 떨어지면 마지막에 View to render로 한 번 더 렌더해 복원합니다.</li>
-        <li>완성본은 Upscale(2x/4x) 후 Image to video로 영상화할 수 있습니다.</li>
-      </ol>
-    </PageShell>
+    <div className="flex-1 overflow-y-auto" style={{ background: '#0d0d11', padding: '36px 48px' }}>
+      <h1 style={{ color: '#ffffff', fontSize: 26, fontWeight: 700, marginBottom: subtitle ? 6 : 24 }}>{title}</h1>
+      {subtitle && <p style={{ color: '#8a8a96', fontSize: 13.5, marginBottom: 24 }}>{subtitle}</p>}
+      <div style={{ maxWidth: 860 }}>{children}</div>
+    </div>
+  )
+}
+
+const TEAL = '#00c9a7'
+
+export function TutorialPage() {
+  const steps = [
+    { n: 1, t: 'SketchUp 뷰 가져오기', d: 'SketchUp에서 구도를 잡고 Lumanova 아이콘을 눌러 현재 뷰를 앱으로 보냅니다. 또는 이미지를 직접 드래그해 불러올 수 있습니다.' },
+    { n: 2, t: '프롬프트 작성 & 렌더', d: 'Auto 버튼으로 프롬프트를 자동 생성하거나 직접 입력한 뒤 ⚡로 렌더링합니다. 벽·가구의 형상은 그대로 유지되고 재질·조명·분위기만 실사화됩니다.' },
+    { n: 3, t: '영역 선택 정밀 편집', d: 'RESULT의 [마스크 패스] 탭에서 바꿀 부위를 클릭해 선택하고, 2차 프롬프트로 그 부위만 재질을 변경하거나 오브젝트를 제거합니다.' },
+    { n: 4, t: '보정 & 내보내기', d: '슬라이더로 밝기·대비·채도를 로컬 보정(API 호출 없음)한 뒤 PNG로 저장합니다. 히스토리에서 언제든 다시 불러올 수 있습니다.' },
+  ]
+  const tips = [
+    '카메라 조작은 WASD 이동 · QE 높이 · ZX 회전 단축키를 씁니다.',
+    'Mirror를 켜면 SketchUp 화면이 실시간으로 앱에 미러링됩니다.',
+    '낮/저녁/밤과 조명 On/Off로 같은 구도의 다양한 분위기를 만듭니다.',
+    'Convert로 고품질(최대 1920px) 캡처를 고정한 뒤 렌더하면 결과가 더 선명합니다.',
+  ]
+  return (
+    <SectionPage title="Tutorial" subtitle="Lumanova로 실사 렌더링을 시작하는 4단계입니다.">
+      <Section title="기본 워크플로우">
+        <div className="flex flex-col gap-4">
+          {steps.map((s) => (
+            <div key={s.n} className="flex gap-4">
+              <span className="flex items-center justify-center rounded-full" style={{ width: 30, height: 30, flexShrink: 0, background: 'rgba(0,201,167,0.14)', color: TEAL, fontSize: 14, fontWeight: 800 }}>{s.n}</span>
+              <div>
+                <div style={{ color: '#e8e8ee', fontSize: 14, fontWeight: 700 }}>{s.t}</div>
+                <div style={{ marginTop: 4, color: '#9a9aa6', fontSize: 13, lineHeight: 1.65 }}>{s.d}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+      <Section title="유용한 팁">
+        <ul className="flex flex-col gap-2.5">
+          {tips.map((t, i) => (
+            <li key={i} className="flex gap-2.5" style={{ color: '#b8b8c2', fontSize: 13, lineHeight: 1.55 }}>
+              <span style={{ color: TEAL, flexShrink: 0 }}>▸</span>{t}
+            </li>
+          ))}
+        </ul>
+      </Section>
+    </SectionPage>
   )
 }
 
 export function SupportPage() {
+  const faqs = [
+    { q: '렌더링이 실제 형상을 바꿔버려요.', a: 'Lumanova는 형상을 고정하고 재질·조명만 바꾸도록 설계돼 있습니다. 그래도 변형이 크면 [마스크 패스]로 특정 부위만 선택해 편집하세요 — 선택 영역 밖은 원본으로 자동 복원됩니다.' },
+    { q: '크레딧은 어떻게 충전하나요?', a: '가입 시 무료 크레딧이 지급됩니다. 추가 충전은 준비 중이며, 본인 Gemini API 키를 Settings에 입력하면 크레딧 차감 없이 사용할 수 있습니다.' },
+    { q: 'SketchUp이 연결되지 않아요.', a: 'SketchUp을 실행하고 Lumanova 플러그인이 설치돼 있는지 확인하세요. 상단 상태 표시가 “Connected”면 정상입니다. 안 되면 SketchUp을 재시작하세요.' },
+  ]
   return (
-    <PageShell title="Support">
-      <p>
-        문제가 발생하면 스크린샷과 함께 문의해주세요. 앱 버전과 SketchUp 버전을 알려주시면
-        더 빠르게 해결할 수 있습니다.
-      </p>
-      <p className="mt-3" style={{ color: '#cccccc' }}>
-        문의: <span style={{ color: '#00c9a7' }}>sbbc212@gmail.com</span>
-      </p>
-    </PageShell>
+    <SectionPage title="Support" subtitle="도움이 필요하신가요? 아래에서 빠르게 해결하세요.">
+      <Section title="문의 채널">
+        <div className="flex flex-col gap-3">
+          <ContactRow label="이메일" value="sbbc212@gmail.com" href="mailto:sbbc212@gmail.com" />
+          <ContactRow label="플러그인 다운로드" value="Lumanova SketchUp 플러그인 (.rbz)" href="/downloads/Lumanova_v1.0.5.rbz" download />
+        </div>
+        <p style={{ marginTop: 14, fontSize: 11.5, color: '#6a6a74', lineHeight: 1.6 }}>
+          문의 시 앱 버전(1.0.5)과 SketchUp 버전, 스크린샷을 함께 보내주시면 더 빠르게 도와드릴 수 있습니다.
+        </p>
+      </Section>
+      <Section title="자주 묻는 질문">
+        <div className="flex flex-col">
+          {faqs.map((f, i) => (
+            <div key={i} style={{ padding: '14px 0', borderTop: i ? '1px solid #22222a' : 'none' }}>
+              <div style={{ color: '#e8e8ee', fontSize: 13.5, fontWeight: 700 }}>Q. {f.q}</div>
+              <div style={{ marginTop: 6, color: '#9a9aa6', fontSize: 12.5, lineHeight: 1.65 }}>{f.a}</div>
+            </div>
+          ))}
+        </div>
+      </Section>
+    </SectionPage>
+  )
+}
+
+function ContactRow({ label, value, href, download }: { label: string; value: string; href: string; download?: boolean }) {
+  return (
+    <a
+      href={href}
+      download={download}
+      className="flex items-center justify-between"
+      style={{ padding: '12px 16px', borderRadius: 8, background: '#111117', border: '1px solid #22222c', textDecoration: 'none' }}
+    >
+      <span style={{ color: '#8a8a96', fontSize: 12.5 }}>{label}</span>
+      <span style={{ color: TEAL, fontSize: 13, fontWeight: 600 }}>{value} →</span>
+    </a>
   )
 }
