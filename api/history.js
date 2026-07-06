@@ -31,13 +31,24 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const limit = Math.min(Number(req.query?.limit ?? 50), 100)
-    const docs = await fsFetch(`/users/${user.uid}/history`, {
+    // orderBy 없는 목록 조회는 문서 이름 순 임의 페이지를 반환해, 항목이 limit을
+    // 넘으면 최신 항목이 누락될 수 있다. runQuery로 최신 limit개를 보장한다.
+    const docs = await fsFetch(`/users/${user.uid}:runQuery`, {
+      method: 'POST',
       token: user.token,
-      query: `?pageSize=${limit}`,
+      body: {
+        structuredQuery: {
+          from: [{ collectionId: 'history' }],
+          orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
+          limit,
+        },
+      },
     })
     if (!docs.ok) return res.status(docs.status).json({ error: 'HISTORY_READ_FAILED' })
 
-    const rows = (docs.json.documents ?? [])
+    const rows = (Array.isArray(docs.json) ? docs.json : [])
+      .map((entry) => entry.document)
+      .filter(Boolean)
       .map((doc) => {
         const fields = doc.fields ?? {}
         return {
@@ -54,7 +65,6 @@ export default async function handler(req, res) {
         }
       })
       .filter((row) => row.thumbnail)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
     return res.status(200).json({ items: rows })
   }

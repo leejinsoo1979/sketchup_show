@@ -66,7 +66,11 @@ function openHistoryDb(): Promise<IDBDatabase | null> {
   })
 }
 
-async function readSnapshotsFromIndexedDb(): Promise<GraphSnapshot[]> {
+// IndexedDB 레코드에는 소유 계정 키(ownerKey)를 함께 저장한다. 이전 버전 레코드는
+// ownerKey가 없으므로, 현재 계정 소유가 확인되는 id(claimableIds)만 인정한다.
+type StoredSnapshot = GraphSnapshot & { ownerKey?: string }
+
+async function readOwnedSnapshotsFromIndexedDb(ownerKey: string, claimableIds: Set<string>): Promise<GraphSnapshot[]> {
   const db = await openHistoryDb()
   if (!db) return []
   return new Promise((resolve) => {
@@ -74,8 +78,13 @@ async function readSnapshotsFromIndexedDb(): Promise<GraphSnapshot[]> {
     const store = tx.objectStore(HISTORY_STORE_NAME)
     const request = store.getAll()
     request.onsuccess = () => {
-      const rows = Array.isArray(request.result) ? request.result : []
-      resolve(rows.slice(0, MAX_HISTORY_ITEMS) as GraphSnapshot[])
+      const rows = (Array.isArray(request.result) ? request.result : []) as StoredSnapshot[]
+      const anonymousKey = ownerKey === 'lumanova.history.local'
+      const owned = rows
+        .filter((row) => row.ownerKey === ownerKey
+          || (row.ownerKey === undefined && (anonymousKey || claimableIds.has(row.id))))
+        .map(({ ownerKey: _ownerKey, ...snapshot }) => snapshot as GraphSnapshot)
+      resolve(owned.slice(0, MAX_HISTORY_ITEMS))
     }
     request.onerror = () => resolve([])
     tx.oncomplete = () => db.close()
@@ -83,14 +92,14 @@ async function readSnapshotsFromIndexedDb(): Promise<GraphSnapshot[]> {
   })
 }
 
-async function persistSnapshotsToIndexedDb(snapshots: GraphSnapshot[]) {
+async function persistSnapshotsToIndexedDb(snapshots: GraphSnapshot[], ownerKey: string) {
   const db = await openHistoryDb()
   if (!db) return
   await new Promise<void>((resolve) => {
     const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite')
     const store = tx.objectStore(HISTORY_STORE_NAME)
     snapshots.slice(0, MAX_HISTORY_ITEMS).forEach((snapshot) => {
-      store.put(snapshot)
+      store.put({ ...snapshot, ownerKey } satisfies StoredSnapshot)
     })
     tx.oncomplete = () => {
       db.close()
@@ -229,15 +238,20 @@ async function persistSnapshotToServer(snapshot: GraphSnapshot) {
   const nodes = snapshot.graph.nodes
   const compressed = await createHistoryPreviewImage(thumbnail)
   const compressedSource = sourceThumbnail ? await createHistoryPreviewImage(sourceThumbnail) : ''
-  await apiSaveHistory({
-    clientId: snapshot.id,
-    thumbnail: compressed,
-    sourceThumbnail: compressedSource,
-    prompt: pickPrompt(nodes),
-    engine: pickEngine(nodes),
-    cost: snapshot.creditUsed,
-    createdAt: snapshot.timestamp,
-  }).catch(() => {})
+  try {
+    await apiSaveHistory({
+      clientId: snapshot.id,
+      thumbnail: compressed,
+      sourceThumbnail: compressedSource,
+      prompt: pickPrompt(nodes),
+      engine: pickEngine(nodes),
+      cost: snapshot.creditUsed,
+      createdAt: snapshot.timestamp,
+    })
+  } catch (err) {
+    // 실패한 항목은 로컬에만 남고, 다음 히스토리 로드 때 재업로드를 시도한다.
+    console.warn('[history] 서버 히스토리 저장 실패:', err)
+  }
 }
 
 function mergeSnapshots(...groups: GraphSnapshot[][]): GraphSnapshot[] {
@@ -308,40 +322,49 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     }
 
     set((s) => {
+      const ownerKey = getHistoryStorageKey()
       const snapshots = [snapshot, ...s.snapshots].slice(0, MAX_HISTORY_ITEMS)
       persistSnapshots(snapshots)
-      void persistSnapshotsToIndexedDb(snapshots)
+      void persistSnapshotsToIndexedDb(snapshots, ownerKey)
       void persistSnapshotToServer(snapshot)
       return { snapshots }
     })
   },
 
   loadSnapshots: async () => {
-    const auth = getFirebaseAuth()
+    // 로컬 캐시는 현재 계정 소유분만 사용한다. 익명(local) 히스토리를 로그인
+    // 계정에 합치면 계정 간 목록이 오염되고 다른 계정 서버로 업로드까지 된다.
     const currentKey = getHistoryStorageKey()
-    const localKey = 'lumanova.history.local'
-    const indexedDbSnapshots = await readSnapshotsFromIndexedDb()
-    const localSnapshots = mergeSnapshots(
-      indexedDbSnapshots,
-      readSnapshotsByKey(currentKey),
-      auth?.currentUser ? readSnapshotsByKey(localKey) : [],
-    )
+    const storedSnapshots = readSnapshotsByKey(currentKey)
+    const storedIds = new Set(storedSnapshots.map((snapshot) => snapshot.id))
 
     if (saasMode()) {
       try {
         const { items } = await apiHistory(60)
         const serverSnapshots = items.map(snapshotFromServerItem)
+        // 서버 목록이 계정의 기준(source of truth). 로컬 캐시는 원본 그래프 복원과
+        // 아직 업로드되지 않은 항목(업로드 대기분) 유지에만 쓴다.
+        const serverIds = new Set(serverSnapshots.map((snapshot) => snapshot.id))
+        const claimableIds = new Set([...storedIds, ...serverIds])
+        const localSnapshots = mergeSnapshots(
+          await readOwnedSnapshotsFromIndexedDb(currentKey, claimableIds),
+          storedSnapshots,
+        )
         const snapshots = mergeServerSnapshotsWithLocalOriginals(serverSnapshots, localSnapshots)
         set({ snapshots })
-        const serverIds = new Set(serverSnapshots.map((snapshot) => snapshot.id))
+        void persistSnapshotsToIndexedDb(snapshots, currentKey)
         localSnapshots.filter((snapshot) => !serverIds.has(snapshot.id)).forEach((snapshot) => {
           void persistSnapshotToServer(snapshot)
         })
         return
-      } catch {
-        // fall through to local cache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리 조회 실패 — 로컬 캐시로 표시합니다:', err)
       }
     }
+    const localSnapshots = mergeSnapshots(
+      await readOwnedSnapshotsFromIndexedDb(currentKey, storedIds),
+      storedSnapshots,
+    )
     set({ snapshots: localSnapshots })
   },
 
